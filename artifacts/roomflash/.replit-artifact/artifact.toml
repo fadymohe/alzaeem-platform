@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "RoomFlash"
+description = "An Arabic-first multi-tenant commerce platform for merchants in Egypt and Iraq to create storefronts, manage products and inventory, process orders, and grow their businesses."
+version = "1.0.0"
+id = "artifacts/roomflash"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22066
+
+[services.development]
+run = "pnpm --filter @workspace/roomflash run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/roomflash", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/roomflash/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22066"
+BASE_PATH = "/"

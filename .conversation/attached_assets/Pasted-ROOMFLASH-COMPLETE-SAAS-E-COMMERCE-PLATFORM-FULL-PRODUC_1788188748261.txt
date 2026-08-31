@@ -1,0 +1,2276 @@
+ROOMFLASH — COMPLETE SAAS E-COMMERCE PLATFORM
+FULL PRODUCTION-READY BUILD SPECIFICATION
+
+You are acting as a senior SaaS architect, full-stack engineer, UI/UX designer, DevOps engineer, database architect, security engineer, and product manager.
+
+Build a complete working SaaS e-commerce platform called:
+
+ROOMFLASH
+
+This is NOT a static website.
+This is NOT a landing page.
+This is NOT a UI mockup.
+
+Build a real working multi-tenant SaaS platform with:
+- Authentication
+- Database
+- Merchant accounts
+- Storefronts
+- Products
+- Categories
+- Inventory
+- Orders
+- Customers
+- Shipping integration architecture
+- Subscriptions
+- Custom domains
+- Analytics
+- Marketing
+- Admin panel
+- API architecture
+- Security
+- Responsive UI
+
+The initial target markets are:
+
+EGYPT
+IRAQ
+
+The platform must be Arabic-first and RTL, while supporting English.
+
+==================================================
+1. CORE BUSINESS CONCEPT
+==================================================
+
+RoomFlash is a SaaS platform that allows merchants to create their own online stores.
+
+A merchant signs up.
+
+The merchant creates a store.
+
+RoomFlash automatically creates a storefront under a RoomFlash subdomain.
+
+Example:
+
+storename.roomflash.com
+
+The merchant can:
+- Add products
+- Add product images
+- Set prices
+- Set inventory
+- Set product weight
+- Receive orders
+- Manage customers
+- Connect shipping providers
+- Create shipments
+- Track shipments
+- View analytics
+- Run marketing campaigns
+- Manage subscriptions
+
+Paid merchants can connect their own custom domain.
+
+Example:
+
+www.mystore.com
+
+==================================================
+2. MULTI-TENANCY
+==================================================
+
+This is a MULTI-TENANT SaaS application.
+
+Every merchant must have isolated data.
+
+Every relevant database entity must be associated with the correct merchant/store.
+
+Use:
+
+tenant_id
+merchant_id
+store_id
+
+where appropriate.
+
+A merchant must NEVER be able to access another merchant's:
+
+Products
+Orders
+Customers
+Inventory
+Analytics
+Settings
+Payments
+Subscriptions
+Shipping information
+
+Implement authorization at the server/API level.
+
+Do NOT rely only on frontend restrictions.
+
+==================================================
+3. USER TYPES
+==================================================
+
+There are currently two main user types:
+
+1. MERCHANT
+2. PLATFORM OWNER / SUPER ADMIN
+
+There is ONE platform owner/admin.
+
+The platform owner has full administrative permissions.
+
+Do not create unnecessary admin roles unless required later.
+
+==================================================
+4. MERCHANT REGISTRATION
+==================================================
+
+Registration page:
+
+Create your RoomFlash account.
+
+Fields:
+
+First Name
+Last Name
+Email
+Country
+Phone
+Store Name
+Preferred Subdomain
+Password
+Confirm Password
+
+Countries:
+
+Egypt
+Iraq
+
+Terms & Conditions checkbox.
+
+Privacy Policy checkbox.
+
+Button:
+
+Create Account
+
+After registration:
+
+Email verification.
+
+==================================================
+5. EMAIL VERIFICATION
+==================================================
+
+Implement email verification architecture.
+
+Flow:
+
+Registration
+↓
+Verification email
+↓
+Verification code/link
+↓
+Account activated
+↓
+Onboarding
+
+Use environment variables for email provider credentials.
+
+Never expose email credentials to frontend.
+
+If email provider is not configured during development:
+
+Provide a development-safe verification mechanism without pretending that production email delivery is active.
+
+==================================================
+6. STORE ONBOARDING
+==================================================
+
+After verification:
+
+Show:
+
+"Let's build your store"
+
+Button:
+
+Get Started
+
+Step 1:
+
+Store Identity
+
+Fields:
+
+Store Name
+Country
+Category
+Logo
+
+Logo formats:
+
+PNG
+JPG/JPEG
+WEBP
+
+Maximum size:
+
+10 MB
+
+Categories:
+
+Fashion
+Electronics
+Beauty
+Food
+Home & Decor
+Services
+Other
+
+==================================================
+7. SUBDOMAIN
+==================================================
+
+Every merchant gets a RoomFlash subdomain.
+
+Example:
+
+mystore.roomflash.com
+
+The subdomain must be unique.
+
+Validate:
+
+Allowed characters
+Length
+Reserved words
+Availability
+
+Reserved examples:
+
+www
+admin
+api
+app
+dashboard
+mail
+support
+help
+billing
+
+Do not allow duplicate subdomains.
+
+==================================================
+8. THEME SELECTION
+==================================================
+
+After store identity:
+
+Show theme selection.
+
+Themes should include:
+
+Fashion
+Electronics
+Beauty
+Food
+Home
+General
+
+Each theme card:
+
+Preview
+Theme name
+Description
+Free/Paid
+Features
+
+Buttons:
+
+Previous
+Next
+Use Theme
+
+Then:
+
+"Your store is ready"
+
+Buttons:
+
+View Store
+Add First Product
+Go to Dashboard
+
+==================================================
+9. STOREFRONT
+==================================================
+
+Every merchant gets a public storefront.
+
+The storefront must support:
+
+Home
+Products
+Categories
+Product page
+Cart
+Checkout
+Order confirmation
+
+Product page:
+
+Product image gallery
+Product name
+Description
+Price
+Discount
+Stock
+Variants if implemented
+Weight
+Add to cart
+Buy now
+
+Cart:
+
+Products
+Quantity
+Subtotal
+Shipping
+Discount
+Total
+
+Checkout:
+
+Customer name
+Phone
+Email
+Address
+City
+Governorate/State
+Country
+Notes
+
+Payment method:
+
+Cash on Delivery initially.
+
+Electronic payments will be added through integrations.
+
+Do not pretend a payment gateway is integrated unless actual credentials/API integration exists.
+
+==================================================
+10. MERCHANT DASHBOARD
+==================================================
+
+Dashboard title:
+
+لوحة التحكم
+
+Top navigation should remain consistent.
+
+Sidebar:
+
+Home
+Orders
+Products
+Customers
+Marketing
+Subscriptions
+Analytics
+Sales Channels
+Applications
+Settings
+Logout
+
+Admin has a separate admin panel.
+
+==================================================
+11. DASHBOARD TOP BAR
+==================================================
+
+Persistent top bar:
+
+Current page title
+View Store
+Notifications
+Profile
+Language
+Dark Mode
+
+Profile menu:
+
+My Profile
+Account Settings
+Store Settings
+Logout
+
+==================================================
+12. FREE PLAN
+==================================================
+
+RoomFlash has a free plan.
+
+Free merchants receive:
+
+Online store
+RoomFlash subdomain
+Basic themes
+Basic products
+Basic inventory
+Basic orders
+Basic customers
+Basic analytics
+
+Free order limit:
+
+10 orders per month.
+
+The dashboard must calculate the remaining quota dynamically.
+
+Example:
+
+"متبقي 5 طلبات مجانية"
+
+This must NOT be hardcoded.
+
+If the merchant has made:
+
+5 orders
+
+then:
+
+5 remaining
+
+If:
+
+10 orders
+
+then:
+
+0 remaining
+
+If the limit is exceeded:
+
+Show subscription upgrade.
+
+==================================================
+13. PAID PLANS
+==================================================
+
+Create two paid subscription plans.
+
+Plan 1:
+
+300 EGP / month
+
+Plan 2:
+
+500 EGP / month
+
+The 300 EGP plan feature matrix should remain configurable from admin settings.
+
+The 500 EGP plan should support advanced features.
+
+Potential 500 EGP features:
+
+Unlimited orders
+Unlimited products
+Advanced themes
+Custom domain
+Coupons
+Discounts
+Ratings
+Reviews
+Affiliate marketing
+Meta integration
+TikTok integration
+Google integration
+Advanced analytics
+Sales funnels
+Abandoned cart recovery
+Loyalty points
+Rewards
+Spin wheel
+Multiple branches
+Multiple warehouses
+AI assistant
+Advanced integrations
+
+Do NOT hardcode business rules in frontend.
+
+Plans and limits must be configurable from database/admin.
+
+==================================================
+14. ANNUAL SUBSCRIPTION
+==================================================
+
+500 EGP/month:
+
+500 × 12 = 6,000 EGP/year
+
+Annual discount:
+
+10%
+
+Discounted annual price:
+
+5,400 EGP/year
+
+Make this dynamic.
+
+Do not hardcode calculated values.
+
+Formula:
+
+monthly_price × 12 × (1 - annual_discount)
+
+==================================================
+15. SUBSCRIPTION PAYMENT
+==================================================
+
+Subscription payment system must support:
+
+Manual payment initially.
+
+Flow:
+
+Merchant selects plan
+↓
+Selects payment method
+↓
+Transfers payment
+↓
+Uploads payment proof
+↓
+System creates Pending Payment
+↓
+Admin reviews
+↓
+Admin approves/rejects
+↓
+Subscription activated/rejected
+
+Payment statuses:
+
+Pending
+Under Review
+Approved
+Rejected
+Expired
+Refunded
+
+Payment proof upload must be securely stored.
+
+Do not expose uploaded payment documents publicly.
+
+==================================================
+16. ADMIN PANEL
+==================================================
+
+Create:
+
+/admin
+
+Protected by admin authentication.
+
+Admin dashboard:
+
+Total merchants
+Active merchants
+Free merchants
+Paid merchants
+New merchants
+Orders
+Revenue
+MRR
+ARR
+Subscriptions
+Pending payments
+Shipping activity
+Support tickets
+
+Admin can manage:
+
+Merchants
+Stores
+Subscriptions
+Payments
+Plans
+Themes
+Apps
+Shipping providers
+Promotions
+Support
+Settings
+Audit logs
+
+==================================================
+17. ADMIN MERCHANT MANAGEMENT
+==================================================
+
+Admin can:
+
+Search merchants
+View merchant
+View store
+View subscription
+View orders
+View usage
+View payment status
+Activate account
+Suspend account
+Deactivate account
+Reset/assist account where securely supported
+
+Never expose merchant passwords.
+
+==================================================
+18. ORDERS
+==================================================
+
+Merchant Orders page:
+
+Title:
+
+الطلبات
+
+Statistics:
+
+Total Revenue
+Orders
+Pending Orders
+Average Order Value
+
+Search.
+
+Filters:
+
+All
+Pending
+Confirmed
+Processing
+Shipping Created
+In Transit
+Delivered
+Cancelled
+Returned
+
+Date filters.
+
+Order table:
+
+Order ID
+Customer
+Total
+Status
+Date
+
+Clicking order:
+
+Order details page.
+
+==================================================
+19. ORDER LIFECYCLE
+==================================================
+
+Order lifecycle:
+
+New
+↓
+Pending Review
+↓
+Confirmed
+↓
+Shipping Created
+↓
+Awaiting Pickup
+↓
+In Transit
+↓
+Delivered
+
+Alternative states:
+
+Cancelled
+Returned
+Failed Delivery
+
+Store the complete status history.
+
+==================================================
+20. SHIPPING INTEGRATION
+==================================================
+
+This is one of the most important RoomFlash features.
+
+Merchant can connect a shipping provider.
+
+Create a generic shipping provider architecture.
+
+DO NOT hardcode one shipping company.
+
+Create:
+
+ShippingProvider interface/service.
+
+Each provider can support:
+
+Create Shipment
+Get Shipment
+Track Shipment
+Cancel Shipment
+Calculate Shipping
+Get Label
+
+==================================================
+21. AUTOMATIC SHIPMENT CREATION
+==================================================
+
+When a customer places an order:
+
+Customer
+↓
+Storefront
+↓
+RoomFlash
+↓
+Order created
+↓
+Merchant Dashboard
+↓
+Shipping API
+↓
+Create Shipment
+↓
+Shipping Company
+↓
+Shipment ID + Tracking Number
+↓
+RoomFlash
+↓
+Merchant Dashboard
+
+Shipment request:
+
+Customer name
+Phone
+Address
+City
+Governorate
+Country
+Products
+Quantities
+Weights
+COD amount
+Order reference
+
+Response:
+
+Shipment ID
+Tracking number
+Status
+Label if available
+
+==================================================
+22. SHIPPING ERROR HANDLING
+==================================================
+
+If shipping API fails:
+
+Do not silently fail.
+
+Store:
+
+Error code
+Error message
+Provider
+Timestamp
+Order
+Request ID
+
+Show:
+
+Shipment creation failed.
+
+Allow:
+
+Retry
+
+==================================================
+23. PRODUCT WEIGHT
+==================================================
+
+Merchant must be able to enter product weight.
+
+Fields:
+
+Weight
+Unit
+
+Supported units:
+
+g
+kg
+
+Store normalized weight internally.
+
+Shipping providers use product weight to calculate shipping cost.
+
+If provider returns exact shipping cost:
+
+Show exact value.
+
+If only an estimate is available:
+
+Show:
+
+Estimated shipping cost.
+
+Never fabricate exact shipping prices.
+
+==================================================
+24. PRODUCTS
+==================================================
+
+Products page:
+
+Statistics:
+
+Categories
+Products
+Out of Stock
+Active Products
+
+Actions:
+
+Add Product
+Add Category
+Import Excel
+Export Excel
+
+Product fields:
+
+Name
+SKU
+Description
+Price
+Compare-at Price
+Cost
+Images
+Category
+Weight
+Stock
+Status
+Variants
+SEO title
+SEO description
+
+==================================================
+25. INVENTORY
+==================================================
+
+Inventory system:
+
+Current stock
+Reserved stock
+Available stock
+Low-stock threshold
+
+Inventory actions:
+
+Add
+Remove
+Adjust
+Transfer
+
+Inventory movement history:
+
+Product
+Warehouse
+Type
+Quantity
+Previous quantity
+New quantity
+User
+Date
+Reason
+
+==================================================
+26. WAREHOUSES
+==================================================
+
+Support multiple warehouses.
+
+Warehouse:
+
+Name
+Country
+City
+Address
+Phone
+Status
+
+Products can have inventory per warehouse.
+
+==================================================
+27. CUSTOMERS
+==================================================
+
+Customer dashboard.
+
+Fields:
+
+Name
+Phone
+Email
+Country
+City
+Orders
+Total spent
+Last order
+
+Segments:
+
+New
+Returning
+VIP
+Inactive
+
+Customer profile:
+
+Order history
+Total spending
+Average order value
+Notes
+Activity
+
+==================================================
+28. MARKETING
+==================================================
+
+Marketing module:
+
+Coupons
+Discounts
+Campaigns
+Abandoned carts
+Customer segments
+Affiliate marketing
+
+Integrations architecture:
+
+Meta
+TikTok
+Google
+
+Do not mark integrations as active unless actually configured.
+
+==================================================
+29. ABANDONED CART
+==================================================
+
+Flow:
+
+Customer adds product
+↓
+Checkout started
+↓
+No completed order
+↓
+Cart becomes abandoned
+↓
+Recovery campaign
+
+Merchant can configure:
+
+Delay
+Message
+Discount
+Channel
+
+Potential channels:
+
+WhatsApp
+SMS
+Email
+
+Do not send real messages without actual integration.
+
+==================================================
+30. SALES CHANNELS
+==================================================
+
+Sales channels:
+
+Online Store
+Future channels
+
+Online Store:
+
+Themes
+Customization
+Preview
+Publish
+
+Store status:
+
+Draft
+Published
+Paused
+
+==================================================
+31. CUSTOM DOMAIN
+==================================================
+
+Free:
+
+RoomFlash subdomain.
+
+Paid:
+
+Custom domain.
+
+Domain flow:
+
+Merchant enters domain
+↓
+System generates verification instructions
+↓
+Merchant updates DNS
+↓
+System verifies
+↓
+SSL provisioning
+↓
+Domain active
+
+Statuses:
+
+Pending Verification
+Verified
+SSL Provisioning
+Active
+Error
+
+Allow:
+
+Set Primary Domain
+Remove Domain
+
+Never claim a domain is connected until DNS verification succeeds.
+
+==================================================
+32. ANALYTICS
+==================================================
+
+Merchant analytics:
+
+Revenue
+Orders
+Customers
+Average Order Value
+Conversion Rate
+Products sold
+Top products
+Top customers
+Sales by day
+Sales by month
+Sales by category
+Shipping statistics
+
+Date filters:
+
+Today
+Yesterday
+7 Days
+30 Days
+Month
+Year
+Custom
+
+If there is not enough data:
+
+Show:
+
+"لا توجد بيانات كافية"
+
+Never generate fake merchant analytics.
+
+==================================================
+33. DASHBOARD REVENUE
+==================================================
+
+Dashboard:
+
+Total Revenue
+Orders
+Customers
+Average Order Value
+
+Compare with previous period.
+
+Example:
+
++12.5%
+
+Only calculate comparison when sufficient data exists.
+
+==================================================
+34. PEAK HOURS
+==================================================
+
+Analyze order timestamps.
+
+Display:
+
+Peak ordering hours.
+
+If insufficient data:
+
+لا توجد بيانات كافية
+
+==================================================
+35. LATEST ORDERS
+==================================================
+
+Dashboard displays latest 6 orders.
+
+Columns:
+
+Order
+Customer
+Total
+Status
+Time
+
+==================================================
+36. TELEGRAM NOTIFICATIONS
+==================================================
+
+Merchant can connect Telegram notifications.
+
+Feature:
+
+Receive new-order notifications on Telegram.
+
+Environment variable:
+
+ROOMFLASH_TELEGRAM_BOT_URL
+
+Do not invent an actual Telegram bot.
+
+Allow merchant to:
+
+Connect
+Disconnect
+Test notification
+
+==================================================
+37. LIVE CHAT
+==================================================
+
+Floating support button:
+
+شات فوري
+
+It opens the RoomFlash support mechanism.
+
+If live chat backend is not implemented:
+
+Provide a configurable support URL.
+
+Do not fabricate a support service.
+
+==================================================
+38. APPLICATION MARKETPLACE
+==================================================
+
+Create:
+
+Applications
+
+Categories:
+
+Shipping
+Payments
+Marketing
+Analytics
+Customer Support
+Social
+AI
+Productivity
+
+Each app:
+
+Name
+Logo
+Description
+Category
+Pricing
+Install
+Configure
+
+Unimplemented apps:
+
+Coming Soon
+
+==================================================
+39. AI ASSISTANT
+==================================================
+
+Create architecture for AI assistant.
+
+Potential features:
+
+Product descriptions
+Marketing copy
+Sales analysis
+Business recommendations
+Customer insights
+Inventory insights
+Campaign ideas
+
+AI API keys must remain server-side.
+
+Use environment variables.
+
+==================================================
+40. SETTINGS
+==================================================
+
+Merchant settings:
+
+Profile
+Store
+Domain
+Notifications
+Shipping
+Payments
+Subscription
+Security
+Language
+Theme
+
+Security:
+
+Change password
+Active sessions
+Logout other sessions
+
+==================================================
+41. AUTHENTICATION
+==================================================
+
+Implement secure authentication.
+
+Requirements:
+
+Password hashing
+Secure sessions
+HttpOnly cookies
+Secure cookies in production
+CSRF protection where applicable
+Rate limiting
+Login throttling
+Input validation
+Password reset architecture
+Email verification
+
+Never store plain-text passwords.
+
+==================================================
+42. SECURITY
+==================================================
+
+Implement:
+
+Authentication
+Authorization
+Tenant isolation
+Input validation
+SQL injection protection
+XSS protection
+CSRF protection
+Rate limiting
+Secure headers
+Audit logging
+File validation
+Upload limits
+Secure secrets
+Database backups
+
+Do not expose:
+
+API keys
+Database credentials
+Secrets
+Passwords
+
+to frontend.
+
+==================================================
+43. DATABASE
+==================================================
+
+Use PostgreSQL.
+
+Recommended entities:
+
+users
+sessions
+merchants
+stores
+subscriptions
+subscription_plans
+payments
+payment_proofs
+products
+product_images
+categories
+product_variants
+inventory
+inventory_movements
+warehouses
+customers
+orders
+order_items
+shipments
+shipping_providers
+shipping_events
+themes
+apps
+installed_apps
+marketing_campaigns
+coupons
+abandoned_carts
+domains
+notifications
+analytics_events
+audit_logs
+support_tickets
+
+Use proper indexes.
+
+Use foreign keys.
+
+Use transactions for financial/order operations.
+
+==================================================
+44. API
+==================================================
+
+Create clean REST or typed API architecture.
+
+Separate:
+
+Authentication
+Merchant
+Storefront
+Orders
+Products
+Customers
+Inventory
+Shipping
+Subscriptions
+Analytics
+Admin
+
+All APIs must verify authorization.
+
+==================================================
+45. FRONTEND
+==================================================
+
+Recommended stack:
+
+Next.js
+React
+TypeScript
+Tailwind CSS
+
+Use reusable components.
+
+Use a consistent design system.
+
+==================================================
+46. RTL
+==================================================
+
+Arabic is the default language.
+
+Entire application:
+
+direction: rtl
+
+Support English.
+
+Ensure RTL works correctly for:
+
+Sidebar
+Tables
+Charts
+Forms
+Cards
+Navigation
+Breadcrumbs
+Modals
+Pagination
+
+Do not mechanically mirror directional icons.
+
+==================================================
+47. ARABIC FONT
+==================================================
+
+Use:
+
+IBM Plex Sans Arabic
+
+Fallback:
+
+Noto Sans Arabic
+system sans-serif
+
+Apply consistently to:
+
+Headings
+Body
+Cards
+Tables
+Forms
+Navigation
+Charts
+Buttons
+
+==================================================
+48. ROOMFLASH BRAND COLORS
+==================================================
+
+Use centralized CSS variables.
+
+Primary:
+
+#4F46E5
+
+Secondary:
+
+#6366F1
+
+Dark:
+
+#111827
+
+Background:
+
+#F8FAFC
+
+Surface:
+
+#FFFFFF
+
+Text:
+
+#111827
+
+Muted:
+
+#64748B
+
+Border:
+
+#E2E8F0
+
+Success:
+
+#16A34A
+
+Warning:
+
+#F59E0B
+
+Danger:
+
+#DC2626
+
+Info:
+
+#0EA5E9
+
+Do not hardcode colors throughout components.
+
+==================================================
+49. DESIGN
+==================================================
+
+Design must be:
+
+Modern
+Premium
+Professional
+Enterprise
+Clean
+Fast
+Trustworthy
+
+Avoid:
+
+Cheap gradients
+Excessive rounded cards
+Excessive shadows
+Clutter
+Generic admin template appearance
+
+RoomFlash should look like a serious technology company.
+
+==================================================
+50. DARK MODE
+==================================================
+
+Support dark mode.
+
+Ensure:
+
+Contrast
+Readable text
+Readable charts
+Readable tables
+Professional surfaces
+
+==================================================
+51. RESPONSIVE
+==================================================
+
+Desktop:
+
+Full sidebar.
+
+Tablet:
+
+Collapsible sidebar.
+
+Mobile:
+
+Drawer navigation.
+
+Tables:
+
+Responsive or horizontal scrolling.
+
+Charts:
+
+Responsive.
+
+No horizontal page overflow.
+
+==================================================
+52. DASHBOARD EMPTY STATES
+==================================================
+
+New merchants should not see fake data.
+
+Examples:
+
+Revenue:
+
+"لا توجد إيرادات بعد"
+
+Orders:
+
+"لا توجد طلبات"
+
+Customers:
+
+"لا يوجد عملاء بعد"
+
+Analytics:
+
+"لا توجد بيانات كافية"
+
+Provide useful CTAs:
+
+Add Product
+Customize Store
+View Store
+Create First Order
+
+==================================================
+53. DEMO MODE
+==================================================
+
+Provide a safe demo mode.
+
+Demo data must be clearly labeled:
+
+DEMO DATA
+
+Demo data must never be mixed with real merchant data.
+
+==================================================
+54. ADMIN PLATFORM ANALYTICS
+==================================================
+
+Admin analytics:
+
+Total merchants
+Active merchants
+Free merchants
+Paid merchants
+MRR
+ARR
+Orders
+Revenue
+Churn
+Conversion
+Retention
+
+If no actual data exists:
+
+Show:
+
+No data available yet.
+
+Never fabricate platform performance.
+
+==================================================
+55. BUSINESS MODEL
+==================================================
+
+Current business assumptions:
+
+Free plan:
+10 orders/month
+
+Paid:
+
+300 EGP/month
+500 EGP/month
+
+Annual 500 EGP plan:
+
+6,000 EGP standard annual value
+10% discount
+5,400 EGP/year
+
+Target market:
+
+Egypt
+Iraq
+
+Merchant target:
+
+1,000–1,500 merchants/year
+
+These are BUSINESS TARGETS / FORECASTS.
+
+Do not describe them as historical results.
+
+==================================================
+56. 3-YEAR FINANCIAL MODEL
+==================================================
+
+Create a separate internal/admin financial model.
+
+Inputs:
+
+New merchants
+Free-to-paid conversion
+Churn
+Monthly price
+Annual plan percentage
+CAC
+Marketing spend
+Development costs
+Hosting
+Support
+Payment fees
+Other operating expenses
+
+Outputs:
+
+Total merchants
+Free merchants
+Paid merchants
+MRR
+ARR
+Revenue
+COGS
+Gross Profit
+Gross Margin
+Operating Expenses
+EBITDA
+Net Profit/Loss
+Cash Burn
+Break-even
+
+Scenarios:
+
+Conservative
+Base
+Aggressive
+
+All assumptions must be editable.
+
+==================================================
+57. DEVELOPMENT TEAM
+==================================================
+
+Initial lean team assumption:
+
+3–5 people.
+
+Possible structure:
+
+1 Full-stack engineer
+1 Backend/Full-stack engineer
+1 UI/UX + frontend resource
+1 QA/technical support resource
+1 Product/Project lead
+
+Some roles can be combined.
+
+AI tools should be used to accelerate development.
+
+Potential AI tools:
+
+Replit Agent
+Gemini
+ChatGPT
+Other coding assistants
+
+AI-generated code must still be reviewed and tested.
+
+==================================================
+58. LAUNCH TARGET
+==================================================
+
+Target:
+
+MVP launch within approximately 1 month.
+
+IMPORTANT:
+
+One-month launch means an MVP, NOT every possible advanced feature.
+
+Prioritize:
+
+Authentication
+Merchant onboarding
+Store creation
+Subdomain
+Themes
+Products
+Inventory
+Orders
+Customers
+Basic dashboard
+Shipping architecture
+Basic subscription system
+Admin panel
+Security
+Responsive design
+
+Advanced features can follow after launch.
+
+==================================================
+59. INFRASTRUCTURE
+==================================================
+
+The system requires:
+
+Application hosting
+PostgreSQL database
+Object/file storage
+CDN
+Backups
+Monitoring
+Logging
+Email service
+Optional SMS
+Optional WhatsApp
+Optional Redis/queue
+Domain/DNS
+SSL
+
+Start with a cost-efficient architecture.
+
+Design for horizontal scaling.
+
+Do not over-engineer infrastructure for launch.
+
+==================================================
+60. DOMAIN
+==================================================
+
+Main domain:
+
+RoomFlash domain.
+
+Use environment variables for:
+
+MAIN_DOMAIN
+DATABASE_URL
+SESSION_SECRET
+ROOMFLASH_PLAN_PASSWORD
+EMAIL_PROVIDER_KEY
+TELEGRAM_BOT_URL
+AI_API_KEY
+
+Never hardcode secrets.
+
+==================================================
+61. BUSINESS PLAN PORTAL
+==================================================
+
+The project may also include a private RoomFlash Business Plan Portal.
+
+It must be separate from the public merchant dashboard.
+
+Authentication:
+
+ROOMFLASH_PLAN_PASSWORD
+
+Environment variable:
+
+ROOMFLASH_PLAN_PASSWORD
+
+Intended password:
+
+RoomFlash
+
+The password must remain server-side.
+
+Never expose it in frontend code.
+
+==================================================
+62. BUSINESS PLAN PORTAL CONTENT
+==================================================
+
+Include:
+
+Executive Summary
+Business Model
+Problem
+Solution
+Product
+Market
+Egypt
+Iraq
+Competitors
+Pricing
+Revenue
+Costs
+Development
+Infrastructure
+Team
+Marketing
+Financial Model
+Break-even
+Risks
+Roadmap
+Technical Architecture
+Database
+API
+Security
+Sources
+
+==================================================
+63. REAL DATA POLICY
+==================================================
+
+For market research:
+
+Use real current public data.
+
+Sources should include:
+
+World Bank
+IMF
+ITU
+GSMA
+DataReportal
+Central banks
+Government sources
+Official company pricing
+Annual reports
+Official documentation
+Reputable research
+
+Every external statistic must have:
+
+Source
+URL
+Publication date
+Data year
+Access date
+
+==================================================
+64. DATA CLASSIFICATION
+==================================================
+
+Every number must be classified.
+
+Possible labels:
+
+VERIFIED EXTERNAL DATA
+ROOMFLASH ACTUAL
+ROOMFLASH ASSUMPTION
+ROOMFLASH FORECAST
+ESTIMATED COST
+TARGET
+DEMO DATA
+
+Never fabricate historical RoomFlash data.
+
+==================================================
+65. SOURCES
+==================================================
+
+Create a Sources & Methodology section.
+
+Source IDs:
+
+SRC-001
+SRC-002
+SRC-003
+
+Fields:
+
+Title
+Publisher
+URL
+Publication Date
+Data Year
+Access Date
+Country
+Metric
+Notes
+
+==================================================
+66. AUDIT LOG
+==================================================
+
+Record important admin actions:
+
+Login
+Logout
+Merchant suspension
+Subscription activation
+Payment approval
+Payment rejection
+Domain changes
+Shipping provider changes
+Settings changes
+
+Audit fields:
+
+User
+Action
+Entity
+Entity ID
+Timestamp
+IP where legally/technically appropriate
+Metadata
+
+==================================================
+67. FILE UPLOADS
+==================================================
+
+Support secure uploads for:
+
+Store logos
+Product images
+Payment proofs
+
+Validate:
+
+File type
+File size
+File extension
+MIME type
+
+Do not trust file extension alone.
+
+==================================================
+68. PERFORMANCE
+==================================================
+
+Optimize for:
+
+Fast initial load
+Image optimization
+Caching
+Database indexes
+Lazy loading
+Pagination
+API efficiency
+
+Do not load thousands of orders/products at once.
+
+==================================================
+69. SEO
+==================================================
+
+Storefronts should support:
+
+SEO title
+Meta description
+Open Graph
+Twitter/X metadata
+Canonical URLs
+Sitemap
+Robots.txt
+Product structured data where appropriate
+
+Each store should have SEO isolation.
+
+==================================================
+70. ERROR HANDLING
+==================================================
+
+Create professional error states.
+
+Never show raw stack traces to users.
+
+Log technical details server-side.
+
+User sees:
+
+"حدث خطأ غير متوقع. حاول مرة أخرى."
+
+with:
+
+Retry
+
+==================================================
+71. TESTING
+==================================================
+
+Create tests for:
+
+Authentication
+Registration
+Login
+Tenant isolation
+Product creation
+Order creation
+Inventory
+Subscription
+Payment approval
+Shipping creation
+Domain verification
+Admin permissions
+
+Most importantly:
+
+Verify merchant A cannot access merchant B's data.
+
+==================================================
+72. SEED DATA
+==================================================
+
+Create development seed data.
+
+Clearly mark:
+
+DEMO DATA
+
+Create:
+
+1 demo merchant
+1 demo store
+Sample products
+Sample orders
+Sample customers
+Sample inventory
+
+Production must not automatically contain demo data.
+
+==================================================
+73. DEPLOYMENT
+==================================================
+
+The project must be deployable.
+
+Provide:
+
+Environment variable documentation
+Database migration
+Production build
+Production start command
+Health check
+Logging
+Backup instructions
+
+==================================================
+74. REPLIT
+==================================================
+
+The current development environment is Replit.
+
+The project should work correctly in Replit.
+
+Use Replit Secrets for sensitive environment variables.
+
+Important:
+
+ROOMFLASH_PLAN_PASSWORD
+
+Value:
+
+RoomFlash
+
+Do not expose it in frontend.
+
+==================================================
+75. DEVELOPMENT WORKFLOW
+==================================================
+
+Do NOT attempt to implement every advanced feature simultaneously.
+
+Build in phases.
+
+PHASE 1:
+
+Authentication
+Database
+Multi-tenancy
+Merchant onboarding
+Store creation
+Subdomain
+Basic storefront
+
+PHASE 2:
+
+Products
+Categories
+Inventory
+Orders
+Customers
+Dashboard
+
+PHASE 3:
+
+Shipping
+Subscriptions
+Admin
+Payments
+Notifications
+
+PHASE 4:
+
+Themes
+Marketing
+Analytics
+Custom domains
+
+PHASE 5:
+
+AI
+Advanced integrations
+Branches
+Warehouses
+Loyalty
+Advanced analytics
+
+==================================================
+76. FIRST PRIORITY
+==================================================
+
+Start by inspecting the existing project.
+
+If code already exists:
+
+DO NOT REBUILD FROM SCRATCH.
+
+Analyze:
+
+Current files
+Database
+API
+Authentication
+Frontend
+Routes
+Components
+Environment variables
+
+Then continue from the existing implementation.
+
+If the project is empty:
+
+Create the architecture above.
+
+==================================================
+77. CRITICAL RULES
+==================================================
+
+1. Do not fabricate real company data.
+2. Do not fabricate partnerships.
+3. Do not fabricate shipping integrations.
+4. Do not fabricate payment integrations.
+5. Do not expose secrets.
+6. Do not hardcode business limits.
+7. Do not hardcode subscription calculations.
+8. Do not mix demo data with real data.
+9. Do not allow cross-tenant access.
+10. Do not sacrifice security for speed.
+11. Do not create fake analytics.
+12. Do not claim a feature is integrated until it actually works.
+13. Use real external sources for market statistics.
+14. Label forecasts and assumptions clearly.
+15. Keep the system scalable.
+16. Keep the interface Arabic-first RTL.
+17. Keep the UI professional.
+18. Test every critical flow.
+
+==================================================
+78. FINAL REQUIREMENT
+==================================================
+
+The final RoomFlash platform must feel like a real commercial SaaS product that could be presented to:
+
+Merchants
+Shipping companies
+Investors
+Business partners
+Development teams
+
+It must NOT look like a prototype or generic AI-generated dashboard.
+
+The system must have:
+
+Real database
+Real authentication
+Real tenant isolation
+Real merchant dashboard
+Real storefront
+Real products
+Real orders
+Real customers
+Real inventory
+Real subscription logic
+Real admin controls
+Real API architecture
+Secure secrets
+Responsive UI
+Professional RTL design
+
+Build the platform incrementally.
+
+After each major phase:
+
+Run
+Test
+Fix errors
+Verify functionality
+Then continue.
+
+DO NOT stop at UI generation.
+
+The goal is a WORKING ROOMFLASH SAAS PLATFORM.
+
+END OF SPECIFICATION

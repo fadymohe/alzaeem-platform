@@ -3,20 +3,26 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: RoomFlash merchant and storefront API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: dashboard
+  - name: stores
+  - name: storefront
+  - name: products
+  - name: orders
+  - name: customers
+  - name: subscriptions
+  - name: admin
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +30,429 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get merchant dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /stores/current:
+    get:
+      operationId: getCurrentStore
+      tags: [stores]
+      summary: Get the signed-in merchant's current store
+      responses:
+        "200":
+          description: Store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+    post:
+      operationId: createStore
+      tags: [stores]
+      summary: Create a merchant store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreInput"
+      responses:
+        "201":
+          description: Store created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+  /storefront/{subdomain}:
+    get:
+      operationId: getStorefront
+      tags: [storefront]
+      summary: Get a public store by subdomain
+      parameters:
+        - $ref: "#/components/parameters/Subdomain"
+      responses:
+        "200":
+          description: Public store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Storefront"
+  /products:
+    get:
+      operationId: getProducts
+      tags: [products]
+      summary: List products for the current merchant
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, active, draft, archived]
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+  /products/{id}:
+    patch:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Archive a product
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Product archived
+  /orders:
+    get:
+      operationId: getOrders
+      tags: [orders]
+      summary: List orders for the current merchant
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, pending, confirmed, processing, delivered, cancelled]
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place a cash-on-delivery order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{id}:
+    patch:
+      operationId: updateOrder
+      tags: [orders]
+      summary: Update an order status
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderUpdate"
+      responses:
+        "200":
+          description: Order updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /customers:
+    get:
+      operationId: getCustomers
+      tags: [customers]
+      summary: List customers for the current merchant
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+  /plans:
+    get:
+      operationId: getPlans
+      tags: [subscriptions]
+      summary: List configurable subscription plans
+      responses:
+        "200":
+          description: Subscription plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plan"
+  /admin/summary:
+    get:
+      operationId: getAdminSummary
+      tags: [admin]
+      summary: Get platform administration summary
+      responses:
+        "200":
+          description: Admin summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSummary"
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    Subdomain:
+      name: subdomain
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 3
+        maxLength: 40
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    Store:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        subdomain: { type: string }
+        country: { type: string, enum: [Egypt, Iraq] }
+        category: { type: string }
+        status: { type: string, enum: [draft, published, paused] }
+        theme: { type: string }
+        plan: { type: string }
+        orderLimit: { type: integer }
+        ordersThisMonth: { type: integer }
+      required: [id, name, subdomain, country, category, status, theme, plan, orderLimit, ordersThisMonth]
+    StoreInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        subdomain: { type: string, minLength: 3, maxLength: 40, pattern: "^[a-z0-9-]+$" }
+        country: { type: string, enum: [Egypt, Iraq] }
+        category: { type: string, minLength: 2 }
+        theme: { type: string }
+      required: [name, subdomain, country, category]
+    Product:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        sku: { type: string }
+        description: { type: string }
+        price: { type: number }
+        compareAtPrice: { type: ["number", "null"] }
+        stock: { type: integer }
+        lowStockThreshold: { type: integer }
+        category: { type: string }
+        status: { type: string, enum: [active, draft, archived] }
+        imageUrl: { type: ["string", "null"] }
+        weightGrams: { type: integer }
+      required: [id, name, sku, description, price, compareAtPrice, stock, lowStockThreshold, category, status, imageUrl, weightGrams]
+    ProductInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        sku: { type: string, minLength: 2 }
+        description: { type: string }
+        price: { type: number, minimum: 0 }
+        compareAtPrice: { type: ["number", "null"], minimum: 0 }
+        stock: { type: integer, minimum: 0 }
+        lowStockThreshold: { type: integer, minimum: 0 }
+        category: { type: string }
+        status: { type: string, enum: [active, draft] }
+        imageUrl: { type: ["string", "null"] }
+        weightGrams: { type: integer, minimum: 0 }
+      required: [name, sku, description, price, stock, lowStockThreshold, category, status, weightGrams]
+    ProductUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        description: { type: string }
+        price: { type: number, minimum: 0 }
+        compareAtPrice: { type: ["number", "null"], minimum: 0 }
+        stock: { type: integer, minimum: 0 }
+        category: { type: string }
+        status: { type: string, enum: [active, draft, archived] }
+        imageUrl: { type: ["string", "null"] }
+        weightGrams: { type: integer, minimum: 0 }
+    Order:
+      type: object
+      properties:
+        id: { type: integer }
+        number: { type: string }
+        customerName: { type: string }
+        customerPhone: { type: string }
+        customerCity: { type: string }
+        total: { type: number }
+        itemsCount: { type: integer }
+        status: { type: string, enum: [pending, confirmed, processing, delivered, cancelled] }
+        paymentMethod: { type: string, enum: [cod] }
+        createdAt: { type: string }
+      required: [id, number, customerName, customerPhone, customerCity, total, itemsCount, status, paymentMethod, createdAt]
+    OrderInput:
+      type: object
+      properties:
+        customerName: { type: string, minLength: 2 }
+        customerPhone: { type: string, minLength: 5 }
+        email: { type: ["string", "null"] }
+        address: { type: string, minLength: 5 }
+        city: { type: string, minLength: 2 }
+        country: { type: string, enum: [Egypt, Iraq] }
+        notes: { type: ["string", "null"] }
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OrderItemInput"
+      required: [customerName, customerPhone, address, city, country, items]
+    OrderItemInput:
+      type: object
+      properties:
+        productId: { type: integer }
+        quantity: { type: integer, minimum: 1 }
+      required: [productId, quantity]
+    OrderUpdate:
+      type: object
+      properties:
+        status: { type: string, enum: [pending, confirmed, processing, delivered, cancelled] }
+      required: [status]
+    Customer:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        phone: { type: string }
+        email: { type: ["string", "null"] }
+        city: { type: string }
+        ordersCount: { type: integer }
+        totalSpent: { type: number }
+        lastOrderAt: { type: ["string", "null"] }
+        segment: { type: string, enum: [new, returning, vip, inactive] }
+      required: [id, name, phone, email, city, ordersCount, totalSpent, lastOrderAt, segment]
+    DashboardSummary:
+      type: object
+      properties:
+        revenue: { type: number }
+        orders: { type: integer }
+        customers: { type: integer }
+        averageOrderValue: { type: number }
+        revenueChange: { type: ["number", "null"] }
+        freeOrdersRemaining: { type: integer }
+        orderLimit: { type: integer }
+        lowStockCount: { type: integer }
+        latestOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+      required: [revenue, orders, customers, averageOrderValue, revenueChange, freeOrdersRemaining, orderLimit, lowStockCount, latestOrders]
+    Plan:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        monthlyPrice: { type: number }
+        annualDiscount: { type: number }
+        annualPrice: { type: number }
+        description: { type: string }
+        features:
+          type: array
+          items: { type: string }
+      required: [id, name, monthlyPrice, annualDiscount, annualPrice, description, features]
+    AdminSummary:
+      type: object
+      properties:
+        totalMerchants: { type: integer }
+        activeMerchants: { type: integer }
+        freeMerchants: { type: integer }
+        paidMerchants: { type: integer }
+        orders: { type: integer }
+        revenue: { type: number }
+        mrr: { type: number }
+        pendingPayments: { type: integer }
+      required: [totalMerchants, activeMerchants, freeMerchants, paidMerchants, orders, revenue, mrr, pendingPayments]
+    Storefront:
+      type: object
+      properties:
+        store:
+          $ref: "#/components/schemas/Store"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+      required: [store, products]
