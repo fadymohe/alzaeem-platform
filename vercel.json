@@ -1,7 +1,7 @@
 {
   "version": 2,
   "buildCommand": "pnpm run build",
-  "outputDirectory": "artifacts/roomflash/dist/public",
+  "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
     {
