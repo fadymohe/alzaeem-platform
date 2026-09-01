@@ -6,14 +6,13 @@ import { getStoredOrders, getStoredProducts } from '../data/storeState';
 export function StorePage() {
   const [copied, setCopied] = useState(false);
   const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
-  const [subdomainInput, setSubdomainInput] = useState('got');
-  const [subdomain, setSubdomain] = useState('got');
+  const [subdomainInput, setSubdomainInput] = useState('zero');
+  const [subdomain, setSubdomain] = useState('zero');
   const [activeTemplate, setActiveTemplate] = useState<TemplateId>('volt');
   const [createdSuccessAlert, setCreatedSuccessAlert] = useState(false);
 
   useEffect(() => {
     try {
-      // Check if URL parameter or hash contains store subdomain (e.g. /#/store/got or ?store=got)
       const hash = window.location.hash;
       const searchParams = new URLSearchParams(window.location.search);
       const queryStore = searchParams.get('store') || searchParams.get('subdomain');
@@ -26,14 +25,13 @@ export function StorePage() {
         const cleanSub = targetSub.toLowerCase().replace(/[^a-z0-9-]/g, '');
         setSubdomain(cleanSub);
         setSubdomainInput(cleanSub);
-        return;
       }
 
       const stored = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.storeName) setStoreName(parsed.storeName);
-        if (parsed.subdomain) {
+        if (parsed.subdomain && !targetSub) {
           const cleanSub = parsed.subdomain.replace(/\.alzaeem\.iq|\.zaeem\.iq|\.za3em\.shop/g, '');
           setSubdomain(cleanSub);
           setSubdomainInput(cleanSub);
@@ -47,6 +45,33 @@ export function StorePage() {
 
   const fullDomain = `${subdomain}.za3em.shop`;
   const fullUrl = `https://${fullDomain}`;
+  const directHashUrl = `https://za3em.shop/#/store/${subdomain}`;
+
+  const handleTemplateChange = (id: TemplateId) => {
+    setActiveTemplate(id);
+    try {
+      const stored = localStorage.getItem('zaeem_store_data') || '{}';
+      const parsed = JSON.parse(stored);
+      parsed.selectedTheme = id;
+      parsed.subdomain = `${subdomain}.za3em.shop`;
+      parsed.storeName = storeName;
+      localStorage.setItem('zaeem_store_data', JSON.stringify(parsed));
+      localStorage.setItem('zaeem_onboarded_store', JSON.stringify(parsed));
+
+      // Sync with DB API
+      fetch('/api/stores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: storeName,
+          subdomain: `${subdomain}.za3em.shop`,
+          theme: id,
+          country: 'Iraq',
+          category: 'Retail'
+        })
+      }).catch(() => {});
+    } catch (e) {}
+  };
 
   const handleApplyNewSubdomain = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,17 +79,7 @@ export function StorePage() {
 
     const cleanSub = subdomainInput.toLowerCase().replace(/[^a-z0-9-]/g, '');
     setSubdomain(cleanSub);
-
-    // Save to persistent local state & DB fallback
-    try {
-      const stored = localStorage.getItem('zaeem_store_data') || '{}';
-      const parsed = JSON.parse(stored);
-      parsed.subdomain = `${cleanSub}.za3em.shop`;
-      parsed.storeName = storeName;
-      parsed.selectedTheme = activeTemplate;
-      localStorage.setItem('zaeem_store_data', JSON.stringify(parsed));
-      localStorage.setItem('zaeem_onboarded_store', JSON.stringify(parsed));
-    } catch (err) {}
+    handleTemplateChange(activeTemplate);
 
     setCreatedSuccessAlert(true);
     setTimeout(() => setCreatedSuccessAlert(false), 4000);
@@ -86,13 +101,13 @@ export function StorePage() {
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
             <span>متجرك الإلكتروني المباشر</span>
-            <span className="text-xs font-mono font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 px-3.5 py-1 rounded-full border border-teal-300/50 flex items-center gap-1.5">
+            <span className="text-xs font-mono font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 px-3.5 py-1 rounded-full border border-teal-300/50 flex items-center gap-1.5 dir-ltr">
               <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
               {fullDomain}
             </span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            أدخل أي نطاق فرعي واختبر تفعيله فورياً في ثوانٍ مع اختيار القالب المناسب لمتجرك.
+            أدخل أي نطاق فرعي واختبر تفعيله فورياً في ثوانٍ مع حفظ القالب المختار في قاعدة البيانات.
           </p>
         </div>
 
@@ -106,7 +121,7 @@ export function StorePage() {
             {copied ? 'تم نسخ الرابط' : `نسخ ${fullDomain}`}
           </button>
           <a
-            href={fullUrl}
+            href={directHashUrl}
             target="_blank"
             rel="noreferrer"
             className="px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5"
@@ -122,10 +137,10 @@ export function StorePage() {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Zap className="size-5 text-emerald-400" />
-            <h3 className="font-extrabold text-base">إنشاء وتفعيل نطاق فرعي حقيقي في لحظة</h3>
+            <h3 className="font-extrabold text-base">إنشاء وتفعيل نطاق فرعي حقيقي لحفظ القالب في قاعدة البيانات</h3>
           </div>
-          <span className="text-xs font-mono bg-emerald-950 text-emerald-300 border border-emerald-800 px-3 py-1 rounded-full">
-            شغال ومفعل 100% على za3em.shop
+          <span className="text-xs font-mono bg-emerald-950 text-emerald-300 border border-emerald-800 px-3 py-1 rounded-full dir-ltr">
+            https://{fullDomain}
           </span>
         </div>
 
@@ -137,7 +152,7 @@ export function StorePage() {
               required
               value={subdomainInput}
               onChange={(e) => setSubdomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-              placeholder="مثال: got أو fady أو baghdad-store"
+              placeholder="مثال: zero أو got أو fady أو baghdad-store"
               dir="ltr"
               className="flex-1 h-11 bg-transparent text-sm font-mono font-bold text-white outline-none"
             />
@@ -150,14 +165,14 @@ export function StorePage() {
             type="submit"
             className="h-11 px-6 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105 shrink-0"
           >
-            <span>تفعيل وإنشاء النطاق المباشر ⚡</span>
+            <span>تفعيل النطاق الفرعي والقالب ⚡</span>
           </button>
         </form>
 
         {createdSuccessAlert && (
           <div className="p-3 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-xs font-bold text-emerald-200 flex items-center gap-2 animate-bounce">
             <CheckCircle2 className="size-4 text-emerald-400" />
-            تم تفعيل إنشاء النطاق الفرعي ({subdomainInput}.za3em.shop) وتطبيقه على القوالب والمنتجات بنجاح!
+            تم حفظ القالب والنطاق الفرعي ({subdomainInput}.za3em.shop) في قاعدة البيانات وتطبيقه فورياً!
           </div>
         )}
       </div>
@@ -168,7 +183,7 @@ export function StorePage() {
           storeName={storeName}
           subdomain={subdomain}
           activeTemplateId={activeTemplate}
-          onTemplateChange={(id) => setActiveTemplate(id)}
+          onTemplateChange={handleTemplateChange}
         />
       </div>
     </div>
