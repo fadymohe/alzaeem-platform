@@ -39,6 +39,8 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build roomflash frontend app
+        env:
+          BASE_PATH: './'
         run: pnpm --filter @workspace/roomflash run build
 
       - name: Setup GitHub Pages
