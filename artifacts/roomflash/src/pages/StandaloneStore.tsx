@@ -17,7 +17,7 @@ export function StandaloneStorePage() {
   const cleanSub = rawSub.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
   const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
-  const [templateId, setTemplateId] = useState<TemplateId>('volt');
+  const [templateId, setTemplateId] = useState<TemplateId>('shoppingcart.1.2.7');
 
   useEffect(() => {
     // If cleanSub directly names a template (volt, rose, nitro, sepia, oret)

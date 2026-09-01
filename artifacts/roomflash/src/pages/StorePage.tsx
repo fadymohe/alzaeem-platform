@@ -8,7 +8,7 @@ export function StorePage() {
   const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
   const [subdomainInput, setSubdomainInput] = useState('zero');
   const [subdomain, setSubdomain] = useState('zero');
-  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('volt');
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('shoppingcart.1.2.7');
   const [createdSuccessAlert, setCreatedSuccessAlert] = useState(false);
 
   useEffect(() => {

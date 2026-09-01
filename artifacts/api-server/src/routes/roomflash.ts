@@ -73,7 +73,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
         country: "Iraq",
         category: "general",
         status: "published",
-        theme: "volt",
+        theme: "shoppingcart.1.2.7",
         plan: "free",
       }).returning();
       createdStore = newStore;

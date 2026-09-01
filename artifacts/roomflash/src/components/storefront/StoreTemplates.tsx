@@ -6,7 +6,7 @@ import {
 import { formatIQD, IRAQ_GOVERNORATES } from '../../data/iraqData';
 import { getStoredProducts, type StoreProduct } from '../../data/storeState';
 
-export type TemplateId = 'volt' | 'rose' | 'nitro' | 'sepia' | 'oret';
+export type TemplateId = 'shoppingcart.1.2.7' | 'volt' | 'rose' | 'nitro' | 'sepia' | 'oret';
 
 export interface TemplateConfig {
   id: TemplateId;
@@ -26,6 +26,22 @@ export interface TemplateConfig {
 }
 
 export const TEMPLATES_MAP: Record<TemplateId, TemplateConfig> = {
+  'shoppingcart.1.2.7': {
+    id: 'shoppingcart.1.2.7',
+    name: 'shoppingcart.1.2.7',
+    nameEn: 'Shopping Cart v1.2.7 (Default)',
+    niche: 'الافتراضي الشامل • سلة التسوق',
+    badge: 'القالب الافتراضي • shoppingcart.1.2.7',
+    bgClass: 'bg-[#090d16] text-white font-sans',
+    cardClass: 'bg-[#0d1322] border-teal-500/40 text-white shadow-xl',
+    headerClass: 'bg-[#0d1322]/90 border-teal-500/40 backdrop-blur-md',
+    accentBtnClass: 'bg-teal-500 hover:bg-teal-400 text-slate-950 font-black',
+    accentTextClass: 'text-teal-400',
+    badgeClass: 'bg-teal-950 border-teal-800 text-teal-300',
+    heroBannerTitle: 'قالب shoppingcart.1.2.7 الافتراضي الشامل',
+    heroBannerSubtitle: 'مربوط تلقائياً بالنطاق الفرعي والدفع عند الاستلام مع أسطول شركة الزعيم للشحن في كل العراق',
+    heroImage: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&auto=format&fit=crop&q=80'
+  },
   volt: {
     id: 'volt',
     name: 'فولت',
@@ -119,7 +135,7 @@ interface StoreTemplatesProps {
 export function StoreTemplates({
   storeName = 'متجر الزعيم الذهبي',
   subdomain = 'fady',
-  activeTemplateId = 'volt',
+  activeTemplateId = 'shoppingcart.1.2.7',
   standalone = false,
   onTemplateChange
 }: StoreTemplatesProps) {
