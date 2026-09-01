@@ -29,6 +29,7 @@ import { AnalyticsPage } from './pages/Analytics';
 import { SubscriptionsPage } from './pages/Subscriptions';
 import { MarketingPage } from './pages/Marketing';
 import { StorePage } from './pages/StorePage';
+import { StandaloneStorePage } from './pages/StandaloneStore';
 import { SettingsPage } from './pages/Settings';
 import { SupportPage } from './pages/Support';
 
@@ -132,6 +133,7 @@ function RoutedApp() {
   if (location.startsWith('/sign-in')) return <SignInPage />;
   if (location.startsWith('/sign-up')) return <SignUpPage />;
   if (location.startsWith('/onboarding')) return <OnboardingPage />;
+  if (location.startsWith('/view-store') || location.startsWith('/store/')) return <StandaloneStorePage />;
   return <ProtectedRoutes />;
 }
 

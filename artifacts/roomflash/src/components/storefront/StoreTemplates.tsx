@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ShoppingBag, Search, Check, Star, ArrowLeft, Truck, ShieldCheck,
   Sparkles, ExternalLink, Heart, Clock, Phone, MapPin, X, CheckCircle2
@@ -112,6 +112,7 @@ interface StoreTemplatesProps {
   storeName?: string;
   subdomain?: string;
   activeTemplateId?: TemplateId;
+  standalone?: boolean;
   onTemplateChange?: (id: TemplateId) => void;
 }
 
@@ -119,6 +120,7 @@ export function StoreTemplates({
   storeName = 'متجر الزعيم الذهبي',
   subdomain = 'fady',
   activeTemplateId = 'volt',
+  standalone = false,
   onTemplateChange
 }: StoreTemplatesProps) {
   const [currentThemeId, setCurrentThemeId] = useState<TemplateId>(activeTemplateId);
@@ -127,6 +129,13 @@ export function StoreTemplates({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProductModal, setSelectedProductModal] = useState<StoreProduct | null>(null);
   const [orderSuccessModal, setOrderSuccessModal] = useState(false);
+
+  // Sync activeTemplateId prop changes
+  useEffect(() => {
+    if (activeTemplateId && TEMPLATES_MAP[activeTemplateId]) {
+      setCurrentThemeId(activeTemplateId);
+    }
+  }, [activeTemplateId]);
 
   // Form states inside order modal
   const [custName, setCustName] = useState('');
@@ -161,11 +170,12 @@ export function StoreTemplates({
       {/* ========================================================================= */}
       {/* TOP LIVE TEMPLATE SWITCHER BAR (Merchant Control) */}
       {/* ========================================================================= */}
-      <div className="bg-slate-950 text-white border-b border-slate-800 px-4 py-3 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 shadow-xl">
-        <div className="flex items-center gap-3">
-          <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
-          <span className="text-xs font-black text-slate-200">اختر القالب للتطبيق فوراً على ({fullDomain}):</span>
-        </div>
+      {!standalone && (
+        <div className="bg-slate-950 text-white border-b border-slate-800 px-4 py-3 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+          <div className="flex items-center gap-3">
+            <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
+            <span className="text-xs font-black text-slate-200">اختر القالب للتطبيق فوراً على ({fullDomain}):</span>
+          </div>
 
         {/* 5 Theme Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -190,6 +200,7 @@ export function StoreTemplates({
           })}
         </div>
       </div>
+      )}
 
       {/* ========================================================================= */}
       {/* STORE HEADER */}
