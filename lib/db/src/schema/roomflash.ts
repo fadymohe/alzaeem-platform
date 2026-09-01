@@ -127,14 +127,35 @@ export const subscriptionPlansTable = pgTable("roomflash_subscription_plans", {
   features: text("features").array().notNull(),
 });
 
+export const usersTable = pgTable(
+  "roomflash_users",
+  {
+    id: serial("id").primaryKey(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone"),
+    passwordHash: text("password_hash").notNull(),
+    governorate: text("governorate").default("بغداد"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    emailUnique: uniqueIndex("roomflash_users_email_unique").on(table.email),
+  }),
+);
+
 export const insertStoreSchema = createInsertSchema(storesTable).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(productsTable).omit({ id: true, createdAt: true });
 export const insertCustomerSchema = createInsertSchema(customersTable).omit({ id: true, createdAt: true });
 export const insertOrderSchema = createInsertSchema(ordersTable).omit({ id: true, createdAt: true });
+export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true });
+
 export type Store = typeof storesTable.$inferSelect;
 export type Product = typeof productsTable.$inferSelect;
 export type Customer = typeof customersTable.$inferSelect;
 export type Order = typeof ordersTable.$inferSelect;
 export type Plan = typeof subscriptionPlansTable.$inferSelect;
+export type User = typeof usersTable.$inferSelect;
 export type InsertStore = z.infer<typeof insertStoreSchema>;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;

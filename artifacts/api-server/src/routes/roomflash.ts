@@ -34,10 +34,95 @@ import {
   productsTable,
   storesTable,
   subscriptionPlansTable,
+  usersTable,
 } from "@workspace/db";
 import { getUserId, requireAdmin, requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
+
+router.post("/auth/register", async (req, res): Promise<void> => {
+  try {
+    const { firstName, lastName, email, phone, governorate, password, storeName, subdomain } = req.body;
+    if (!email || !password) {
+      res.status(400).json({ error: "البريد الإلكتروني وكلمة المرور مطلوبان" });
+      return;
+    }
+
+    const existingUsers = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase()));
+    if (existingUsers.length > 0) {
+      res.status(400).json({ error: "يوجد حساب مسجل بهذا البريد بالفعل" });
+      return;
+    }
+
+    const [newUser] = await db.insert(usersTable).values({
+      firstName: firstName || "التاجر",
+      lastName: lastName || "الجديد",
+      email: email.toLowerCase(),
+      phone: phone || null,
+      governorate: governorate || "بغداد",
+      passwordHash: Buffer.from(password).toString("base64"),
+    }).returning();
+
+    let createdStore = null;
+    if (subdomain || storeName) {
+      const storeSlug = (subdomain || storeName).toLowerCase().replace(/[^a-z0-9-]/g, "");
+      const [newStore] = await db.insert(storesTable).values({
+        ownerClerkId: `usr_${newUser.id}`,
+        name: storeName || "متجري الجديد",
+        subdomain: storeSlug,
+        country: "Iraq",
+        category: "general",
+        status: "published",
+        theme: "volt",
+        plan: "free",
+      }).returning();
+      createdStore = newStore;
+    }
+
+    res.json({
+      success: true,
+      user: { id: newUser.id, firstName: newUser.firstName, lastName: newUser.lastName, email: newUser.email },
+      store: createdStore,
+      token: `token_${newUser.id}_${Date.now()}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: "حدث خطأ بالخادم أثناء التسجيل" });
+  }
+});
+
+router.post("/auth/login", async (req, res): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400).json({ error: "البريد الإلكتروني وكلمة المرور مطلوبان" });
+      return;
+    }
+
+    const users = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase()));
+    if (users.length === 0) {
+      res.status(401).json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
+      return;
+    }
+
+    const user = users[0];
+    const passwordHash = Buffer.from(password).toString("base64");
+    if (user.passwordHash !== passwordHash) {
+      res.status(401).json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
+      return;
+    }
+
+    const stores = await db.select().from(storesTable).where(eq(storesTable.ownerClerkId, `usr_${user.id}`));
+
+    res.json({
+      success: true,
+      user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email },
+      store: stores[0] || null,
+      token: `token_${user.id}_${Date.now()}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: "حدث خطأ بالخادم أثناء تسجيل الدخول" });
+  }
+});
 
 const orderStatuses = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
 
@@ -340,7 +425,7 @@ router.post("/orders", requireAuth, async (req, res): Promise<void> => {
     const [created] = await tx.insert(ordersTable).values({
       storeId: store.id,
       customerId: customer.id,
-      number: `RF-${Date.now()}`,
+      number: `ZAEEM-${Date.now()}`,
       customerName: parsed.data.customerName,
       customerPhone: parsed.data.customerPhone,
       customerCity: parsed.data.city,
