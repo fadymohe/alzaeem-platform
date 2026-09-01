@@ -6,14 +6,21 @@ export function StandaloneStorePage() {
   const [match, params] = useRoute('/view-store/:subdomain');
   const [match2, params2] = useRoute('/store/:subdomain');
 
-  const rawSub = params?.subdomain || params2?.subdomain || 'zero';
+  // Extract subdomain from hostname (e.g. zero.za3em.shop) or route params
+  const hostMatch = window.location.hostname.match(/^([a-zA-Z0-9-]+)\.za3em\.shop$/i);
+  const hostSub = hostMatch?.[1]?.toLowerCase();
+
+  const rawSub = (hostSub && hostSub !== 'www' && hostSub !== 'za3em')
+    ? hostSub
+    : params?.subdomain || params2?.subdomain || 'zero';
+
   const cleanSub = rawSub.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
   const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
   const [templateId, setTemplateId] = useState<TemplateId>('volt');
 
   useEffect(() => {
-    // Check if cleanSub matches one of the template IDs directly (e.g. volt, rose, nitro, sepia, oret)
+    // If cleanSub directly names a template (volt, rose, nitro, sepia, oret)
     if (TEMPLATES_MAP[cleanSub as TemplateId]) {
       setTemplateId(cleanSub as TemplateId);
       return;
