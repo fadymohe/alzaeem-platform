@@ -67,7 +67,12 @@ export function SignInPage() {
       setLoading(false);
       setLocation('/dashboard');
     } catch (err) {
-      localStorage.setItem('zaeem_user', JSON.stringify({ email: email.trim(), loggedIn: true, time: new Date().toISOString() }));
+      localStorage.setItem('zaeem_user', JSON.stringify({
+        email: email.trim(),
+        name: 'التاجر',
+        loggedIn: true,
+        time: new Date().toISOString()
+      }));
       setLoading(false);
       setLocation('/dashboard');
     }

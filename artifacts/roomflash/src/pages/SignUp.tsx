@@ -66,7 +66,19 @@ export function SignUpPage() {
 
       const data = await res.json().catch(() => null);
 
+      const userObj = {
+        email: email.trim(),
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        phone: phone.trim(),
+        governorate,
+        storeName: storeSlug,
+        subdomain: `${storeSlug}.za3em.shop`,
+        loggedIn: true,
+        time: new Date().toISOString()
+      };
+
       if (res.ok && data?.success) {
+        localStorage.setItem('zaeem_user', JSON.stringify(userObj));
         localStorage.setItem('zaeem_store_data', JSON.stringify({
           ...storePayload,
           userId: data.user?.id,
@@ -77,6 +89,7 @@ export function SignUpPage() {
         setErrors({ general: data.error });
         return;
       } else {
+        localStorage.setItem('zaeem_user', JSON.stringify(userObj));
         localStorage.setItem('zaeem_store_data', JSON.stringify({
           ...storePayload,
           userId: `user_${Date.now()}`,
@@ -87,6 +100,12 @@ export function SignUpPage() {
       setLoading(false);
       setLocation('/onboarding');
     } catch (err) {
+      localStorage.setItem('zaeem_user', JSON.stringify({
+        email: email.trim(),
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        loggedIn: true,
+        time: new Date().toISOString()
+      }));
       localStorage.setItem('zaeem_store_data', JSON.stringify({
         ...storePayload,
         userId: `user_${Date.now()}`,

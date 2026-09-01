@@ -18,7 +18,7 @@ export function PublicHomePage() {
   const isAr = lang === 'ar';
 
   const t = {
-    badge: isAr ? 'منصة التجارة والشحن المتكاملة الأولى في العراق 🇮🇶' : 'The #1 E-Commerce & Logistics Platform in Iraq 🇮🇶',
+    badge: isAr ? 'منصة التجارة والشحن المتكاملة الأولى في العراق' : 'The #1 E-Commerce & Logistics Platform in Iraq',
     titleMain: isAr ? 'أنشئ متجرك الإلكتروني وأدِر' : 'Build Your Online Store & Manage Your',
     titleHighlight: isAr ? 'شحناتك في منصة واحدة' : 'Shipments in One Unified Platform',
     subtitle: isAr
@@ -38,7 +38,7 @@ export function PublicHomePage() {
     navFaq: isAr ? 'الأسئلة الشائعة' : 'FAQ',
     signIn: isAr ? 'تسجيل الدخول' : 'Sign In',
     startFree: isAr ? 'ابدأ مجاناً' : 'Start Free',
-    countryBadge: isAr ? '🇮🇶 العراق' : '🇮🇶 Iraq',
+    countryBadge: isAr ? 'العراق' : 'Iraq',
 
     // Dashboard Mockup
     liveBadge: isAr ? 'مباشر' : 'LIVE',

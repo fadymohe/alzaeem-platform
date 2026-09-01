@@ -99,6 +99,35 @@ function ShellLayout({ children }: { children: ReactNode }) {
 }
 
 function ProtectedRoutes() {
+  const [, setLocation] = useLocation();
+  const [isAuth, setIsAuth] = useState<boolean>(() => {
+    try {
+      const u = localStorage.getItem('zaeem_user');
+      if (u) {
+        const parsed = JSON.parse(u);
+        return Boolean(parsed && parsed.loggedIn);
+      }
+    } catch (e) {}
+    return false;
+  });
+
+  useEffect(() => {
+    try {
+      const u = localStorage.getItem('zaeem_user');
+      if (!u || !JSON.parse(u).loggedIn) {
+        setIsAuth(false);
+        setLocation('/sign-in');
+      }
+    } catch (e) {
+      setIsAuth(false);
+      setLocation('/sign-in');
+    }
+  }, [setLocation]);
+
+  if (!isAuth) {
+    return <Redirect to="/sign-in" />;
+  }
+
   return (
     <ShellLayout>
       <Switch>
