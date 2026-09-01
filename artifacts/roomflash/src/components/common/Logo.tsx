@@ -11,7 +11,7 @@ export function Logo({ inverse = false, showSubtitle = true, className = '' }: L
     <Link href="/" data-testid="link-logo" className={`flex items-center gap-3 group ${className}`}>
       <div className="relative size-10 rounded-xl overflow-hidden shadow-sm transition-all group-hover:scale-105 border border-teal-600/30 shrink-0">
         <img
-          src="/logo.png"
+          src="logo.png"
           alt="لوجو شركة الزعيم للشحن"
           className="size-full object-cover"
         />
