@@ -130,6 +130,29 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 });
 
+router.get("/stores/check-subdomain", async (req, res): Promise<void> => {
+  try {
+    const slugParam = (req.query.subdomain || req.query.slug || "").toString().toLowerCase().trim().replace(/[^a-z0-9-]/g, "");
+    if (!slugParam) {
+      res.status(400).json({ available: false, error: "اسم النطاق مطلوب" });
+      return;
+    }
+    const RESERVED_SUBDOMAINS = ["api", "admin", "www", "app", "static", "assets", "za3em", "home", "login", "register", "dashboard", "stores", "store"];
+    if (RESERVED_SUBDOMAINS.includes(slugParam)) {
+      res.json({ available: false, reason: "reserved", message: "هذا النطاق محجوز للاستخدام الخادمي للنظام" });
+      return;
+    }
+    const existingStores = await db.select().from(storesTable).where(eq(storesTable.subdomain, slugParam));
+    if (existingStores.length > 0) {
+      res.json({ available: false, reason: "taken", message: "هذا النطاق مستخدم مسبقاً من متجر آخر" });
+      return;
+    }
+    res.json({ available: true, subdomain: slugParam, message: "النطاق متاح ويمكن حجزه ✅" });
+  } catch (err) {
+    res.status(500).json({ available: false, error: "خطأ بالخادم" });
+  }
+});
+
 const orderStatuses = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
 
 function productResponse(product: typeof productsTable.$inferSelect) {
