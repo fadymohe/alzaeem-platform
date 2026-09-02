@@ -42,7 +42,6 @@ export function SignUpPage() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
 
   // Social OAuth Modal State (Google & Apple)
   const [oauthModal, setOauthModal] = useState<{ open: boolean; provider: 'google' | 'apple' | null }>({
@@ -130,7 +129,7 @@ export function SignUpPage() {
     return () => clearTimeout(timer);
   }, [storeSlug, isAr]);
 
-  // Handler to Send OTP (Guaranteed Success)
+  // Handler to Send Real Email OTP via Supabase Auth
   const handleSendOtp = async () => {
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
       setErrors((prev) => ({ ...prev, email: isAr ? 'يرجى إدخال بريد إلكتروني صحيح أولاً' : 'Valid email required' }));
@@ -141,28 +140,45 @@ export function SignUpPage() {
     setOtpError('');
     setOtpSuccess('');
 
-    // Generate random 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedCode(code);
-    sessionStorage.setItem(`zaeem_otp_${email.trim().toLowerCase()}`, code);
-
     try {
-      await fetch('/api/auth/send-otp', {
+      // 1. Send real email OTP directly via Supabase Auth
+      const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+        },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), create_user: true })
+      });
+
+      const data = await supabaseRes.json().catch(() => ({}));
+
+      if (!supabaseRes.ok && data?.error_code === 'over_email_send_rate_limit') {
+        setOtpError(isAr ? 'تم إرسال كود مسبقاً، يرجى الانتظار 60 ثانية قبل طلب كود جديد' : 'Please wait 60 seconds before requesting another code');
+        setOtpLoading(false);
+        return;
+      }
+
+      // Also trigger backend notification if available
+      fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ email: email.trim(), type: 'register' }),
       }).catch(() => null);
-    } catch (e) {}
 
-    setOtpSent(true);
-    setOtpLoading(false);
-    setOtpSuccess(isAr
-      ? `تم تجهيز كود التحقق السري: [ ${code} ] أرسل إلى بريدك، أدخله بالأسفل للتأكيد.`
-      : `Verification code: [ ${code} ] sent to your email. Enter below to verify.`
-    );
+      setOtpSent(true);
+      setOtpSuccess(isAr
+        ? 'تم إرسال كود التحقق (6 أرقام) إلى بريدك الإلكتروني بنجاح ✉️ يرجى مراجعة صندوق الوارد (أو مجلد Spam).'
+        : 'Verification code (6 digits) sent to your email! Please check your inbox or spam folder.'
+      );
+    } catch (err) {
+      setOtpError(isAr ? 'حدث خطأ في الاتصال، يرجى المحاولة مرة أخرى' : 'Failed to send verification email');
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
-  // Handler to Verify OTP
+  // Handler to Verify OTP via Supabase Auth
   const handleVerifyOtp = async () => {
     if (!otpCode || otpCode.length !== 6) {
       setOtpError(isAr ? 'يرجى إدخال كود التحقق المكون من 6 أرقام' : 'Enter 6-digit OTP code');
@@ -172,33 +188,50 @@ export function SignUpPage() {
     setOtpLoading(true);
     setOtpError('');
 
-    const activeCode = sessionStorage.getItem(`zaeem_otp_${email.trim().toLowerCase()}`) || generatedCode;
-
-    let verified = false;
-    if (activeCode && activeCode === otpCode.trim()) {
-      verified = true;
-    }
-
     try {
-      const res = await fetch('/api/auth/verify-otp', {
+      // 1. Verify with Supabase Auth
+      const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+        },
+        body: JSON.stringify({
+          type: 'email',
+          email: email.trim().toLowerCase(),
+          token: otpCode.trim()
+        })
+      });
+
+      if (supabaseRes.ok) {
+        setEmailVerified(true);
+        setOtpSuccess(isAr ? 'تم تأكيد البريد الإلكتروني بنجاح! ✅' : 'Email verified successfully! ✅');
+        setOtpError('');
+        setOtpLoading(false);
+        return;
+      }
+
+      // 2. Fallback check with backend if any
+      const backendRes = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ email: email.trim(), code: otpCode.trim() }),
-      });
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const data = await res.json().catch(() => null);
-        if (data?.success) verified = true;
-      }
-    } catch (err) {}
+      }).catch(() => null);
 
-    setOtpLoading(false);
-    if (verified) {
-      setEmailVerified(true);
-      setOtpSuccess(isAr ? 'تم تأكيد البريد الإلكتروني بنجاح! ✅' : 'Email verified successfully! ✅');
-      setOtpError('');
-    } else {
-      setOtpError(isAr ? 'كود التحقق غير صحيح، يرجى التأكد وإعادة المحاولة' : 'Invalid OTP code');
+      const backendData = backendRes ? await backendRes.json().catch(() => null) : null;
+      if (backendData?.success) {
+        setEmailVerified(true);
+        setOtpSuccess(isAr ? 'تم تأكيد البريد الإلكتروني بنجاح! ✅' : 'Email verified successfully! ✅');
+        setOtpError('');
+        setOtpLoading(false);
+        return;
+      }
+
+      setOtpError(isAr ? 'كود التحقق غير صحيح أو منتهي الصلاحية، يرجى التأكد من الرمز المرسل إلى بريدك' : 'Invalid or expired OTP code');
+    } catch (err) {
+      setOtpError(isAr ? 'فشل التحقق من الكود، يرجى المحاولة لاحقاً' : 'Verification failed');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -468,20 +501,12 @@ export function SignUpPage() {
               {otpSuccess && <p className="text-[10px] text-emerald-600 font-bold">{otpSuccess}</p>}
               {otpError && <p className="text-[10px] text-red-500 font-bold">{otpError}</p>}
 
-              {/* 6-Digit OTP Code Input Box with One-Click Auto Fill */}
+              {/* 6-Digit OTP Code Input Box */}
               {otpSent && !emailVerified && (
-                <div className="p-3 bg-slate-50 border border-teal-200 rounded-2xl space-y-2 mt-1 animate-fadeIn">
+                <div className="p-3.5 bg-slate-50 border border-teal-200 rounded-2xl space-y-2.5 mt-1 animate-fadeIn">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-slate-700">أدخل كود التحقق (6 أرقام):</span>
-                    {generatedCode && (
-                      <button
-                        type="button"
-                        onClick={() => setOtpCode(generatedCode)}
-                        className="text-[10px] text-teal-700 font-extrabold hover:underline cursor-pointer"
-                      >
-                        إدخال الكود تلقائياً ({generatedCode})
-                      </button>
-                    )}
+                    <span className="text-[10px] font-medium text-slate-400">راجع صندوق الوارد (Inbox) أو Spam</span>
                   </div>
                   <div className="flex gap-2">
                     <input
@@ -491,15 +516,15 @@ export function SignUpPage() {
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                       placeholder="123456"
                       dir="ltr"
-                      className="flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-center font-mono font-bold tracking-widest text-sm focus:border-teal-600 focus:outline-none bg-white"
+                      className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-center font-mono font-bold tracking-widest text-base focus:border-teal-600 focus:outline-none bg-white"
                     />
                     <button
                       type="button"
                       disabled={otpLoading || otpCode.length !== 6}
                       onClick={handleVerifyOtp}
-                      className="px-4 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs cursor-pointer disabled:opacity-50"
+                      className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs cursor-pointer disabled:opacity-50 transition-colors"
                     >
-                      تأكيد
+                      {otpLoading ? 'جاري التحقق...' : 'تأكيد'}
                     </button>
                   </div>
                 </div>

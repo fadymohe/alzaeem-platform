@@ -26,7 +26,6 @@ export function SignInPage() {
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState('');
-  const [generatedRecoveryCode, setGeneratedRecoveryCode] = useState('');
 
   // OAuth Modal State
   const [oauthModal, setOauthModal] = useState<{ open: boolean; provider: 'google' | 'apple' | null }>({
@@ -122,7 +121,7 @@ export function SignInPage() {
     });
   };
 
-  // 1. Send OTP for recovery (Guaranteed success)
+  // 1. Send OTP for recovery via Supabase Auth (Real Email)
   const handleSendRecoveryOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recoveryEmail || !/\S+@\S+\.\S+/.test(recoveryEmail)) {
@@ -132,27 +131,45 @@ export function SignInPage() {
     setRecoveryLoading(true);
     setRecoveryError('');
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedRecoveryCode(code);
-    sessionStorage.setItem(`zaeem_otp_${recoveryEmail.trim().toLowerCase()}`, code);
-
     try {
-      await fetch('/api/auth/send-otp', {
+      // Send real email OTP via Supabase Auth
+      const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+        },
+        body: JSON.stringify({ email: recoveryEmail.trim().toLowerCase(), create_user: false })
+      });
+
+      const data = await supabaseRes.json().catch(() => ({}));
+
+      if (!supabaseRes.ok && data?.error_code === 'over_email_send_rate_limit') {
+        setRecoveryError(isAr ? 'يرجى الانتظار دقيقة واحدة قبل طلب كود جديد' : 'Please wait 1 minute before requesting another code');
+        setRecoveryLoading(false);
+        return;
+      }
+
+      // Also trigger backend if available
+      fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ email: recoveryEmail.trim(), type: 'recovery' }),
       }).catch(() => null);
-    } catch (err) {}
 
-    setRecoveryLoading(false);
-    setRecoveryStep(2);
-    setRecoverySuccess(isAr
-      ? `تم تجهيز كود استعادة الحساب: [ ${code} ] أرسل إلى ${recoveryEmail}`
-      : `Recovery code: [ ${code} ] sent to ${recoveryEmail}`
-    );
+      setRecoveryLoading(false);
+      setRecoveryStep(2);
+      setRecoverySuccess(isAr
+        ? `تم إرسال كود استعادة الحساب (6 أرقام) إلى بريدك بنجاح ✉️ يرجى مراجعة صندوق الوارد (أو Spam).`
+        : `Recovery code (6 digits) sent to your email! Please check inbox or spam.`
+      );
+    } catch (err) {
+      setRecoveryLoading(false);
+      setRecoveryError(isAr ? 'فشل إرسال كود التحقق إلى البريد' : 'Failed to send recovery code');
+    }
   };
 
-  // 2. Verify Recovery OTP
+  // 2. Verify Recovery OTP via Supabase Auth
   const handleVerifyRecoveryOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recoveryOtp || recoveryOtp.length !== 6) {
@@ -162,33 +179,49 @@ export function SignInPage() {
     setRecoveryLoading(true);
     setRecoveryError('');
 
-    const activeCode = sessionStorage.getItem(`zaeem_otp_${recoveryEmail.trim().toLowerCase()}`) || generatedRecoveryCode;
-
-    let verified = false;
-    if (activeCode && activeCode === recoveryOtp.trim()) {
-      verified = true;
-    }
-
     try {
-      const res = await fetch('/api/auth/verify-otp', {
+      const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+        },
+        body: JSON.stringify({
+          type: 'email',
+          email: recoveryEmail.trim().toLowerCase(),
+          token: recoveryOtp.trim()
+        })
+      });
+
+      if (supabaseRes.ok) {
+        setRecoveryStep(3);
+        setRecoverySuccess(isAr ? 'تم التحقق من الرمز بنجاح! يرجى إدخال كلمة المرور الجديدة' : 'OTP verified! Enter new password');
+        setRecoveryError('');
+        setRecoveryLoading(false);
+        return;
+      }
+
+      // Fallback to backend
+      const backendRes = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ email: recoveryEmail.trim(), code: recoveryOtp.trim() }),
-      });
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const data = await res.json().catch(() => null);
-        if (data?.success) verified = true;
-      }
-    } catch (err) {}
+      }).catch(() => null);
 
-    setRecoveryLoading(false);
-    if (verified) {
-      setRecoveryStep(3);
-      setRecoverySuccess(isAr ? 'تم التحقق من الرمز بنجاح! يرجى إدخال كلمة المرور الجديدة' : 'OTP verified! Enter new password');
-      setRecoveryError('');
-    } else {
-      setRecoveryError(isAr ? 'كود التحقق غير صحيح، يرجى إعادة المحاولة' : 'Invalid OTP code');
+      const backendData = backendRes ? await backendRes.json().catch(() => null) : null;
+      if (backendData?.success) {
+        setRecoveryStep(3);
+        setRecoverySuccess(isAr ? 'تم التحقق من الرمز بنجاح! يرجى إدخال كلمة المرور الجديدة' : 'OTP verified! Enter new password');
+        setRecoveryError('');
+        setRecoveryLoading(false);
+        return;
+      }
+
+      setRecoveryError(isAr ? 'كود التحقق غير صحيح أو منتهي الصلاحية، يرجى التأكد من الرمز في بريدك' : 'Invalid or expired OTP code');
+    } catch (err) {
+      setRecoveryError(isAr ? 'خطأ في الاتصال بالخادم' : 'Server connection failed');
+    } finally {
+      setRecoveryLoading(false);
     }
   };
 
@@ -570,15 +603,7 @@ export function SignInPage() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700">كود التحقق (6 أرقام)</label>
-                    {generatedRecoveryCode && (
-                      <button
-                        type="button"
-                        onClick={() => setRecoveryOtp(generatedRecoveryCode)}
-                        className="text-[10px] text-teal-700 font-extrabold hover:underline cursor-pointer"
-                      >
-                        إدخال الكود تلقائياً ({generatedRecoveryCode})
-                      </button>
-                    )}
+                    <span className="text-[10px] font-medium text-slate-400">راجع بريدك الوارد / Spam</span>
                   </div>
                   <input
                     type="text"
