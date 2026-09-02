@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import { useUser, UserButton } from '@clerk/react';
 import { Menu, Bell, Check, ShoppingBag, Truck, AlertTriangle, Sparkles, X, User } from 'lucide-react';
 
@@ -139,11 +140,10 @@ export function Header({ onOpenMobile }: HeaderProps) {
                 {notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`p-3 rounded-xl border transition-colors ${
-                      n.read
-                        ? 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 opacity-70'
-                        : 'bg-teal-50/50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/50'
-                    }`}
+                    className={`p-3 rounded-xl border transition-colors ${n.read
+                      ? 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 opacity-70'
+                      : 'bg-teal-50/50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/50'
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <p className="font-extrabold text-xs text-slate-900 dark:text-white">{n.title}</p>

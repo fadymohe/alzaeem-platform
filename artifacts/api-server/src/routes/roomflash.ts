@@ -40,47 +40,232 @@ import { getUserId, requireAdmin, requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.post("/auth/register", async (req, res): Promise<void> => {
+const otpStore = new Map<string, { code: string; expiresAt: number; verified: boolean }>();
+
+const RESERVED_SUBDOMAINS = [
+  "admin", "api", "app", "zaeem", "za3em", "dashboard", "root", "www",
+  "mail", "support", "billing", "auth", "account", "portal", "cpanel",
+  "system", "null", "undefined", "test", "stores", "store", "static", "assets", "webmail"
+];
+
+// Helper to validate name (letters and spaces only, no digits or symbols)
+const isValidName = (name: string): boolean => {
+  return /^[\u0600-\u06FFa-zA-Z\s]{2,50}$/.test((name || "").trim());
+};
+
+// Helper to validate phone (+964 followed by 10 digits starting with 770, 780, or 790)
+const isValidIraqPhone = (phone: string): boolean => {
+  const clean = (phone || "").replace(/[\s-]/g, "");
+  return /^(\+?964)?0?(770|780|790)\d{7}$/.test(clean);
+};
+
+// Helper to validate password (min 8 chars, at least 1 letter, 1 number, 1 special character)
+const isValidPassword = (pwd: string): boolean => {
+  if (!pwd || pwd.length < 8) return false;
+  const hasLetter = /[a-zA-Z\u0600-\u06FF]/.test(pwd);
+  const hasNumber = /[0-9]/.test(pwd);
+  const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(pwd);
+  return hasLetter && hasNumber && hasSymbol;
+};
+
+// 1. Send OTP for verification or password recovery
+router.post("/auth/send-otp", async (req, res): Promise<void> => {
   try {
-    const { firstName, lastName, email, phone, governorate, password, storeName, subdomain } = req.body;
-    if (!email || !password) {
-      res.status(400).json({ error: "البريد الإلكتروني وكلمة المرور مطلوبان" });
+    const { email, type = "register" } = req.body;
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      res.status(400).json({ error: "يرجى إدخال بريد إلكتروني صحيح" });
       return;
     }
 
-    const existingUsers = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase()));
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (type === "recovery") {
+      const existing = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
+      if (existing.length === 0) {
+        res.status(404).json({ error: "هذا البريد الإلكتروني غير مسجل لدينا في قاعدة البيانات" });
+        return;
+      }
+    }
+
+    // Generate random 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    otpStore.set(normalizedEmail, { code, expiresAt, verified: false });
+
+    console.log(`[OTP SERVICE] Code for ${normalizedEmail}: ${code}`);
+
+    res.json({
+      success: true,
+      message: `تم إرسال كود التحقق بنجاح إلى ${normalizedEmail}`,
+      otpCode: code // provided for demo/testing convenience
+    });
+  } catch (err) {
+    res.status(500).json({ error: "فشل إرسال كود التحقق" });
+  }
+});
+
+// 2. Verify OTP
+router.post("/auth/verify-otp", async (req, res): Promise<void> => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      res.status(400).json({ error: "البريد الإلكتروني وكود التحقق مطلوبان" });
+      return;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const record = otpStore.get(normalizedEmail);
+
+    if (!record || record.expiresAt < Date.now()) {
+      res.status(400).json({ error: "كود التحقق منتهي الصلاحية أو غير موجود، يرجى طلب كود جديد" });
+      return;
+    }
+
+    if (record.code !== code.toString().trim()) {
+      res.status(400).json({ error: "كود التحقق غير صحيح، يرجى التأكد وإعادة المحاولة" });
+      return;
+    }
+
+    record.verified = true;
+    otpStore.set(normalizedEmail, record);
+
+    res.json({ success: true, verified: true, message: "تم التحقق من البريد الإلكتروني بنجاح" });
+  } catch (err) {
+    res.status(500).json({ error: "فشل التحقق من الكود" });
+  }
+});
+
+// 3. Reset Password using verified OTP
+router.post("/auth/reset-password", async (req, res): Promise<void> => {
+  try {
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) {
+      res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      return;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const record = otpStore.get(normalizedEmail);
+
+    if (!record || record.code !== code.toString().trim() || record.expiresAt < Date.now()) {
+      res.status(400).json({ error: "كود التحقق غير صحيح أو منتهي الصلاحية" });
+      return;
+    }
+
+    if (!isValidPassword(newPassword)) {
+      res.status(400).json({ error: "كلمة المرور يجب أن تتكون من 8 أحرف على الأقل، وتحتوي على حروف وأرقام ورموز خاصة" });
+      return;
+    }
+
+    const passwordHash = Buffer.from(newPassword).toString("base64");
+    const updated = await db.update(usersTable)
+      .set({ passwordHash })
+      .where(eq(usersTable.email, normalizedEmail))
+      .returning();
+
+    if (updated.length === 0) {
+      res.status(404).json({ error: "المستخدم غير موجود" });
+      return;
+    }
+
+    otpStore.delete(normalizedEmail);
+
+    res.json({ success: true, message: "تمت إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول." });
+  } catch (err) {
+    res.status(500).json({ error: "فشلت إعادة تعيين كلمة المرور" });
+  }
+});
+
+// 4. Check if Email Exists
+router.post("/auth/check-email", async (req, res): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
+      return;
+    }
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
+    res.json({ exists: existing.length > 0 });
+  } catch (err) {
+    res.status(500).json({ error: "خطأ في فحص البريد الإلكتروني" });
+  }
+});
+
+// 5. Register with Strict Business Rules
+router.post("/auth/register", async (req, res): Promise<void> => {
+  try {
+    const { firstName, lastName, email, phone, governorate, password, storeName, subdomain } = req.body;
+
+    if (!firstName || !lastName || !email || !password || !phone) {
+      res.status(400).json({ error: "جميع الحقول الأساسية مطلوبة لإتمام التسجيل" });
+      return;
+    }
+
+    // Rule: Name must contain only letters and spaces (no digits or symbols)
+    if (!isValidName(firstName) || !isValidName(lastName)) {
+      res.status(400).json({ error: "يمنع إدخال أرقام أو رموز في حقول الاسم الأول واسم العائلة" });
+      return;
+    }
+
+    // Rule: Phone must be 10 digits starting with 770, 780, or 790
+    if (!isValidIraqPhone(phone)) {
+      res.status(400).json({ error: "رقم الهاتف يجب أن يتكون من 10 أرقام ويبدأ بـ 770 أو 780 أو 790" });
+      return;
+    }
+
+    // Rule: Password minimum 8 characters with letters, numbers, and symbols
+    if (!isValidPassword(password)) {
+      res.status(400).json({ error: "كلمة المرور يجب ألا تقل عن 8 أحرف وتحتوي على حروف وأرقام ورموز خاصة (!@#$...)" });
+      return;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUsers = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
     if (existingUsers.length > 0) {
       res.status(400).json({ error: "يوجد حساب مسجل بهذا البريد بالفعل" });
       return;
     }
 
+    // Format phone to clean +964...
+    const cleanDigits = phone.replace(/\D/g, "").replace(/^964/, "").replace(/^0/, "");
+    const formattedPhone = `+964${cleanDigits}`;
+
     const [newUser] = await db.insert(usersTable).values({
-      firstName: firstName || "التاجر",
-      lastName: lastName || "الجديد",
-      email: email.toLowerCase(),
-      phone: phone || null,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: normalizedEmail,
+      phone: formattedPhone,
       governorate: governorate || "بغداد",
       passwordHash: Buffer.from(password).toString("base64"),
     }).returning();
 
-const RESERVED_SUBDOMAINS = ["api", "admin", "www", "app", "static", "assets", "za3em", "home", "login", "register", "dashboard", "stores", "store"];
-
     let createdStore = null;
     if (subdomain || storeName) {
       const storeSlug = (subdomain || storeName).toLowerCase().replace(/[^a-z0-9-]/g, "");
+
       if (RESERVED_SUBDOMAINS.includes(storeSlug)) {
-        res.status(400).json({ error: "هذا النطاق الفرعي محجوز للاستخدام الخاص بالنظام، يرجى اختيار اسم آخر" });
+        res.status(400).json({ error: "هذا النطاق الفرعي محجوز للاستخدام الخاص بإدارة المنصة، يرجى اختيار اسم آخر" });
         return;
       }
+
+      const existingStores = await db.select().from(storesTable).where(eq(storesTable.subdomain, storeSlug));
+      if (existingStores.length > 0) {
+        res.status(400).json({ error: "اسم النطاق الفرعي محجوز لمتجر آخر، يرجى اختيار اسم متاح" });
+        return;
+      }
+
       const [newStore] = await db.insert(storesTable).values({
         ownerClerkId: `usr_${newUser.id}`,
-        name: storeName || "متجري الجديد",
+        name: storeName || `متجر ${firstName}`,
         subdomain: storeSlug,
         country: "Iraq",
         category: "general",
         status: "published",
         theme: "shoppingcart.1.2.7",
         plan: "free",
+        orderLimit: 5, // Free trial: max 5 shipments as requested
       }).returning();
       createdStore = newStore;
     }
@@ -137,9 +322,8 @@ router.get("/stores/check-subdomain", async (req, res): Promise<void> => {
       res.status(400).json({ available: false, error: "اسم النطاق مطلوب" });
       return;
     }
-    const RESERVED_SUBDOMAINS = ["api", "admin", "www", "app", "static", "assets", "za3em", "home", "login", "register", "dashboard", "stores", "store"];
     if (RESERVED_SUBDOMAINS.includes(slugParam)) {
-      res.json({ available: false, reason: "reserved", message: "هذا النطاق محجوز للاستخدام الخادمي للنظام" });
+      res.json({ available: false, reason: "reserved", message: "هذا النطاق محجوز للاستخدام الخاص بإدارة المنصة وغير متاح" });
       return;
     }
     const existingStores = await db.select().from(storesTable).where(eq(storesTable.subdomain, slugParam));

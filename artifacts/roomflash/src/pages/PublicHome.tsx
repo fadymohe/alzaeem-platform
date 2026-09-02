@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import { Link } from 'wouter';
 import { Logo } from '../components/common/Logo';
 import {
@@ -77,8 +78,15 @@ export function PublicHomePage() {
     stickyBtn: isAr ? 'ابدأ متجرك مجاناً' : 'Start Free Store'
   };
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
-    <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[100dvh] overflow-x-hidden bg-white text-slate-900 font-sans select-none pb-24">
+    <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[100dvh] overflow-x-hidden bg-white text-slate-900 font-sans select-none">
       {/* Background Grid & Glow */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-70" />
@@ -92,21 +100,48 @@ export function PublicHomePage() {
         {/* ========================================================================= */}
         <div className="sticky top-4 z-50 px-4 md:px-8">
           <header className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/80 bg-white/80 px-4 md:px-6 py-3 backdrop-blur-md shadow-lg shadow-slate-100/50">
-            {/* Logo + Iraq Badge */}
+            {/* Logo Clean (No Country Badge) */}
             <div className="flex items-center gap-3">
               <Logo showSubtitle={false} />
-              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-extrabold text-teal-800 border border-teal-200/60">
-                {t.countryBadge}
-              </span>
             </div>
 
-            {/* Nav Links */}
-            <nav className="hidden lg:flex items-center gap-8 text-xs font-bold text-slate-600">
-              <a href="#features" className="transition-colors hover:text-teal-700">{t.navFeatures}</a>
-              <a href="#templates" className="transition-colors hover:text-teal-700">{t.navTemplates}</a>
-              <a href="#stories" className="transition-colors hover:text-teal-700">{t.navStories}</a>
-              <a href="#shipping" className="transition-colors hover:text-teal-700">{t.navShipping}</a>
-              <a href="#blog" className="transition-colors hover:text-teal-700">{t.navBlog}</a>
+            {/* Nav Links With Smooth Scrolling */}
+            <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-600">
+              <button
+                type="button"
+                onClick={() => scrollToSection('features')}
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+              >
+                {t.navFeatures}
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('templates')}
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+              >
+                {t.navTemplates}
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('stories')}
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+              >
+                {t.navStories}
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('shipping')}
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+              >
+                {t.navShipping}
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('blog')}
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+              >
+                {t.navBlog}
+              </button>
             </nav>
 
             {/* Language Switcher & Auth */}
@@ -368,11 +403,10 @@ export function PublicHomePage() {
               <button
                 key={tab.id}
                 onClick={() => setSelectedTemplateTab(tab.id as any)}
-                className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-extrabold transition-all border ${
-                  selectedTemplateTab === tab.id
-                    ? 'border-red-300 bg-red-50 text-red-700 shadow-md ring-2 ring-red-200'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                }`}
+                className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-extrabold transition-all border ${selectedTemplateTab === tab.id
+                  ? 'border-red-300 bg-red-50 text-red-700 shadow-md ring-2 ring-red-200'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
               >
                 <span>{tab.label}</span>
                 <span className="text-[10px] font-normal opacity-80">({tab.tag})</span>
@@ -594,6 +628,91 @@ export function PublicHomePage() {
         </section>
 
         {/* ========================================================================= */}
+        {/* 7.5️⃣ SHIPPING & FLEET SECTION (Anchored by #shipping) */}
+        {/* ========================================================================= */}
+        <section id="shipping" className="py-20 px-4 bg-slate-900 text-white border-y border-slate-800">
+          <div className="mx-auto max-w-6xl">
+            <div className="text-center max-w-2xl mx-auto mb-14">
+              <span className="inline-block rounded-full bg-teal-500/20 border border-teal-500/40 px-3.5 py-1 text-xs font-black text-teal-300 mb-3">
+                {isAr ? '● شبكة الشحن واللوجستيات' : '● Logistics Fleet'}
+              </span>
+              <h2 className="text-3xl md:text-5xl font-black">
+                {isAr ? 'ربط فوري بأسطول شركة الزعيم للشحن' : 'Direct Dispatch with Al-Zaeem Logistics'}
+              </h2>
+              <p className="text-xs md:text-sm text-slate-400 mt-2">
+                {isAr ? 'تغطية شاملة لجميع المحافظات الـ 18، طباعة بوليصات ZAEEM بنقرة واحدة، وتحصيل مالي موثوق (COD).' : 'Full coverage across 18 governorates with instant waybill printing and cash on delivery.'}
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
+                <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center mb-2">
+                  <Truck className="size-6" />
+                </div>
+                <h3 className="font-extrabold text-base text-white">{isAr ? 'تغطية 18 محافظة' : '18 Governorates Coverage'}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {isAr ? 'شحن فوري من بغداد لجميع المحافظات مع تسليم سريع خلال 24 - 48 ساعة كحد أقصى.' : 'Fast parcel delivery from Baghdad across all governorates within 24-48 hours.'}
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
+                <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center mb-2">
+                  <ShieldCheck className="size-6" />
+                </div>
+                <h3 className="font-extrabold text-base text-white">{isAr ? 'الدفع عند الاستلام (COD)' : 'Cash On Delivery'}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {isAr ? 'تحصيل المبالغ النقدية بأمان وتصفية الحسابات وإيداع الأرباح في محفظتك أو حسابك بانتظام.' : 'Secure COD collection with regular payouts directly to your account.'}
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
+                <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center mb-2">
+                  <Zap className="size-6" />
+                </div>
+                <h3 className="font-extrabold text-base text-white">{isAr ? 'تتبع لحظي للزبائن' : 'Live Customer Tracking'}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {isAr ? 'صفحة تتبع حية لكل طلب تتيح للعميل معرفة خط سير الشحنة بدقة وتخفف رسائل خدمة العملاء.' : 'Real-time parcel tracking stepper minimizing customer inquiries.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* 7.8️⃣ BLOG & FAQ SECTION (Anchored by #blog) */}
+        {/* ========================================================================= */}
+        <section id="blog" className="py-20 px-4 mx-auto max-w-6xl">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="text-xs font-black text-teal-700 tracking-widest uppercase block mb-2">{isAr ? 'دليلك للنجاح' : 'Guide to Success'}</span>
+            <h2 className="text-3xl md:text-5xl font-black text-slate-900">
+              {isAr ? 'الأسئلة الشائعة ومدونة التجارة' : 'FAQ & E-Commerce Blog'}
+            </h2>
+          </div>
+
+          <div className="grid gap-4 max-w-3xl mx-auto">
+            {[
+              {
+                q: isAr ? 'كيف تعمل الخطة المجانية التجريبية؟' : 'How does the free trial plan work?',
+                a: isAr ? 'تحصل فور إنشاء الحساب على متجر مجاني بالكامل مع نطاق فرعي وإمكانية تجربة شحن أول 5 شحنات مجاناً وبدون أي عمولة على المبيعات.' : 'You get an online store immediately with 5 free shipments and 0% sales commission.'
+              },
+              {
+                q: isAr ? 'هل يتم ربط الشحنات تلقائياً بشركة الزعيم؟' : 'Are orders dispatched automatically with Al-Zaeem?',
+                a: isAr ? 'نعم، بمجرد تأكيد الطلب، يمكنك إصدار بوليصة الشحن بنقرة زر واحدة وتحديد موقع الاستلام من مقر متجرك.' : 'Yes, 1-click waybill generation directly from your merchant dashboard.'
+              },
+              {
+                q: isAr ? 'أين يقع المقر الرئيسي لشركة الزعيم؟' : 'Where is Al-Zaeem headquarters located?',
+                a: isAr ? 'يقع مقرنا الرئيسي في: بغداد - سريع الدورة - مقابل شركة تشانجان. يمكنك زيارتنا أو التواصل معنا هاتفياً على 07822999919 أو 07722999919.' : 'Our HQ is in Baghdad - Dora Highway - Opposite Changan Co. Phone: 07822999919 / 07722999919.'
+              }
+            ].map((faq, i) => (
+              <div key={i} className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-2 text-right">
+                <h4 className="font-extrabold text-sm text-slate-900">{faq.q}</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
         {/* 8️⃣ BOTTOM CTA BANNER */}
         {/* ========================================================================= */}
         <section className="py-16 px-4 mx-auto max-w-6xl">
@@ -623,28 +742,42 @@ export function PublicHomePage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* 9️⃣ FOOTER */}
+        {/* 9️⃣ FOOTER (Flush to bottom, with official headquarters and phone numbers) */}
         {/* ========================================================================= */}
-        <footer className="border-t border-slate-200 bg-slate-900 text-white pt-16 pb-12 px-4">
+        <footer className="border-t border-slate-800 bg-slate-950 text-white pt-16 pb-20 px-4">
           <div className="mx-auto max-w-6xl grid gap-10 sm:grid-cols-2 lg:grid-cols-4 mb-12">
             <div className="lg:col-span-2 space-y-4">
-              <Logo showSubtitle={false} />
+              <Logo showSubtitle={false} inverse />
               <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
                 {isAr
-                  ? 'منصة الزعيم هي المنظومة المتكاملة لإدارة المتاجر الإلكترونية وربط الشحنات مباشرة بخدمات الشحن السريع والدفع عند الاستلام.'
-                  : 'Al-Zaeem is the premier all-in-one SaaS platform connecting online stores directly with logistics fleets and cash on delivery.'}
+                  ? 'منصة الزعيم هي المنظومة المتكاملة الأولى لإدارة المتاجر الإلكترونية وربط الشحنات مباشرة بأسطول شركة الزعيم للشحن والدفع عند الاستلام.'
+                  : 'Al-Zaeem is the premier all-in-one SaaS platform connecting online stores directly with Al-Zaeem Logistics Fleet & COD.'}
               </p>
-              <div className="flex items-center gap-2 text-xs font-bold text-teal-400">
-                <span>📍 {isAr ? 'القاهرة · الجيزة · الإسكندرية · جميع المحافظات' : 'Cairo · Giza · Alexandria · All Governorates'}</span>
+              <div className="space-y-2 text-xs text-slate-300">
+                <div className="flex items-start gap-2">
+                  <span className="text-teal-400 font-bold shrink-0">📍 المقر الرئيسي:</span>
+                  <span>بغداد - سريع الدورة - مقابل شركة تشانجان</span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-teal-400 font-bold">📞 هاتف التواصل:</span>
+                  <a href="tel:07822999919" dir="ltr" className="font-mono font-bold text-white hover:text-teal-300 transition-colors">07822999919</a>
+                  <span>أو</span>
+                  <a href="tel:07722999919" dir="ltr" className="font-mono font-bold text-white hover:text-teal-300 transition-colors">07722999919</a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-teal-400 font-bold">✉️ البريد الإلكتروني:</span>
+                  <a href="mailto:info@zaeem.shop" className="hover:text-teal-300 font-mono text-white transition-colors">info@zaeem.shop</a>
+                </div>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h4 className="font-extrabold text-xs text-white">{isAr ? 'الشركة' : 'Company'}</h4>
+              <h4 className="font-extrabold text-xs text-white">{isAr ? 'الشركة والتنقل' : 'Navigation'}</h4>
               <ul className="space-y-2 text-xs text-slate-400">
-                <li><a href="#features" className="hover:text-white transition-colors">{t.navFeatures}</a></li>
-                <li><a href="#templates" className="hover:text-white transition-colors">{t.navTemplates}</a></li>
-                <li><a href="#stories" className="hover:text-white transition-colors">{t.navStories}</a></li>
+                <li><button type="button" onClick={() => scrollToSection('features')} className="hover:text-white transition-colors cursor-pointer">{t.navFeatures}</button></li>
+                <li><button type="button" onClick={() => scrollToSection('templates')} className="hover:text-white transition-colors cursor-pointer">{t.navTemplates}</button></li>
+                <li><button type="button" onClick={() => scrollToSection('stories')} className="hover:text-white transition-colors cursor-pointer">{t.navStories}</button></li>
+                <li><button type="button" onClick={() => scrollToSection('shipping')} className="hover:text-white transition-colors cursor-pointer">{t.navShipping}</button></li>
               </ul>
             </div>
 
@@ -652,13 +785,15 @@ export function PublicHomePage() {
               <h4 className="font-extrabold text-xs text-white">{isAr ? 'الدعم والسياسات' : 'Support & Policy'}</h4>
               <ul className="space-y-2 text-xs text-slate-400">
                 <li><Link href="/support" className="hover:text-white transition-colors">{isAr ? 'المساعدة والدعم' : 'Help & Support'}</Link></li>
-                <li><a href="#" className="hover:text-white transition-colors">{isAr ? 'الشروط والسياسات' : 'Terms & Policies'}</a></li>
+                <li><Link href="/sign-in" className="hover:text-white transition-colors">{isAr ? 'تسجيل الدخول' : 'Sign In'}</Link></li>
+                <li><Link href="/sign-up" className="hover:text-white transition-colors">{isAr ? 'فتح متجر جديد' : 'Open Store'}</Link></li>
               </ul>
             </div>
           </div>
 
-          <div className="mx-auto max-w-6xl border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-            <p>© 2026 {isAr ? 'شركة الزعيم للشحن والتجارة الإلكترونية — جميع الحقوق محفوظة' : 'Al-Zaeem E-Commerce & Shipping Co. — All rights reserved'}</p>
+          <div className="mx-auto max-w-6xl border-t border-slate-800/80 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+            <p>© 2026 {isAr ? 'شركة الزعيم للشحن والتجارة الإلكترونية — جميع الحقوق محفوظة — جمهورية العراق' : 'Al-Zaeem E-Commerce & Shipping Co. — All rights reserved'}</p>
+            <p className="text-[11px] text-slate-400">بغداد - سريع الدورة - مقابل شركة تشانجان</p>
           </div>
         </footer>
 

@@ -36,8 +36,11 @@ export function SupportPage() {
             <PhoneCall className="size-6" />
           </div>
           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">الهاتف والواتساب</h3>
-          <p className="text-xs text-slate-500 mt-1">متاح طوال أيام الأسبوع</p>
-          <p className="font-mono font-bold text-teal-700 dark:text-teal-400 text-sm mt-3 ltr">+964 770 000 0000</p>
+          <p className="text-xs text-slate-500 mt-1">متاح طوال أيام الأسبوع على مدار الساعة</p>
+          <div className="mt-3 space-y-1">
+            <a href="tel:07822999919" className="font-mono font-bold text-teal-700 dark:text-teal-400 text-sm block ltr hover:underline">07822999919</a>
+            <a href="tel:07722999919" className="font-mono font-bold text-teal-700 dark:text-teal-400 text-sm block ltr hover:underline">07722999919</a>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-center shadow-sm">
@@ -45,8 +48,8 @@ export function SupportPage() {
             <Building className="size-6" />
           </div>
           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">المقر الرئيسي</h3>
-          <p className="text-xs text-slate-500 mt-1">بغداد - العرصات</p>
-          <p className="font-bold text-slate-700 dark:text-slate-300 text-xs mt-3">شركة الزعيم للشحن والتوصيل</p>
+          <p className="text-xs text-slate-500 mt-1">العراق - بغداد</p>
+          <p className="font-bold text-slate-700 dark:text-slate-300 text-xs mt-3 leading-relaxed">بغداد - سريع الدورة - مقابل شركة تشانجان</p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-center shadow-sm">
@@ -54,8 +57,8 @@ export function SupportPage() {
             <Mail className="size-6" />
           </div>
           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">البريد الإلكتروني</h3>
-          <p className="text-xs text-slate-500 mt-1">للاستفسارات والشكاوى</p>
-          <p className="font-mono font-bold text-teal-700 dark:text-teal-400 text-xs mt-3">support@zaeem.iq</p>
+          <p className="text-xs text-slate-500 mt-1">خدمة التجار والدعم التقني</p>
+          <a href="mailto:info@zaeem.shop" className="font-mono font-bold text-teal-700 dark:text-teal-400 text-xs mt-3 block hover:underline">info@zaeem.shop</a>
         </div>
       </div>
 

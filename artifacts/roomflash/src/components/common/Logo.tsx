@@ -25,13 +25,6 @@ export function Logo({ inverse = false, showSubtitle = true, className = '' }: L
           >
             الزعيم
           </span>
-          <span
-            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-              inverse ? 'bg-teal-500/30 text-teal-300' : 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300'
-            }`}
-          >
-            مصر
-          </span>
         </div>
         {showSubtitle && (
           <span
