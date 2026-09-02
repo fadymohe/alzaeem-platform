@@ -98,6 +98,7 @@ export function SignUpPage() {
       }
 
       setLoading(false);
+      window.location.hash = '#/onboarding';
       setLocation('/onboarding');
     } catch (err) {
       localStorage.setItem('zaeem_user', JSON.stringify({
@@ -112,6 +113,7 @@ export function SignUpPage() {
         token: `token_${Date.now()}`,
       }));
       setLoading(false);
+      window.location.hash = '#/onboarding';
       setLocation('/onboarding');
     }
   };
