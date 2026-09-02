@@ -179,8 +179,8 @@ export function SignUpPage() {
 
       setOtpSent(true);
       setOtpSuccess(isAr
-        ? 'تم إرسال كود التحقق (6 أرقام) إلى بريدك الإلكتروني بنجاح ✉️ يرجى مراجعة صندوق الوارد (أو مجلد Spam).'
-        : 'Verification code (6 digits) sent to your email! Please check your inbox or spam folder.'
+        ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️ يرجى مراجعة صندوق الوارد (أو مجلد Spam).'
+        : 'Verification code sent to your email! Please check your inbox or spam folder.'
       );
     } catch (err) {
       setOtpError(isAr ? 'حدث خطأ في الاتصال، يرجى المحاولة مرة أخرى' : 'Failed to send verification email');
@@ -191,8 +191,8 @@ export function SignUpPage() {
 
   // Handler to Verify OTP via Supabase Auth
   const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length !== 6) {
-      setOtpError(isAr ? 'يرجى إدخال كود التحقق المكون من 6 أرقام' : 'Enter 6-digit OTP code');
+    if (!otpCode || otpCode.length < 6 || otpCode.length > 8) {
+      setOtpError(isAr ? 'يرجى إدخال كود التحقق (من 6 إلى 8 أرقام)' : 'Enter valid OTP code (6-8 digits)');
       return;
     }
 
@@ -512,26 +512,26 @@ export function SignUpPage() {
               {otpSuccess && <p className="text-[10px] text-emerald-600 font-bold">{otpSuccess}</p>}
               {otpError && <p className="text-[10px] text-red-500 font-bold">{otpError}</p>}
 
-              {/* 6-Digit OTP Code Input Box */}
+              {/* 6 to 8-Digit OTP Code Input Box */}
               {otpSent && !emailVerified && (
                 <div className="p-3.5 bg-slate-50 border border-teal-200 rounded-2xl space-y-2.5 mt-1 animate-fadeIn">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-700">أدخل كود التحقق (6 أرقام):</span>
+                    <span className="text-[11px] font-bold text-slate-700">أدخل كود التحقق المستلم:</span>
                     <span className="text-[10px] font-medium text-slate-400">راجع صندوق الوارد (Inbox) أو Spam</span>
                   </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      maxLength={6}
+                      maxLength={8}
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="123456"
+                      placeholder="12345678"
                       dir="ltr"
                       className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-center font-mono font-bold tracking-widest text-base focus:border-teal-600 focus:outline-none bg-white"
                     />
                     <button
                       type="button"
-                      disabled={otpLoading || otpCode.length !== 6}
+                      disabled={otpLoading || otpCode.length < 6}
                       onClick={handleVerifyOtp}
                       className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs cursor-pointer disabled:opacity-50 transition-colors"
                     >

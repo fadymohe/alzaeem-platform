@@ -160,8 +160,8 @@ export function SignInPage() {
       setRecoveryLoading(false);
       setRecoveryStep(2);
       setRecoverySuccess(isAr
-        ? `تم إرسال كود استعادة الحساب (6 أرقام) إلى بريدك بنجاح ✉️ يرجى مراجعة صندوق الوارد (أو Spam).`
-        : `Recovery code (6 digits) sent to your email! Please check inbox or spam.`
+        ? `تم إرسال كود استعادة الحساب إلى بريدك بنجاح ✉️ يرجى مراجعة صندوق الوارد (أو Spam).`
+        : `Recovery code sent to your email! Please check inbox or spam.`
       );
     } catch (err) {
       setRecoveryLoading(false);
@@ -172,8 +172,8 @@ export function SignInPage() {
   // 2. Verify Recovery OTP via Supabase Auth
   const handleVerifyRecoveryOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recoveryOtp || recoveryOtp.length !== 6) {
-      setRecoveryError(isAr ? 'يرجى إدخال كود التحقق المكون من 6 أرقام' : 'Enter the 6-digit OTP code');
+    if (!recoveryOtp || recoveryOtp.length < 6 || recoveryOtp.length > 8) {
+      setRecoveryError(isAr ? 'يرجى إدخال كود التحقق (من 6 إلى 8 أرقام)' : 'Enter valid OTP code (6-8 digits)');
       return;
     }
     setRecoveryLoading(true);
@@ -552,7 +552,7 @@ export function SignInPage() {
                 {recoveryStep === 3 && 'تعيين كلمة المرور الجديدة'}
               </h3>
               <p className="text-xs text-slate-500">
-                {recoveryStep === 1 && 'أدخل بريدك الإلكتروني للتحقق وإرسال رمز سري مكون من 6 أرقام.'}
+                {recoveryStep === 1 && 'أدخل بريدك الإلكتروني للتحقق وإرسال رمز التحقق السري.'}
                 {recoveryStep === 2 && `تم تجهيز رمز التحقق لبريدك: ${recoveryEmail}`}
                 {recoveryStep === 3 && 'أدخل كلمة المرور الجديدة لتسجيل الدخول الفوري.'}
               </p>
@@ -597,28 +597,28 @@ export function SignInPage() {
               </form>
             )}
 
-            {/* STEP 2: Enter 6-Digit OTP */}
+            {/* STEP 2: Enter OTP */}
             {recoveryStep === 2 && (
               <form onSubmit={handleVerifyRecoveryOtp} className="space-y-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700">كود التحقق (6 أرقام)</label>
+                    <label className="text-xs font-bold text-slate-700">كود التحقق</label>
                     <span className="text-[10px] font-medium text-slate-400">راجع بريدك الوارد / Spam</span>
                   </div>
                   <input
                     type="text"
                     required
-                    maxLength={6}
+                    maxLength={8}
                     value={recoveryOtp}
                     onChange={(e) => setRecoveryOtp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456"
+                    placeholder="12345678"
                     dir="ltr"
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-mono font-bold tracking-widest text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none"
                   />
                 </div>
                 <button
                   type="submit"
-                  disabled={recoveryLoading || recoveryOtp.length !== 6}
+                  disabled={recoveryLoading || recoveryOtp.length < 6}
                   className="w-full py-3 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
                 >
                   {recoveryLoading ? 'جاري التحقق...' : 'تأكيد الكود ومتابعة'}
