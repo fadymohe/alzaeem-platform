@@ -51,6 +51,17 @@ export function SignUpPage() {
 
   const isAr = lang === 'ar';
 
+  // Check if customer clicked the verification link in their email
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    if (hash.includes('access_token=') || hash.includes('type=magiclink') || search.includes('token=')) {
+      setEmailVerified(true);
+      setOtpSuccess(isAr ? 'تم تأكيد البريد الإلكتروني بنجاح! ✅' : 'Email verified successfully! ✅');
+      setOtpError('');
+    }
+  }, [isAr]);
+
   // Password Strength Calculation
   const calculatePasswordStrength = (pwd: string) => {
     if (!pwd) return { score: 0, label: isAr ? 'فارغ' : 'Empty', color: 'bg-slate-200', text: 'text-slate-400' };
