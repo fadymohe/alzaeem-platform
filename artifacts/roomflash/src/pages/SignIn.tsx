@@ -27,13 +27,47 @@ export function SignInPage() {
   const [recoveryError, setRecoveryError] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState('');
 
-  // OAuth Modal State
-  const [oauthModal, setOauthModal] = useState<{ open: boolean; provider: 'google' | 'apple' | null }>({
+  // Real OAuth Provider State & Notice Modal
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const [oauthNotice, setOauthNotice] = useState<{ open: boolean; provider: 'google' | 'apple' | null }>({
     open: false,
     provider: null
   });
 
   const isAr = lang === 'ar';
+
+  // Handle return from Google / Apple OAuth
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    if (hash.includes('access_token=')) {
+      const match = hash.match(/access_token=([^&]+)/);
+      const token = match ? match[1] : null;
+      if (token) {
+        fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+          }
+        })
+        .then(res => res.json())
+        .then(user => {
+          if (user && user.email) {
+            const userObj = {
+              email: user.email,
+              name: user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0],
+              provider: user.app_metadata?.provider || 'google',
+              loggedIn: true,
+              time: new Date().toISOString()
+            };
+            localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+            window.location.hash = '#/dashboard';
+            setLocation('/dashboard');
+          }
+        })
+        .catch(() => null);
+      }
+    }
+  }, [setLocation]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -262,19 +296,28 @@ export function SignInPage() {
     alert(isAr ? 'تم تحديث كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول بها.' : 'Password reset successfully!');
   };
 
-  // Google / Apple Instant Sign In
-  const handleConfirmOAuthSignIn = (emailInput: string, nameInput: string) => {
-    const userObj = {
-      email: emailInput,
-      name: nameInput,
-      provider: oauthModal.provider,
-      loggedIn: true,
-      time: new Date().toISOString()
-    };
-    localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-    setOauthModal({ open: false, provider: null });
-    window.location.hash = '#/dashboard';
-    setLocation('/dashboard');
+  // Trigger Real Google / Apple OAuth via Supabase
+  const handleOAuthClick = async (provider: 'google' | 'apple') => {
+    setOauthLoading(true);
+    const redirectUrl = `${window.location.origin}/#/dashboard`;
+    const authorizeUrl = `https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
+
+    try {
+      const res = await fetch(`https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/authorize?provider=${provider}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error_code === 'validation_failed' || data.msg?.includes('not enabled')) {
+          setOauthNotice({ open: true, provider });
+          setOauthLoading(false);
+          return;
+        }
+      }
+      window.location.href = authorizeUrl;
+    } catch {
+      window.location.href = authorizeUrl;
+    } finally {
+      setOauthLoading(false);
+    }
   };
 
   return (
@@ -413,8 +456,9 @@ export function SignInPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setOauthModal({ open: true, provider: 'google' })}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 cursor-pointer"
+              disabled={oauthLoading}
+              onClick={() => handleOAuthClick('google')}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 cursor-pointer disabled:opacity-60"
             >
               <svg className="size-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
@@ -422,18 +466,19 @@ export function SignInPage() {
                 <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                 <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
               </svg>
-              <span>Google</span>
+              <span>{oauthLoading ? 'جاري التحويل...' : 'Google'}</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setOauthModal({ open: true, provider: 'apple' })}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 hover:bg-slate-800 py-2.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
+              disabled={oauthLoading}
+              onClick={() => handleOAuthClick('apple')}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 hover:bg-slate-800 py-2.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer disabled:opacity-60"
             >
               <svg className="size-4 fill-current" viewBox="0 0 24 24">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.6-1.12.98-2.67.87-4.22-1.42.06-3.08.95-3.86 1.86-.54.63-.98 1.63-.86 2.82 1.57.12 3.18-.8 3.85-1.46z"/>
               </svg>
-              <span>Apple</span>
+              <span>{oauthLoading ? 'جاري التحويل...' : 'Apple'}</span>
             </button>
           </div>
         </div>
@@ -452,30 +497,28 @@ export function SignInPage() {
         </p>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 🌐 OAUTH AUTHENTIC SELECTION MODAL (Google & Apple) */}
-      {/* ========================================================================= */}
-      {oauthModal.open && (
+      {/* Real OAuth Setup Guidance Modal */}
+      {oauthNotice.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl text-center space-y-5">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-2xl text-center space-y-4">
             <button
               type="button"
-              onClick={() => setOauthModal({ open: false, provider: null })}
+              onClick={() => setOauthNotice({ open: false, provider: null })}
               className="absolute left-4 top-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="size-4" />
             </button>
 
-            <div className="size-12 rounded-2xl mx-auto grid place-items-center shadow-sm border border-slate-100 bg-slate-50">
-              {oauthModal.provider === 'google' ? (
-                <svg className="size-7" viewBox="0 0 24 24">
+            <div className="size-14 rounded-2xl mx-auto grid place-items-center shadow-sm border border-slate-100 bg-slate-50">
+              {oauthNotice.provider === 'google' ? (
+                <svg className="size-8" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
                   <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
                   <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                   <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                 </svg>
               ) : (
-                <svg className="size-7 fill-current text-slate-900" viewBox="0 0 24 24">
+                <svg className="size-8 fill-current text-slate-900" viewBox="0 0 24 24">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.6-1.12.98-2.67.87-4.22-1.42.06-3.08.95-3.86 1.86-.54.63-.98 1.63-.86 2.82 1.57.12 3.18-.8 3.85-1.46z"/>
                 </svg>
               )}
@@ -483,45 +526,41 @@ export function SignInPage() {
 
             <div>
               <h3 className="font-black text-base text-slate-900">
-                {oauthModal.provider === 'google' ? 'تسجيل دخول سريع بـ Google' : 'تسجيل دخول سريع بـ Apple ID'}
+                {oauthNotice.provider === 'google' ? 'تفعيل الدخول بحساب Google' : 'تفعيل الدخول بـ Apple ID'}
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                اختر الحساب المعتمد للوصول فوراً إلى لوحة التحكم
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                {oauthNotice.provider === 'google'
+                  ? 'يتطلب تسجيل الدخول المباشر بـ Google تفعيل Google Provider في لوحة تحكم Supabase الخاصة بك.'
+                  : 'يتطلب تسجيل الدخول بـ Apple تفعيل Apple Provider في لوحة Supabase.'}
               </p>
             </div>
 
-            {/* Quick Profile Item */}
-            <div
-              onClick={() => handleConfirmOAuthSignIn(
-                oauthModal.provider === 'google' ? 'merchant@gmail.com' : 'merchant@icloud.com',
-                oauthModal.provider === 'google' ? 'تاجر الزعيم الذهبي' : 'تاجر الزعيم (Apple)'
-              )}
-              className="p-3.5 rounded-2xl border border-slate-200 hover:border-teal-600 bg-slate-50 hover:bg-teal-50/40 text-right flex items-center justify-between cursor-pointer transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="size-9 rounded-full bg-teal-700 text-white grid place-items-center font-bold text-xs">
-                  ز
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-xs text-slate-900">تاجر الزعيم الذهبي</h4>
-                  <p className="text-[11px] font-mono text-slate-500">
-                    {oauthModal.provider === 'google' ? 'merchant@gmail.com' : 'merchant@icloud.com'}
-                  </p>
-                </div>
-              </div>
-              <ArrowLeft className="size-4 text-teal-700" />
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-right space-y-2 text-xs text-amber-900">
+              <p className="font-bold">خطوات التفعيل في Supabase (تستغرق دقيقتين):</p>
+              <ol className="list-decimal list-inside space-y-1 text-[11px] text-amber-800">
+                <li>افتح لوحة تحكم Supabase ➔ Authentication ➔ Providers</li>
+                <li>اختر Google وقم بتفعيل خيار "Enable Sign in with Google"</li>
+                <li>أدخل Client ID و Client Secret من Google Cloud Console</li>
+              </ol>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleConfirmOAuthSignIn(
-                oauthModal.provider === 'google' ? 'zaeem.merchant@gmail.com' : 'zaeem.merchant@icloud.com',
-                'تاجر الزعيم'
-              )}
-              className="w-full py-2.5 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer"
-            >
-              متابعة بالحساب الحالي
-            </button>
+            <div className="flex flex-col gap-2 pt-1">
+              <a
+                href="https://supabase.com/dashboard/project/cfpmbasxvjlcfcteyyaa/auth/providers"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs shadow-md transition-all text-center"
+              >
+                فتح صفحة تفعيل Google في Supabase ↗
+              </a>
+              <button
+                type="button"
+                onClick={() => setOauthNotice({ open: false, provider: null })}
+                className="w-full py-2.5 rounded-2xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                تسجيل الدخول بالبريد الإلكتروني وكلمة المرور
+              </button>
+            </div>
           </div>
         </div>
       )}
