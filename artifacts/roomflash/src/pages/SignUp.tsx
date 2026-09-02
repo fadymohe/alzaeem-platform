@@ -195,14 +195,27 @@ export function SignUpPage() {
     setOtpSuccess('');
 
     try {
-      // 1. Send real email OTP directly via Supabase Auth
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+      const formattedPhone = phoneBody ? `+964${phoneBody}` : '';
+
+      // 1. Send real email OTP directly via Supabase Auth with initial metadata
       const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
         },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), create_user: true })
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          create_user: true,
+          data: {
+            full_name: fullName || undefined,
+            name: fullName || undefined,
+            first_name: firstName.trim() || undefined,
+            last_name: lastName.trim() || undefined,
+            phone: formattedPhone || undefined
+          }
+        })
       });
 
       const data = await supabaseRes.json().catch(() => ({}));
@@ -407,6 +420,8 @@ export function SignUpPage() {
           body: JSON.stringify({
             password,
             data: {
+              full_name: `${firstName.trim()} ${lastName.trim()}`,
+              name: `${firstName.trim()} ${lastName.trim()}`,
               first_name: firstName.trim(),
               last_name: lastName.trim(),
               phone: formattedPhone,
@@ -434,6 +449,8 @@ export function SignUpPage() {
             email: email.trim().toLowerCase(),
             password,
             data: {
+              full_name: `${firstName.trim()} ${lastName.trim()}`,
+              name: `${firstName.trim()} ${lastName.trim()}`,
               first_name: firstName.trim(),
               last_name: lastName.trim(),
               phone: formattedPhone,
