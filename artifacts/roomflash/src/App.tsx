@@ -30,6 +30,8 @@ import { SubscriptionsPage } from './pages/Subscriptions';
 import { MarketingPage } from './pages/Marketing';
 import { StorePage } from './pages/StorePage';
 import { StandaloneStorePage } from './pages/StandaloneStore';
+import { DynamicStoreLanding } from './pages/DynamicStoreLanding';
+import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { SettingsPage } from './pages/Settings';
 import { SupportPage } from './pages/Support';
 
@@ -156,7 +158,7 @@ function ProtectedRoutes() {
   );
 }
 
-const RESERVED_SUBDOMAINS = ['api', 'admin', 'www', 'app', 'static', 'assets', 'za3em', 'home', 'login', 'register', 'dashboard', 'stores', 'store'];
+const RESERVED_SUBDOMAINS = ['api', 'admin', 'www', 'app', 'static', 'assets', 'za3em', 'home', 'login', 'register', 'dashboard', 'stores', 'store', 'track'];
 
 function RoutedApp() {
   const [location] = useLocation();
@@ -165,14 +167,21 @@ function RoutedApp() {
   const hostMatch = window.location.hostname.match(/^([a-zA-Z0-9-]+)\.za3em\.shop$/i);
   const hostSub = hostMatch?.[1]?.toLowerCase();
   if (hostSub && !RESERVED_SUBDOMAINS.includes(hostSub)) {
-    return <StandaloneStorePage />;
+    return <DynamicStoreLanding />;
+  }
+
+  // صفحة التتبع الحي للعملاء
+  if (location.startsWith('/track')) return <OrderTrackingPage />;
+
+  // صفحات المتاجر والهبوط بالنطاقات المباشرة
+  if (location.startsWith('/landing') || location.startsWith('/view-store') || location.startsWith('/store')) {
+    return <DynamicStoreLanding />;
   }
 
   if (location === '/') return <PublicHomePage />;
   if (location.startsWith('/sign-in')) return <SignInPage />;
   if (location.startsWith('/sign-up')) return <SignUpPage />;
   if (location.startsWith('/onboarding')) return <OnboardingPage />;
-  if (location.startsWith('/view-store') || location.startsWith('/store/')) return <StandaloneStorePage />;
   return <ProtectedRoutes />;
 }
 

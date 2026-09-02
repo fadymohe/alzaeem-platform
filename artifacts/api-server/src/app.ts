@@ -10,6 +10,7 @@ import {
   clerkProxyMiddleware,
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
+import { wildcardTenantMiddleware } from "./middlewares/tenantRouting";
 
 const app: Express = express();
 
@@ -46,6 +47,7 @@ app.use(
   })),
 );
 
+app.use(wildcardTenantMiddleware);
 app.use("/api", router);
 
 export default app;
