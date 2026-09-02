@@ -63,9 +63,15 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       passwordHash: Buffer.from(password).toString("base64"),
     }).returning();
 
+const RESERVED_SUBDOMAINS = ["api", "admin", "www", "app", "static", "assets", "za3em", "home", "login", "register", "dashboard", "stores", "store"];
+
     let createdStore = null;
     if (subdomain || storeName) {
       const storeSlug = (subdomain || storeName).toLowerCase().replace(/[^a-z0-9-]/g, "");
+      if (RESERVED_SUBDOMAINS.includes(storeSlug)) {
+        res.status(400).json({ error: "هذا النطاق الفرعي محجوز للاستخدام الخاص بالنظام، يرجى اختيار اسم آخر" });
+        return;
+      }
       const [newStore] = await db.insert(storesTable).values({
         ownerClerkId: `usr_${newUser.id}`,
         name: storeName || "متجري الجديد",

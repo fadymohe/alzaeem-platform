@@ -156,13 +156,15 @@ function ProtectedRoutes() {
   );
 }
 
+const RESERVED_SUBDOMAINS = ['api', 'admin', 'www', 'app', 'static', 'assets', 'za3em', 'home', 'login', 'register', 'dashboard', 'stores', 'store'];
+
 function RoutedApp() {
   const [location] = useLocation();
 
   // Automatic Subdomain Detection (e.g. zero.za3em.shop)
   const hostMatch = window.location.hostname.match(/^([a-zA-Z0-9-]+)\.za3em\.shop$/i);
   const hostSub = hostMatch?.[1]?.toLowerCase();
-  if (hostSub && hostSub !== 'www' && hostSub !== 'za3em') {
+  if (hostSub && !RESERVED_SUBDOMAINS.includes(hostSub)) {
     return <StandaloneStorePage />;
   }
 
