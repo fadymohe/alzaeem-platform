@@ -91,7 +91,53 @@ export function SignInPage() {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 1. Try server login
+    // 1. Authenticate with Supabase Auth (Production Database)
+    try {
+      const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password: password
+        })
+      });
+
+      if (supabaseRes.ok) {
+        const data = await supabaseRes.json();
+        if (data && data.user) {
+          const meta = data.user.user_metadata || {};
+          const userObj = {
+            id: data.user.id,
+            email: data.user.email,
+            name: meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : (data.user.email.split('@')[0]),
+            phone: meta.phone || '+9647700000000',
+            governorate: meta.governorate || 'بغداد',
+            storeName: meta.store_name || '',
+            subdomain: meta.subdomain || `${data.user.email.split('@')[0]}.za3em.shop`,
+            token: data.access_token,
+            loggedIn: true,
+            time: new Date().toISOString()
+          };
+          localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+          localStorage.setItem('zaeem_store_data', JSON.stringify({
+            ...userObj,
+            plan: meta.plan || 'free',
+            orderLimit: meta.order_limit || 5
+          }));
+          setLoading(false);
+          window.location.hash = '#/dashboard';
+          setLocation('/dashboard');
+          return;
+        }
+      }
+    } catch (err) {
+      // Supabase network fallback
+    }
+
+    // 2. Try server login
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',

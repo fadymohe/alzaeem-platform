@@ -39,6 +39,7 @@ export function SignUpPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
+  const [supabaseAccessToken, setSupabaseAccessToken] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
@@ -257,6 +258,10 @@ export function SignUpPage() {
       });
 
       if (supabaseRes.ok) {
+        const verifyData = await supabaseRes.json().catch(() => null);
+        if (verifyData?.access_token) {
+          setSupabaseAccessToken(verifyData.access_token);
+        }
         setEmailVerified(true);
         setOtpSuccess(isAr ? 'تم تأكيد البريد الإلكتروني بنجاح! ✅' : 'Email verified successfully! ✅');
         setOtpError('');
@@ -390,6 +395,63 @@ export function SignUpPage() {
     }
 
     try {
+      // 1. Official Supabase Auth Signup (Persists directly to Database!)
+      if (supabaseAccessToken) {
+        const updateRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2',
+            'Authorization': `Bearer ${supabaseAccessToken}`
+          },
+          body: JSON.stringify({
+            password,
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              phone: formattedPhone,
+              governorate,
+              store_name: storeSlug,
+              subdomain: `${cleanSubdomain}.za3em.shop`,
+              plan: 'free',
+              order_limit: 5
+            }
+          })
+        });
+        const updateData = await updateRes.json().catch(() => null);
+        if (updateData?.id) {
+          userObj.id = updateData.id;
+          localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+        }
+      } else {
+        const signupRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+          },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            password,
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              phone: formattedPhone,
+              governorate,
+              store_name: storeSlug,
+              subdomain: `${cleanSubdomain}.za3em.shop`,
+              plan: 'free',
+              order_limit: 5
+            }
+          })
+        });
+        const signupData = await signupRes.json().catch(() => null);
+        if (signupData?.user?.id) {
+          userObj.id = signupData.user.id;
+          localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+        }
+      }
+
       await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
