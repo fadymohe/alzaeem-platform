@@ -207,7 +207,7 @@ function AppWithClerk() {
       signUpUrl={`${basePath}/sign-up`}
       localization={{
         signIn: { start: { title: 'مرحباً بعودتك في الزعيم', subtitle: 'سجّل الدخول للوصول إلى لوحة الشحن والمتجر' } },
-        signUp: { start: { title: 'افتح حسابك مع الزعيم', subtitle: 'ابدأ إدارة شحناتك ومتجرك اليوم في العراق' } },
+        signUp: { start: { title: 'افتح حسابك مع الزعيم', subtitle: 'ابدأ إدارة شحناتك ومتجرك اليوم' } },
       }}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}

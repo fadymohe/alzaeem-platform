@@ -47,8 +47,8 @@ export function OrdersPage() {
       customerName,
       customerPhone,
       customerCity,
-      address: address || `العراق — ${customerCity}`,
-      total: Number(totalPrice) || 45000,
+      address: address || `مصر — ${customerCity}`,
+      total: Number(totalPrice) || 450,
       itemsCount: 1,
       status: 'pending',
       paymentMethod: 'cod',
@@ -100,7 +100,7 @@ export function OrdersPage() {
             إدارة الطلبات والشراء
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            متابعة وتحديث حالة طلبات الزبائن والدفع عند الاستلام داخل العراق.
+            متابعة وتحديث حالة طلبات الزبائن والدفع عند الاستلام والتوصيل.
           </p>
         </div>
 

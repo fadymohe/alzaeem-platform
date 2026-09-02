@@ -61,10 +61,10 @@ export function DashboardPage() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-bold mb-2 border border-teal-500/30">
-              <Sparkles className="size-3.5" /> منصة الزعيم — العراق
+              <Sparkles className="size-3.5" /> منصة الزعيم — مصر
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              هلا بيك في الزعيم 👋
+              أهلاً بك في الزعيم 👋
             </h1>
             <p className="text-sm text-teal-100/80 mt-1">
               أهلاً بعودتك، <span className="font-bold text-white">{merchantName}</span>. إليك حركة مبيعاتك وشحناتك اليومية الحية.

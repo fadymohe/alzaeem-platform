@@ -105,7 +105,7 @@ export function SignInPage() {
               {isAr ? 'مرحباً بعودتك' : 'Welcome Back'}
             </h1>
             <p className="text-xs font-medium text-slate-500">
-              {isAr ? 'ادخل لإدارة متجرك وشحناتك في العراق' : 'Sign in to manage your store and shipments'}
+              {isAr ? 'ادخل لإدارة متجرك وشحناتك' : 'Sign in to manage your store and shipments'}
             </p>
           </div>
 

@@ -21,11 +21,11 @@ interface Coupon {
 const INITIAL_COUPONS: Coupon[] = [
   {
     id: '1',
-    name: 'خصم الافتتاح العراقي',
+    name: 'خصم الافتتاح الذهبي',
     code: 'ZAEEM10',
     discountType: 'percentage',
     discountValue: 10,
-    minOrderValue: 25000,
+    minOrderValue: 250,
     startDate: '2026-08-01',
     endDate: '2026-09-30',
     status: 'نشط',
@@ -109,7 +109,7 @@ export function MarketingPage() {
             الحملات والكوبونات والعروض
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            أنشئ أكواد الخصم وروابط التتبع لجذب المزيد من الزبائن وزيادة المبيعات في العراق.
+            أنشئ أكواد الخصم وروابط التتبع لجذب المزيد من الزبائن وزيادة المبيعات في متجرك.
           </p>
         </div>
 

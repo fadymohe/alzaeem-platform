@@ -39,7 +39,7 @@ export const TEMPLATES_MAP: Record<TemplateId, TemplateConfig> = {
     accentTextClass: 'text-teal-400',
     badgeClass: 'bg-teal-950 border-teal-800 text-teal-300',
     heroBannerTitle: 'قالب shoppingcart.1.2.7 الافتراضي الشامل',
-    heroBannerSubtitle: 'مربوط تلقائياً بالنطاق الفرعي والدفع عند الاستلام مع أسطول شركة الزعيم للشحن في كل العراق',
+    heroBannerSubtitle: 'مربوط تلقائياً بالنطاق الفرعي والدفع عند الاستلام مع خدمات الشحن السريع في جميع المحافظات',
     heroImage: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&auto=format&fit=crop&q=80'
   },
   volt: {
@@ -339,7 +339,7 @@ export function StoreTemplates({
                     {p.category}
                   </span>
                   <span className="absolute top-3 left-3 text-[10px] font-black bg-emerald-600 text-white px-2.5 py-1 rounded-full">
-                    شحن لـ 18 محافظة
+                    شحن لجميع المحافظات
                   </span>
                 </div>
 

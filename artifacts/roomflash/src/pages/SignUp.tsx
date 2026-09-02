@@ -369,11 +369,11 @@ export function SignUpPage() {
 
         <div className="relative z-10 max-w-lg space-y-6">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-500/20 border border-teal-400/30 px-3.5 py-1 text-xs font-bold text-teal-300">
-            <Sparkles className="size-3.5" /> {isAr ? 'متاح الآن في جميع المحافظات الـ 18' : 'Available across all 18 governorates'}
+            <Sparkles className="size-3.5" /> {isAr ? 'متاح الآن في جميع المحافظات' : 'Available across all governorates'}
           </span>
 
           <h2 className="text-3xl lg:text-5xl font-black leading-tight">
-            {isAr ? 'أطلق متجرك.. ووصّل لكل محافظات العراق.' : 'Launch Your Store.. Ship to All Iraq.'}
+            {isAr ? 'أطلق متجرك.. ووصّل لكل المحافظات.' : 'Launch Your Store.. Ship to All Governorates.'}
           </h2>
 
           <p className="text-xs lg:text-sm text-teal-100/80 leading-relaxed">

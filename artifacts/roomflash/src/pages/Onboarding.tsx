@@ -97,7 +97,7 @@ export function OnboardingPage() {
 
   // Quick default sample filler
   const handleUseDefaultSample = () => {
-    setStoreName('متجر الفخامة العراقي');
+    setStoreName('متجر الفخامة');
     setSubdomain('fady.za3em.shop');
     setSelectedNiche('fashion');
     setSelectedTheme('volt');
@@ -157,7 +157,7 @@ export function OnboardingPage() {
           <div className="h-4 w-px bg-slate-800 hidden sm:block" />
           <div className="hidden sm:block">
             <h1 className="text-sm font-extrabold text-white">جهّز متجرك (كل خطوة بنجاح تُحفظ تلقائياً)</h1>
-            <p className="text-[11px] text-slate-400">منصة الزعيم — مركز الإعداد الفوري داخل العراق</p>
+            <p className="text-[11px] text-slate-400">منصة الزعيم — مركز الإعداد الفوري السريع</p>
           </div>
         </div>
 
@@ -217,7 +217,7 @@ export function OnboardingPage() {
                     <span className="font-extrabold text-xs text-white">{storeName}</span>
                   </div>
                   <span className="text-[10px] font-bold text-teal-400 bg-teal-950 border border-teal-800/60 px-2 py-0.5 rounded">
-                    العراق (IQD)
+                    مصر (EGP)
                   </span>
                 </div>
 
@@ -440,13 +440,13 @@ export function OnboardingPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300 block">السعر بالدينار العراقي (د.ع) *</label>
+                  <label className="text-xs font-bold text-slate-300 block">السعر بالجنيه المصري (ج.م) *</label>
                   <input
                     type="number"
                     required
                     value={productPrice}
                     onChange={(e) => setProductPrice(e.target.value)}
-                    placeholder="45000"
+                    placeholder="450"
                     className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white font-mono focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
@@ -470,7 +470,7 @@ export function OnboardingPage() {
                 </span>
                 <h3 className="font-extrabold text-sm text-white">تفعيل الشحن وتأكيد الدفع عند الاستلام</h3>
               </div>
-              <span className="text-[10px] font-bold text-emerald-400">18 محافظة عراقية</span>
+              <span className="text-[10px] font-bold text-emerald-400">جميع المحافظات</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-200 space-y-2">
@@ -551,7 +551,7 @@ export function OnboardingPage() {
                 <span className="font-bold text-white">{productName} - {formatIQD(Number(productPrice) || 45000)}</span>
               </div>
               <div className="p-3 rounded-xl bg-emerald-950/50 border border-emerald-800 text-emerald-300 text-center font-bold">
-                ✓ التغطية مفعلة لـ 18 محافظة عراقية مع أسطول الزعيم
+                ✓ التغطية مفعلة لجميع المحافظات مع خدمات الشحن
               </div>
             </div>
 

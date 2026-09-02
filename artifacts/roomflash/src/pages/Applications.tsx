@@ -20,7 +20,7 @@ const APPLICATIONS: AppItem[] = [
     id: 'zaeem-express',
     name: 'شركة الزعيم للشحن',
     category: 'الشحن',
-    description: 'الربط التلقائي المباشر مع أسطول الزعيم لتوفير وتتبع الشحنات في جميع المحافظات العراقية.',
+    description: 'الربط التلقائي المباشر مع أسطول الزعيم لتوفير وتتبع الشحنات في جميع المحافظات.',
     status: 'مفعّل',
     icon: Truck,
     badgeColor: 'bg-teal-500/10 text-teal-700 dark:text-teal-400',
@@ -92,10 +92,10 @@ const APPLICATIONS: AppItem[] = [
     badgeColor: 'bg-slate-500/10 text-slate-700 dark:text-slate-400',
   },
   {
-    id: 'zain-cash',
-    name: 'زين كاش (ZainCash)',
+    id: 'vodafone-cash',
+    name: 'المحافظ الإلكترونية (Vodafone Cash & InstaPay)',
     category: 'الدفع',
-    description: 'تحصيل الأموال مباشرة عبر المحفظة الإلكترونية زين كاش في العراق.',
+    description: 'تحصيل الأموال مباشرة عبر المحافظ الإلكترونية وإنستاباي والدفع عند الاستلام.',
     status: 'متاح قريباً',
     icon: CreditCard,
   },
@@ -153,7 +153,7 @@ export function ApplicationsPage() {
             التطبيقات والربط البرمجي
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            اكتشف وادمج أدوات الشحن والدفع والتسويق لرفع كفاءة متجرك في العراق.
+            اكتشف وادمج أدوات الشحن والدفع والتسويق لرفع كفاءة متجرك الإلكتروني.
           </p>
         </div>
       </div>

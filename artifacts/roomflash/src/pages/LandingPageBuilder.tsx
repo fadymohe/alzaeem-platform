@@ -25,16 +25,16 @@ export interface LandingPageData {
 const DEMO_LANDING_PAGES: LandingPageData[] = [
   {
     id: '1',
-    slug: 'perfume-royal-baghdad',
-    title: 'عطر الفخامة الملكي - عروض بغداد',
+    slug: 'perfume-royal-cairo',
+    title: 'عطر الفخامة الملكي - عروض الموسم',
     template: 'modern',
     productName: 'عطر الفخامة الملكي (100 مل)',
-    description: 'عطر رجالي فخم بتركيز عالي يدوم طويلاً، مع خلطة العود والصندل العراقي الفاخر.',
-    price: 45000,
-    compareAtPrice: 65000,
+    description: 'عطر رجالي فخم بتركيز عالي يدوم طويلاً، مع خلطة العود والصندل الفاخر.',
+    price: 450,
+    compareAtPrice: 650,
     discountPercentage: 30,
     stock: 25,
-    features: ['ثبات يدوم 48 ساعة', 'عطور أصلية 100%', 'توصيل مجاني لجميع محافظات العراق'],
+    features: ['ثبات يدوم 48 ساعة', 'عطور أصلية 100%', 'توصيل سريع لجميع المحافظات'],
     imageUrl: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=600&auto=format&fit=crop&q=80',
     isPublished: true,
     createdAt: '2026-09-01',
@@ -237,7 +237,7 @@ export function LandingPageBuilderPage() {
                 rows={3}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="اكتب وصفاً مشوقاً يوضح فوائد المنتج للزبون العراقي..."
+                placeholder="اكتب وصفاً مشوقاً يوضح فوائد المنتج للزبائن..."
                 className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-teal-600"
               />
             </div>
@@ -418,7 +418,7 @@ export function LandingPageBuilderPage() {
               {/* Order Form simulation */}
               <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 text-right space-y-3 border border-slate-200/60 dark:border-slate-700">
                 <h3 className="font-extrabold text-xs text-slate-900 dark:text-white border-b pb-2">
-                  نموذج اطلب الآن (الدفع عند الاستلام داخل العراق)
+                  نموذج اطلب الآن (الدفع عند الاستلام والتوصيل السريع)
                 </h3>
                 <input
                   disabled

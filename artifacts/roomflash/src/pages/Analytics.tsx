@@ -20,7 +20,7 @@ export function AnalyticsPage() {
             تحليلات المتجر والشحنات
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            قراءة دقيقة لمبيعاتك ومعدلات التوصيل الميداني في العراق.
+            قراءة دقيقة لمبيعاتك ومعدلات التوصيل ونسب التسليم الميداني.
           </p>
         </div>
 
@@ -157,7 +157,7 @@ export function AnalyticsPage() {
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
           <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
-            مخطط حركة المبيعات بالدينار العراقي (IQD)
+            مخطط حركة المبيعات بالجنيه المصري (EGP)
           </h3>
           <span className="text-xs font-bold text-teal-700">تحديث تلقائي</span>
         </div>

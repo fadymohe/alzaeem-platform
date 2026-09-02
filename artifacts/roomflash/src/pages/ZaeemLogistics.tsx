@@ -22,13 +22,13 @@ export function ZaeemLogisticsPage() {
         <div className="absolute -right-20 -top-20 size-72 rounded-full bg-teal-500/10 blur-3xl" />
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-bold mb-4 border border-teal-500/30">
-            <Building className="size-3.5" /> الناقل الرسمي للتجارة الإلكترونية في العراق
+            <Building className="size-3.5" /> الناقل الرسمي للتجارة الإلكترونية والشحن السريع
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
             شركة الزعيم للشحن
           </h1>
           <p className="mt-3 text-base md:text-lg text-slate-300 leading-relaxed font-medium">
-            حلول شحن وتوصيل متكاملة للتجار والمتاجر الإلكترونية داخل جميع محافظات العراق، بنسب تسليم قياسية وتحصيل مالي موثوق.
+            حلول شحن وتوصيل متكاملة للتجار والمتاجر الإلكترونية داخل جميع المحافظات، بنسب تسليم قياسية وتحصيل مالي موثوق.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4 items-center">
@@ -115,7 +115,7 @@ export function ZaeemLogisticsPage() {
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
           <div>
             <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <MapPin className="size-5 text-teal-700" /> التغطية الجغرافية وأسعار الشحن داخل العراق
+              <MapPin className="size-5 text-teal-700" /> التغطية الجغرافية وأسعار الشحن والتوصيل
             </h2>
             <p className="text-xs text-slate-500 mt-1">
               أسعار ثابتة وواضحة بدون تكاليف خفية، تشمل التوصيل والتحصيل والتسليم للزبون.
@@ -131,7 +131,7 @@ export function ZaeemLogisticsPage() {
             >
               <div>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white block">{gov}</span>
-                <span className="text-[11px] text-slate-500 font-medium">العراق</span>
+                <span className="text-[11px] text-slate-500 font-medium">توصيل سريع</span>
               </div>
               <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
                 <span className="font-mono font-bold text-xs text-teal-700 dark:text-teal-400">

@@ -18,12 +18,12 @@ export function PublicHomePage() {
   const isAr = lang === 'ar';
 
   const t = {
-    badge: isAr ? 'منصة التجارة والشحن المتكاملة الأولى في العراق' : 'The #1 E-Commerce & Logistics Platform in Iraq',
+    badge: isAr ? 'منصة التجارة والشحن المتكاملة الأولى' : 'The #1 E-Commerce & Logistics Platform',
     titleMain: isAr ? 'أنشئ متجرك الإلكتروني وأدِر' : 'Build Your Online Store & Manage Your',
     titleHighlight: isAr ? 'شحناتك في منصة واحدة' : 'Shipments in One Unified Platform',
     subtitle: isAr
-      ? 'كل ما تحتاجه لإدارة متجرك، منتجاتك، طلبياتك، وربط شحناتك مباشرة بأسطول شركة الزعيم للشحن في كل المحافظات العراقية الـ 18.'
-      : 'Everything you need to manage your store, inventory, orders, and dispatch shipments with Al-Zaeem Fleet across all 18 Iraqi governorates.',
+      ? 'كل ما تحتاجه لإدارة متجرك، منتجاتك، طلبياتك، وربط شحناتك مباشرة بأسطول شركة الزعيم للشحن في كل المحافظات.'
+      : 'Everything you need to manage your store, inventory, orders, and dispatch shipments with Al-Zaeem Fleet across all governorates.',
     ctaPrimary: isAr ? 'ابدأ متجرك الآن مجاناً' : 'Start Your Free Store Now',
     ctaSecondary: isAr ? 'شاهد كيف تعمل المنصة' : 'Watch How It Works',
     trustText: isAr
@@ -38,7 +38,7 @@ export function PublicHomePage() {
     navFaq: isAr ? 'الأسئلة الشائعة' : 'FAQ',
     signIn: isAr ? 'تسجيل الدخول' : 'Sign In',
     startFree: isAr ? 'ابدأ مجاناً' : 'Start Free',
-    countryBadge: isAr ? 'العراق' : 'Iraq',
+    countryBadge: isAr ? 'مصر' : 'Egypt',
 
     // Dashboard Mockup
     liveBadge: isAr ? 'مباشر' : 'LIVE',
@@ -604,7 +604,7 @@ export function PublicHomePage() {
                 {isAr ? 'حوّل فكرتك إلى متجر ينمو كل يوم' : 'Turn Your Vision Into a Scalable Store'}
               </h2>
               <p className="text-sm md:text-base text-teal-100 max-w-xl mx-auto leading-relaxed">
-                {isAr ? 'انضم لمئات التجار في العراق الذين يثقون بمنصة الزعيم وأسطول شحنها لترتيب وإدارة أعمالهم.' : 'Join hundreds of Iraqi merchants who rely on Al-Zaeem SaaS and logistics fleet.'}
+                {isAr ? 'انضم لمئات التجار الذين يثقون بمنصة الزعيم وأسطول شحنها لترتيب وإدارة أعمالهم.' : 'Join hundreds of merchants who rely on Al-Zaeem SaaS and logistics fleet.'}
               </p>
               <div className="pt-4">
                 <Link
@@ -631,11 +631,11 @@ export function PublicHomePage() {
               <Logo showSubtitle={false} />
               <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
                 {isAr
-                  ? 'منصة الزعيم هي المنظومة المتكاملة الأولى في العراق لتأطير وإدارة المتاجر الإلكترونية وربط الشحنات مباشرة بأسطول شركة الزعيم للشحن.'
-                  : 'Al-Zaeem is the premier all-in-one SaaS platform in Iraq connecting online stores directly with Al-Zaeem Logistics Fleet.'}
+                  ? 'منصة الزعيم هي المنظومة المتكاملة لإدارة المتاجر الإلكترونية وربط الشحنات مباشرة بخدمات الشحن السريع والدفع عند الاستلام.'
+                  : 'Al-Zaeem is the premier all-in-one SaaS platform connecting online stores directly with logistics fleets and cash on delivery.'}
               </p>
               <div className="flex items-center gap-2 text-xs font-bold text-teal-400">
-                <span>📍 {isAr ? 'بغداد · البصرة · أربيل · جميع المحافظات الـ 18' : 'Baghdad · Basra · Erbil · All 18 Governorates'}</span>
+                <span>📍 {isAr ? 'القاهرة · الجيزة · الإسكندرية · جميع المحافظات' : 'Cairo · Giza · Alexandria · All Governorates'}</span>
               </div>
             </div>
 
@@ -658,7 +658,7 @@ export function PublicHomePage() {
           </div>
 
           <div className="mx-auto max-w-6xl border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-            <p>© 2026 {isAr ? 'شركة الزعيم للشحن والتجارة الإلكترونية — جميع الحقوق محفوظة في جمهورية العراق' : 'Al-Zaeem E-Commerce & Shipping Co. — All rights reserved in Iraq'}</p>
+            <p>© 2026 {isAr ? 'شركة الزعيم للشحن والتجارة الإلكترونية — جميع الحقوق محفوظة' : 'Al-Zaeem E-Commerce & Shipping Co. — All rights reserved'}</p>
           </div>
         </footer>
 

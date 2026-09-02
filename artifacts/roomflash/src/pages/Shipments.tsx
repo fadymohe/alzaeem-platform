@@ -92,13 +92,13 @@ export function ShipmentsPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-teal-700 dark:text-teal-400 mb-1">
-            <Truck className="size-4" /> شركة الزعيم للشحن - العراق
+            <Truck className="size-4" /> شركة الزعيم للشحن والتوصيل
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             إدارة الشحنات والتوصيل
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            إنشاء، متابعة وتتبع الشحنات مع أسطول الزعيم عبر جميع المحافظات العراقية.
+            إنشاء، متابعة وتتبع الشحنات مع أسطول الزعيم عبر جميع المحافظات.
           </p>
         </div>
 
@@ -169,14 +169,14 @@ export function ShipmentsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    رقم الهاتف العراقي <span className="text-red-500">*</span>
+                    رقم هاتف المستلم <span className="text-red-500">*</span>
                   </label>
                   <input
                     required
                     type="text"
                     value={form.recipientPhone}
                     onChange={(e) => setForm({ ...form, recipientPhone: e.target.value })}
-                    placeholder="+964 770 000 0000"
+                    placeholder="01012345678"
                     className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm ltr text-right outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
                   />
                 </div>
@@ -186,7 +186,7 @@ export function ShipmentsPage() {
             {/* Address Details */}
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-bold text-teal-800 dark:text-teal-400 mb-4 flex items-center gap-2">
-                <MapPin className="size-4" /> عنوان التوصيل داخل العراق
+                <MapPin className="size-4" /> عنوان التوصيل بالتفصيل
               </h3>
               <div className="grid gap-4 md:grid-cols-3">
                 <div>

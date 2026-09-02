@@ -3,7 +3,7 @@ import { useGetCurrentStore, useCreateStore, getGetCurrentStoreQueryKey } from '
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Settings2, Store, CreditCard, Shield, Truck, Bell, Code, Webhook,
-  Check, Lock, Palette, LifeBuoy
+  Check, Lock, Palette, LifeBuoy, Save
 } from 'lucide-react';
 
 export function SettingsPage() {
@@ -22,6 +22,7 @@ export function SettingsPage() {
   });
 
   const [saved, setSaved] = useState(false);
+  const saving = create.isPending;
   const store = storeQuery.data;
 
   const handleSave = (e: FormEvent) => {
@@ -55,7 +56,7 @@ export function SettingsPage() {
           إعدادات المتجر والحساب
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          إدارة هوية المتجر، خيارات الشحن العراقي، الدفع، ومفاتيح API.
+          إدارة هوية المتجر، خيارات الشحن والتوصيل، الدفع، ومفاتيح API.
         </p>
       </div>
 
@@ -153,10 +154,10 @@ export function SettingsPage() {
                 </label>
                 <select
                   disabled
-                  value="Iraq"
+                  value="Egypt"
                   className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-sm font-bold outline-none cursor-not-allowed"
                 >
-                  <option value="Iraq">جمهورية العراق (IQD د.ع)</option>
+                  <option value="Egypt">جمهورية مصر العربية (EGP ج.م)</option>
                 </select>
               </div>
             </div>
@@ -164,9 +165,11 @@ export function SettingsPage() {
             <div className="pt-4 flex items-center gap-3">
               <button
                 type="submit"
-                className="px-6 h-11 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                disabled={saving}
+                className="px-6 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-bold shadow-md shadow-teal-700/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                حفظ التغييرات
+                <Save className="size-4" />
+                <span>{saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}</span>
               </button>
               {saved && (
                 <span className="text-xs font-bold text-teal-700 flex items-center gap-1">
@@ -201,7 +204,7 @@ export function SettingsPage() {
             إعدادات التوصيل مع شركة الزعيم للشحن
           </h2>
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            الربط مع أسطول الشحن مفعّل تلقائياً. يتم التوصيل لجميع المحافظات العراقية الـ 18 بتسعيرة ثابتة، مع تصفية المبالغ المحصلة (COD).
+            الربط مع أسطول الشحن مفعّل تلقائياً. يتم التوصيل لجميع المحافظات بتسعيرة محددة، مع تصفية المبالغ المحصلة (COD).
           </p>
           <div className="p-4 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200/50 text-xs font-bold text-teal-900 dark:text-teal-200">
             حالة الربط اللوجستي: فعّال وجاهز لإرسال الشحنات.

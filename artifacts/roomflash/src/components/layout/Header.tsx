@@ -105,7 +105,7 @@ export function Header({ onOpenMobile }: HeaderProps) {
       <div className="flex items-center gap-3">
         {/* Currency & Market Badge */}
         <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200/60 dark:border-teal-900/50 text-teal-800 dark:text-teal-300 text-xs font-bold">
-          <span>العراق (د.ع)</span>
+          <span>مصر (ج.م)</span>
         </div>
 
         {/* Notification Center Trigger */}

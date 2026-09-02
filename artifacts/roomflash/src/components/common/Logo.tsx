@@ -30,7 +30,7 @@ export function Logo({ inverse = false, showSubtitle = true, className = '' }: L
               inverse ? 'bg-teal-500/30 text-teal-300' : 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300'
             }`}
           >
-            عراق
+            مصر
           </span>
         </div>
         {showSubtitle && (
