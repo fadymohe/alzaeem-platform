@@ -163,6 +163,52 @@ const RESERVED_SUBDOMAINS = ['api', 'admin', 'www', 'app', 'static', 'assets', '
 function RoutedApp() {
   const [location] = useLocation();
 
+  // Automatic OAuth Hash Token Listener (Google & Apple)
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    if (hash.includes('access_token=')) {
+      const match = hash.match(/access_token=([^&]+)/);
+      const token = match ? match[1] : null;
+      if (token) {
+        fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+          }
+        })
+        .then(res => res.json())
+        .then(user => {
+          if (user && user.email) {
+            const meta = user.user_metadata || {};
+            const cleanSlug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+            const userObj = {
+              id: user.id,
+              email: user.email,
+              name: meta.full_name || meta.name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : user.email.split('@')[0]),
+              phone: meta.phone || user.phone || '+9647700000000',
+              governorate: meta.governorate || 'بغداد',
+              storeName: meta.store_name || user.email.split('@')[0],
+              subdomain: meta.subdomain || `${cleanSlug}.za3em.shop`,
+              token: token,
+              provider: user.app_metadata?.provider || 'google',
+              loggedIn: true,
+              time: new Date().toISOString()
+            };
+            localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+            localStorage.setItem('zaeem_store_data', JSON.stringify({
+              ...userObj,
+              plan: meta.plan || 'free',
+              orderLimit: meta.order_limit || 5
+            }));
+            window.location.hash = '#/dashboard';
+            window.location.reload();
+          }
+        })
+        .catch(() => null);
+      }
+    }
+  }, []);
+
   // Automatic Subdomain Detection (e.g. zero.za3em.shop)
   const hostMatch = window.location.hostname.match(/^([a-zA-Z0-9-]+)\.za3em\.shop$/i);
   const hostSub = hostMatch?.[1]?.toLowerCase();

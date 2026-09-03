@@ -428,27 +428,11 @@ export function SignInPage() {
   };
 
   // Trigger Real Google / Apple OAuth via Supabase
-  const handleOAuthClick = async (provider: 'google' | 'apple') => {
+  const handleOAuthClick = (provider: 'google' | 'apple') => {
     setOauthLoading(true);
-    const redirectUrl = `${window.location.origin}/#/dashboard`;
+    const redirectUrl = `${window.location.origin}/`;
     const authorizeUrl = `https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-
-    try {
-      const res = await fetch(`https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/authorize?provider=${provider}`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (data.error_code === 'validation_failed' || data.msg?.includes('not enabled')) {
-          setOauthNotice({ open: true, provider });
-          setOauthLoading(false);
-          return;
-        }
-      }
-      window.location.href = authorizeUrl;
-    } catch {
-      window.location.href = authorizeUrl;
-    } finally {
-      setOauthLoading(false);
-    }
+    window.location.href = authorizeUrl;
   };
 
   return (
