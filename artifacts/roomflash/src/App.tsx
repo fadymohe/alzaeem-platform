@@ -104,6 +104,10 @@ function ProtectedRoutes() {
   const [, setLocation] = useLocation();
   const [isAuth, setIsAuth] = useState<boolean>(() => {
     try {
+      const hash = window.location.hash || '';
+      if (hash.includes('access_token=')) {
+        return true; // Hold router while OAuth token is processed
+      }
       const u = localStorage.getItem('zaeem_user');
       if (u) {
         const parsed = JSON.parse(u);
@@ -115,6 +119,10 @@ function ProtectedRoutes() {
 
   useEffect(() => {
     try {
+      const hash = window.location.hash || '';
+      if (hash.includes('access_token=')) {
+        return; // Do not redirect while token is being exchanged
+      }
       const u = localStorage.getItem('zaeem_user');
       if (!u || !JSON.parse(u).loggedIn) {
         setIsAuth(false);
@@ -162,12 +170,19 @@ const RESERVED_SUBDOMAINS = ['api', 'admin', 'www', 'app', 'static', 'assets', '
 
 function RoutedApp() {
   const [location] = useLocation();
+  const [oauthProcessing, setOauthProcessing] = useState<boolean>(() => {
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    return hash.includes('access_token=') || search.includes('access_token=');
+  });
 
   // Automatic OAuth Hash Token Listener (Google & Apple)
   useEffect(() => {
     const hash = window.location.hash || '';
-    if (hash.includes('access_token=')) {
-      const match = hash.match(/access_token=([^&]+)/);
+    const search = window.location.search || '';
+    const full = hash + search;
+    if (full.includes('access_token=')) {
+      const match = full.match(/access_token=([^&]+)/);
       const token = match ? match[1] : null;
       if (token) {
         fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
@@ -202,12 +217,37 @@ function RoutedApp() {
             }));
             window.location.hash = '#/dashboard';
             window.location.reload();
+          } else {
+            setOauthProcessing(false);
           }
         })
-        .catch(() => null);
+        .catch(() => {
+          setOauthProcessing(false);
+        });
+        return;
       }
     }
+    setOauthProcessing(false);
   }, []);
+
+  if (oauthProcessing) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50 text-slate-900 p-4 font-sans" dir="rtl">
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-xl text-center space-y-4 max-w-sm w-full animate-fadeIn">
+          <div className="size-14 rounded-2xl mx-auto grid place-items-center bg-teal-50 border border-teal-200">
+            <svg className="size-7 animate-spin text-teal-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-base font-black text-slate-900">جاري تسجيل الدخول عبر Google...</h2>
+            <p className="text-xs text-slate-500 mt-1">يتم تجهيز متجرك وتحويلك مباشرة إلى لوحة التحكم</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Automatic Subdomain Detection (e.g. zero.za3em.shop)
   const hostMatch = window.location.hostname.match(/^([a-zA-Z0-9-]+)\.za3em\.shop$/i);
