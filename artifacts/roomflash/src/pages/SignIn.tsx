@@ -1,25 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Logo } from '../components/common/Logo';
 import {
   Eye, EyeOff, ArrowLeft, Globe, Mail, Lock, AlertCircle,
-  CheckCircle2, ShieldCheck, KeyRound, RefreshCw, X, User
+  CheckCircle2, ShieldCheck, KeyRound, RefreshCw, X, User, Sparkles
 } from 'lucide-react';
 
 export function SignInPage() {
   const [, setLocation] = useLocation();
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
 
+  // Direct OTP Sign-In State
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccess, setOtpSuccess] = useState('');
+
   // Forgot Password / Account Recovery Modal State
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [recoveryStep, setRecoveryStep] = useState<1 | 2 | 3>(1); // 1: email, 2: otp, 3: new password
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryOtp, setRecoveryOtp] = useState('');
+  const [recoveryAccessToken, setRecoveryAccessToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -81,7 +90,7 @@ export function SignInPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Robust Login
+  // 1. Password Login Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -91,7 +100,7 @@ export function SignInPage() {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 1. Authenticate with Supabase Auth (Production Database)
+    // Authenticate with Supabase Auth (Production Database)
     try {
       const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/token?grant_type=password', {
         method: 'POST',
@@ -112,7 +121,7 @@ export function SignInPage() {
           const userObj = {
             id: data.user.id,
             email: data.user.email,
-            name: meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : (data.user.email.split('@')[0]),
+            name: meta.full_name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : (data.user.email.split('@')[0])),
             phone: meta.phone || '+9647700000000',
             governorate: meta.governorate || 'بغداد',
             storeName: meta.store_name || '',
@@ -129,79 +138,142 @@ export function SignInPage() {
           }));
           setLoading(false);
           window.location.hash = '#/dashboard';
-          setLocation('/dashboard');
+          window.location.reload();
           return;
         }
+      } else {
+        const errorData = await supabaseRes.json().catch(() => ({}));
+        setLoading(false);
+        if (errorData?.error_code === 'invalid_credentials') {
+          setErrors({
+            general: isAr
+              ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة. هل قمت بتعيين كلمة مرور مسبقاً؟ يمكنك الضغط على "كود التحقق (بدون كلمة مرور)" بالأعلى للدخول الفوري، أو الضغط على "نسيت كلمة المرور".'
+              : 'Invalid email or password. You can also sign in via "Email OTP" tab above or click "Forgot Password".'
+          });
+          return;
+        }
+        setErrors({
+          general: isAr ? (errorData?.msg || 'فشل تسجيل الدخول') : (errorData?.msg || 'Sign in failed')
+        });
+        return;
       }
     } catch (err) {
-      // Supabase network fallback
+      setLoading(false);
+      setErrors({
+        general: isAr ? 'فشل الاتصال بخادم المصادقة، يرجى المحاولة مرة أخرى' : 'Authentication network error'
+      });
     }
+  };
 
-    // 2. Try server login
+  // 2. Direct OTP Login Handlers (Instant Access Without Password)
+  const handleSendOtpLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setErrors({ email: isAr ? 'يرجى إدخال بريد إلكتروني مسجل صحيح' : 'Please enter a valid registered email' });
+      return;
+    }
+    setOtpLoading(true);
+    setOtpError('');
+    setOtpSuccess('');
+
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password }),
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          create_user: false
+        })
       });
 
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const data = await res.json().catch(() => null);
-        if (data?.success && data.user) {
-          const userObj = {
-            email: data.user.email,
-            name: `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.email.split('@')[0],
-            token: data.token,
-            store: data.store || null,
-            loggedIn: true,
-            time: new Date().toISOString()
-          };
-          localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-          setLoading(false);
-          window.location.hash = '#/dashboard';
-          setLocation('/dashboard');
-          return;
-        } else if (data?.error) {
-          setLoading(false);
-          setErrors({ general: data.error });
-          return;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (data?.error_code === 'over_email_send_rate_limit') {
+          setOtpError(isAr ? 'يرجى الانتظار 60 ثانية قبل طلب كود جديد' : 'Please wait 60 seconds before requesting another code');
+        } else if (data?.msg?.includes('Signups not allowed for otp') || data?.error_code === 'user_not_found') {
+          setOtpError(isAr ? 'هذا البريد غير مسجل، يرجى إنشاء متجرك أولاً' : 'This email is not registered yet, please sign up first');
+        } else {
+          setOtpError(isAr ? (data.msg || 'فشل إرسال كود التحقق') : (data.msg || 'Failed to send verification code'));
         }
+        setOtpLoading(false);
+        return;
       }
+
+      setOtpSent(true);
+      setOtpSuccess(isAr
+        ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️ يرجى إدخاله أدناه للدخول الفوري.'
+        : 'Verification code sent to your email! Enter it below to sign in.'
+      );
     } catch (err) {
-      // network
+      setOtpError(isAr ? 'حدث خطأ في الاتصال، يرجى المحاولة لاحقاً' : 'Connection failed');
+    } finally {
+      setOtpLoading(false);
     }
+  };
 
-    // 2. Hybrid fallback for static SPA / stored user
-    const localStore = JSON.parse(localStorage.getItem('zaeem_store_data') || 'null');
-    const localUser = JSON.parse(localStorage.getItem('zaeem_user') || 'null');
-
-    if (
-      (localStore && localStore.email?.toLowerCase() === normalizedEmail) ||
-      (localUser && localUser.email?.toLowerCase() === normalizedEmail) ||
-      normalizedEmail.includes('@')
-    ) {
-      const userObj = {
-        email: normalizedEmail,
-        name: localStore?.firstName ? `${localStore.firstName} ${localStore.lastName}` : (localUser?.name || 'تاجر الزعيم'),
-        phone: localStore?.phone || localUser?.phone || '+9647701234567',
-        loggedIn: true,
-        time: new Date().toISOString()
-      };
-      localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-      setLoading(false);
-      window.location.hash = '#/dashboard';
-      setLocation('/dashboard');
+  const handleVerifyOtpLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.length < 6 || otpCode.length > 8) {
+      setOtpError(isAr ? 'يرجى إدخال كود التحقق (من 6 إلى 8 أرقام)' : 'Enter valid OTP code (6-8 digits)');
       return;
     }
 
-    setLoading(false);
-    setErrors({
-      general: isAr ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى' : 'Invalid email or password. Please try again.'
-    });
+    setOtpLoading(true);
+    setOtpError('');
+
+    try {
+      const res = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+        },
+        body: JSON.stringify({
+          type: 'email',
+          email: email.trim().toLowerCase(),
+          token: otpCode.trim()
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.user) {
+        const meta = data.user.user_metadata || {};
+        const userObj = {
+          id: data.user.id,
+          email: data.user.email,
+          name: meta.full_name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : data.user.email.split('@')[0]),
+          phone: meta.phone || '+9647700000000',
+          governorate: meta.governorate || 'بغداد',
+          storeName: meta.store_name || '',
+          subdomain: meta.subdomain || `${data.user.email.split('@')[0]}.za3em.shop`,
+          token: data.access_token,
+          loggedIn: true,
+          time: new Date().toISOString()
+        };
+        localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+        localStorage.setItem('zaeem_store_data', JSON.stringify({
+          ...userObj,
+          plan: meta.plan || 'free',
+          orderLimit: meta.order_limit || 5
+        }));
+        setOtpLoading(false);
+        window.location.hash = '#/dashboard';
+        window.location.reload();
+        return;
+      }
+
+      setOtpError(isAr ? 'كود التحقق غير صحيح أو منتهي الصلاحية' : 'Invalid or expired OTP code');
+    } catch (err) {
+      setOtpError(isAr ? 'فشل التحقق من الكود' : 'Verification failed');
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
-  // 1. Send OTP for recovery via Supabase Auth (Real Email)
+  // 3. Send OTP for Password Recovery
   const handleSendRecoveryOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recoveryEmail || !/\S+@\S+\.\S+/.test(recoveryEmail)) {
@@ -212,7 +284,6 @@ export function SignInPage() {
     setRecoveryError('');
 
     try {
-      // Send real email OTP via Supabase Auth
       const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
         method: 'POST',
         headers: {
@@ -230,13 +301,6 @@ export function SignInPage() {
         return;
       }
 
-      // Also trigger backend if available
-      fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: recoveryEmail.trim(), type: 'recovery' }),
-      }).catch(() => null);
-
       setRecoveryLoading(false);
       setRecoveryStep(2);
       setRecoverySuccess(isAr
@@ -249,7 +313,7 @@ export function SignInPage() {
     }
   };
 
-  // 2. Verify Recovery OTP via Supabase Auth
+  // 4. Verify Recovery OTP
   const handleVerifyRecoveryOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recoveryOtp || recoveryOtp.length < 6 || recoveryOtp.length > 8) {
@@ -274,22 +338,10 @@ export function SignInPage() {
       });
 
       if (supabaseRes.ok) {
-        setRecoveryStep(3);
-        setRecoverySuccess(isAr ? 'تم التحقق من الرمز بنجاح! يرجى إدخال كلمة المرور الجديدة' : 'OTP verified! Enter new password');
-        setRecoveryError('');
-        setRecoveryLoading(false);
-        return;
-      }
-
-      // Fallback to backend
-      const backendRes = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: recoveryEmail.trim(), code: recoveryOtp.trim() }),
-      }).catch(() => null);
-
-      const backendData = backendRes ? await backendRes.json().catch(() => null) : null;
-      if (backendData?.success) {
+        const verifyData = await supabaseRes.json().catch(() => null);
+        if (verifyData?.access_token) {
+          setRecoveryAccessToken(verifyData.access_token);
+        }
         setRecoveryStep(3);
         setRecoverySuccess(isAr ? 'تم التحقق من الرمز بنجاح! يرجى إدخال كلمة المرور الجديدة' : 'OTP verified! Enter new password');
         setRecoveryError('');
@@ -305,11 +357,11 @@ export function SignInPage() {
     }
   };
 
-  // 3. Reset Password
+  // 5. Reset Password & Direct Login
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 8) {
-      setRecoveryError(isAr ? 'كلمة المرور يجب ألا تقل عن 8 أحرف' : 'Password must be at least 8 characters');
+    if (!newPassword || newPassword.length < 6) {
+      setRecoveryError(isAr ? 'كلمة المرور يجب ألا تقل عن 6 أحرف' : 'Password must be at least 6 characters');
       return;
     }
     if (newPassword !== confirmNewPassword) {
@@ -321,25 +373,58 @@ export function SignInPage() {
     setRecoveryError('');
 
     try {
-      await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: recoveryEmail.trim(), newPassword }),
-      }).catch(() => null);
-    } catch (err) {}
+      if (recoveryAccessToken) {
+        const res = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2',
+            'Authorization': `Bearer ${recoveryAccessToken}`
+          },
+          body: JSON.stringify({
+            password: newPassword
+          })
+        });
 
-    // Update local store if present
-    const localStore = JSON.parse(localStorage.getItem('zaeem_store_data') || 'null');
-    if (localStore && localStore.email?.toLowerCase() === recoveryEmail.trim().toLowerCase()) {
-      localStore.password = newPassword;
-      localStorage.setItem('zaeem_store_data', JSON.stringify(localStore));
+        if (res.ok) {
+          const updatedUser = await res.json().catch(() => null);
+          const meta = updatedUser?.user_metadata || {};
+          const userObj = {
+            id: updatedUser?.id,
+            email: recoveryEmail.trim().toLowerCase(),
+            name: meta.full_name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : recoveryEmail.split('@')[0]),
+            phone: meta.phone || '+9647700000000',
+            governorate: meta.governorate || 'بغداد',
+            storeName: meta.store_name || '',
+            subdomain: meta.subdomain || `${recoveryEmail.split('@')[0]}.za3em.shop`,
+            token: recoveryAccessToken,
+            loggedIn: true,
+            time: new Date().toISOString()
+          };
+          localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+          setRecoverySuccess(isAr ? 'تم تعيين كلمة المرور الجديدة بنجاح! جاري تحويلك إلى لوحة التحكم...' : 'Password reset successfully! Redirecting...');
+          setTimeout(() => {
+            setShowRecoveryModal(false);
+            window.location.hash = '#/dashboard';
+            window.location.reload();
+          }, 1000);
+          return;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          setRecoveryError(isAr ? (errData?.msg || 'فشل تحديث كلمة المرور') : (errData?.msg || 'Password update failed'));
+          setRecoveryLoading(false);
+          return;
+        }
+      } else {
+        setRecoveryError(isAr ? 'جلسة التحقق منتهية، يرجى طلب كود جديد' : 'Session expired, request a new code');
+        setRecoveryStep(1);
+        setRecoveryLoading(false);
+      }
+    } catch (err) {
+      setRecoveryError(isAr ? 'فشل الاتصال لتحديث كلمة المرور' : 'Connection failed');
+    } finally {
+      setRecoveryLoading(false);
     }
-
-    setRecoveryLoading(false);
-    setShowRecoveryModal(false);
-    setEmail(recoveryEmail);
-    setPassword(newPassword);
-    alert(isAr ? 'تم تحديث كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول بها.' : 'Password reset successfully!');
   };
 
   // Trigger Real Google / Apple OAuth via Supabase
@@ -400,6 +485,32 @@ export function SignInPage() {
             </p>
           </div>
 
+          {/* Mode Switch Tabs */}
+          <div className="flex rounded-2xl bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => { setLoginMode('password'); setErrors({}); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                loginMode === 'password'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {isAr ? '🔑 كلمة المرور' : '🔑 Password'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMode('otp'); setErrors({}); setOtpError(''); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                loginMode === 'otp'
+                  ? 'bg-white text-teal-700 shadow-sm font-extrabold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {isAr ? '✉️ كود التحقق (بدون كلمة مرور)' : '✉️ Email OTP'}
+            </button>
+          </div>
+
           {errors.general && (
             <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-start gap-2.5 animate-shake">
               <AlertCircle className="size-4 shrink-0 mt-0.5 text-red-600" />
@@ -407,88 +518,169 @@ export function SignInPage() {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4 text-right" noValidate>
-            {/* Email Field */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block">
-                {isAr ? 'البريد الإلكتروني' : 'Email Address'}
-              </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="merchant@za3em.shop"
-                  dir="ltr"
-                  className={`w-full rounded-2xl border px-3.5 py-3 text-xs text-slate-900 focus:outline-none transition-all pl-10 ${
-                    errors.email ? 'border-red-400 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 focus:border-teal-600 focus:bg-white'
-                  }`}
-                />
-                <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-              {errors.email && (
-                <p className="text-[11px] text-red-500 font-bold">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-slate-700">
-                  {isAr ? 'كلمة المرور' : 'Password'}
+          {/* Mode 1: Traditional Password Form */}
+          {loginMode === 'password' && (
+            <form onSubmit={handleSubmit} className="space-y-4 text-right" noValidate>
+              {/* Email Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">
+                  {isAr ? 'البريد الإلكتروني' : 'Email Address'}
                 </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRecoveryEmail(email);
-                    setRecoveryStep(1);
-                    setRecoveryError('');
-                    setRecoverySuccess('');
-                    setShowRecoveryModal(true);
-                  }}
-                  className="font-bold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
-                >
-                  {isAr ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
-                </button>
+                <div className="relative">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="merchant@za3em.shop"
+                    dir="ltr"
+                    className={`w-full rounded-2xl border px-3.5 py-3 text-xs text-slate-900 focus:outline-none transition-all pl-10 ${
+                      errors.email ? 'border-red-400 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 focus:border-teal-600 focus:bg-white'
+                    }`}
+                  />
+                  <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+                {errors.email && (
+                  <p className="text-[11px] text-red-500 font-bold">{errors.email}</p>
+                )}
               </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className={`w-full rounded-2xl border px-3.5 py-3 text-xs text-slate-900 focus:outline-none transition-all pl-10 ${
-                    errors.password ? 'border-red-400 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 focus:border-teal-600 focus:bg-white'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
+
+              {/* Password Field */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <label className="font-bold text-slate-700">
+                    {isAr ? 'كلمة المرور' : 'Password'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecoveryEmail(email);
+                      setRecoveryStep(1);
+                      setRecoveryError('');
+                      setRecoverySuccess('');
+                      setShowRecoveryModal(true);
+                    }}
+                    className="font-bold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
+                  >
+                    {isAr ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={`w-full rounded-2xl border px-3.5 py-3 text-xs text-slate-900 focus:outline-none transition-all pl-10 ${
+                      errors.password ? 'border-red-400 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 focus:border-teal-600 focus:bg-white'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-[11px] text-red-500 font-bold">
+                    {errors.password}
+                  </p>
+                )}
               </div>
-              {errors.password && (
-                <p className="text-[11px] text-red-500 font-bold">
-                  {errors.password}
-                </p>
+
+              {/* Primary Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-teal-700 hover:bg-teal-800 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-teal-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 mt-2 cursor-pointer"
+              >
+                <span>{loading ? (isAr ? 'جاري التحقق والدخول...' : 'Verifying & Signing In...') : (isAr ? 'تسجيل الدخول' : 'Sign In')}</span>
+                {isAr ? <ArrowLeft className="size-4" /> : null}
+              </button>
+            </form>
+          )}
+
+          {/* Mode 2: Direct OTP Form (Instant Access Without Password) */}
+          {loginMode === 'otp' && (
+            <div className="space-y-4 text-right">
+              {otpError && (
+                <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-start gap-2.5">
+                  <AlertCircle className="size-4 shrink-0 mt-0.5 text-red-600" />
+                  <span className="leading-relaxed">{otpError}</span>
+                </div>
+              )}
+              {otpSuccess && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-start gap-2.5">
+                  <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-600" />
+                  <span className="leading-relaxed">{otpSuccess}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">
+                  {isAr ? 'البريد الإلكتروني المسجل' : 'Registered Email Address'}
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="merchant@za3em.shop"
+                      dir="ltr"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-3 text-xs text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none pl-10"
+                    />
+                    <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={otpLoading || !email}
+                    onClick={handleSendOtpLogin}
+                    className="shrink-0 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 font-extrabold text-xs px-4 py-3 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {otpLoading ? (isAr ? 'جاري الإرسال...' : 'Sending...') : (otpSent ? (isAr ? 'إعادة إرسال' : 'Resend') : (isAr ? 'إرسال الكود' : 'Send Code'))}
+                  </button>
+                </div>
+                {errors.email && <p className="text-[11px] text-red-500 font-bold">{errors.email}</p>}
+              </div>
+
+              {otpSent && (
+                <form onSubmit={handleVerifyOtpLogin} className="space-y-4 animate-fadeIn">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-700">
+                        {isAr ? 'أدخل كود التحقق (من 6 إلى 8 أرقام)' : 'Enter OTP Code (6-8 digits)'}
+                      </label>
+                      <span className="text-[10px] text-slate-400">تحقق من بريدك الوارد / Spam</span>
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      maxLength={8}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="••••••••"
+                      dir="ltr"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-center text-lg font-mono font-bold tracking-widest text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={otpLoading || otpCode.length < 6}
+                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-teal-700 hover:bg-teal-800 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-teal-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
+                  >
+                    <span>{otpLoading ? (isAr ? 'جاري التحقق والدخول...' : 'Verifying & Signing In...') : (isAr ? 'تأكيد الرمز والدخول إلى لوحة التحكم' : 'Verify & Sign In')}</span>
+                    {isAr ? <ArrowLeft className="size-4" /> : null}
+                  </button>
+                </form>
               )}
             </div>
-
-            {/* Primary Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-teal-700 hover:bg-teal-800 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-teal-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 mt-2 cursor-pointer"
-            >
-              <span>{loading ? (isAr ? 'جاري التحقق والدخول...' : 'Verifying & Signing In...') : (isAr ? 'تسجيل الدخول' : 'Sign In')}</span>
-              {isAr ? <ArrowLeft className="size-4" /> : null}
-            </button>
-          </form>
+          )}
 
           {/* Social Auth Divider */}
           <div className="relative flex items-center justify-center my-4">
