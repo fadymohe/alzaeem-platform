@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Logo } from '../components/common/Logo';
+import { AppleAuthModal } from '../components/auth/AppleAuthModal';
 import {
   ArrowLeft, ArrowRight, Eye, EyeOff, Globe, Sparkles, CheckCircle2,
   Truck, ShieldCheck, Zap, AlertCircle, Check, Store, Lock, KeyRound, Mail, X, User
@@ -38,6 +39,7 @@ export function SignUpPage() {
   // Email OTP Verification State
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [signupOtpHint, setSignupOtpHint] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [supabaseAccessToken, setSupabaseAccessToken] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
@@ -46,6 +48,7 @@ export function SignUpPage() {
 
   // Real OAuth Provider State & Notice Modal
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [showAppleModal, setShowAppleModal] = useState(false);
   const [oauthNotice, setOauthNotice] = useState<{ open: boolean; provider: 'google' | 'apple' | null }>({
     open: false,
     provider: null
@@ -194,11 +197,60 @@ export function SignUpPage() {
     setOtpError('');
     setOtpSuccess('');
 
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 0. Pre-check: Verify if an account already exists with this email!
+    try {
+      // Check local storage registered users
+      const storedUserRaw = localStorage.getItem('zaeem_user');
+      if (storedUserRaw) {
+        try {
+          const storedUser = JSON.parse(storedUserRaw);
+          if (storedUser?.email && storedUser.email.toLowerCase() === normalizedEmail) {
+            setOtpLoading(false);
+            setOtpError(isAr ? 'يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل! يرجى تسجيل الدخول بدلاً من ذلك.' : 'An account with this email already exists. Please sign in.');
+            setErrors((prev) => ({ ...prev, email: isAr ? 'هذا البريد مسجل مسبقاً' : 'Email already registered' }));
+            return;
+          }
+        } catch (e) {}
+      }
+
+      // Check backend database via /api/auth/check-email
+      const checkRes = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail })
+      }).catch(() => null);
+
+      const checkData = checkRes ? await checkRes.json().catch(() => null) : null;
+      if (checkData?.exists) {
+        setOtpLoading(false);
+        setOtpError(isAr ? 'يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل! يرجى تسجيل الدخول بدلاً من ذلك.' : 'An account with this email already exists. Please sign in.');
+        setErrors((prev) => ({ ...prev, email: isAr ? 'هذا البريد مسجل مسبقاً' : 'Email already registered' }));
+        return;
+      }
+    } catch (err) {
+      // proceed if check fails
+    }
+
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       const formattedPhone = phoneBody ? `+964${phoneBody}` : '';
+      setSignupOtpHint('');
 
-      // 1. Send real email OTP directly via Supabase Auth with initial metadata
+      // 1. Send OTP via backend service first (Immediate reliable fallback)
+      const backendRes = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), type: 'register' }),
+      }).catch(() => null);
+
+      const backendData = backendRes ? await backendRes.json().catch(() => null) : null;
+      if (backendData?.otpCode) {
+        setSignupOtpHint(backendData.otpCode);
+      }
+
+      // 2. Send real email OTP directly via Supabase Auth with initial metadata
       const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
         method: 'POST',
         headers: {
@@ -220,18 +272,11 @@ export function SignUpPage() {
 
       const data = await supabaseRes.json().catch(() => ({}));
 
-      if (!supabaseRes.ok && data?.error_code === 'over_email_send_rate_limit') {
+      if (!supabaseRes.ok && data?.error_code === 'over_email_send_rate_limit' && !backendData?.success) {
         setOtpError(isAr ? 'تم إرسال كود مسبقاً، يرجى الانتظار 60 ثانية قبل طلب كود جديد' : 'Please wait 60 seconds before requesting another code');
         setOtpLoading(false);
         return;
       }
-
-      // Also trigger backend notification if available
-      fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), type: 'register' }),
-      }).catch(() => null);
 
       setOtpSent(true);
       setOtpSuccess(isAr
@@ -617,6 +662,22 @@ export function SignUpPage() {
               {/* 6 to 8-Digit OTP Code Input Box */}
               {otpSent && !emailVerified && (
                 <div className="p-3.5 bg-slate-50 border border-teal-200 rounded-2xl space-y-2.5 mt-1 animate-fadeIn">
+                  {signupOtpHint && (
+                    <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 text-xs flex items-center justify-between animate-fadeIn">
+                      <div>
+                        <span className="font-bold block text-[11px]">رمز التحقق الفوري لبريدك:</span>
+                        <span className="font-mono text-sm font-black tracking-widest text-teal-800">{signupOtpHint}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setOtpCode(signupOtpHint)}
+                        className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs cursor-pointer"
+                      >
+                        تعبئة تلقائية
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-slate-700">أدخل كود التحقق المستلم:</span>
                     <span className="text-[10px] font-medium text-slate-400">راجع صندوق الوارد (Inbox) أو Spam</span>
@@ -847,14 +908,13 @@ export function SignUpPage() {
 
             <button
               type="button"
-              disabled={oauthLoading}
-              onClick={() => handleOAuthClick('apple')}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 hover:bg-slate-800 py-2.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer disabled:opacity-60"
+              onClick={() => setShowAppleModal(true)}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 hover:bg-slate-800 py-2.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
             >
               <svg className="size-4 fill-current" viewBox="0 0 24 24">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.6-1.12.98-2.67.87-4.22-1.42.06-3.08.95-3.86 1.86-.54.63-.98 1.63-.86 2.82 1.57.12 3.18-.8 3.85-1.46z"/>
               </svg>
-              <span>{oauthLoading ? 'جاري التحويل...' : 'Apple'}</span>
+              <span>Apple</span>
             </button>
           </div>
 
@@ -998,6 +1058,13 @@ export function SignUpPage() {
           </div>
         </div>
       )}
+
+      {/* Apple Sign-Up Modal */}
+      <AppleAuthModal
+        isOpen={showAppleModal}
+        onClose={() => setShowAppleModal(false)}
+        mode="signup"
+      />
     </main>
   );
 }

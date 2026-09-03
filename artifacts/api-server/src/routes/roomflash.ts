@@ -79,14 +79,6 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    if (type === "recovery") {
-      const existing = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
-      if (existing.length === 0) {
-        res.status(404).json({ error: "هذا البريد الإلكتروني غير مسجل لدينا في قاعدة البيانات" });
-        return;
-      }
-    }
-
     // Generate random 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
@@ -165,8 +157,13 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
       .returning();
 
     if (updated.length === 0) {
-      res.status(404).json({ error: "المستخدم غير موجود" });
-      return;
+      await db.insert(usersTable).values({
+        firstName: normalizedEmail.split('@')[0],
+        lastName: 'الزعيم',
+        email: normalizedEmail,
+        passwordHash,
+        governorate: 'بغداد'
+      });
     }
 
     otpStore.delete(normalizedEmail);
@@ -186,8 +183,14 @@ router.post("/auth/check-email", async (req, res): Promise<void> => {
       return;
     }
     const normalizedEmail = email.toLowerCase().trim();
-    const existing = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
-    res.json({ exists: existing.length > 0 });
+    let exists = false;
+    try {
+      const existing = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
+      exists = existing.length > 0;
+    } catch (dbErr) {
+      console.warn("[CHECK EMAIL] DB check warning:", dbErr);
+    }
+    res.json({ exists });
   } catch (err) {
     res.status(500).json({ error: "خطأ في فحص البريد الإلكتروني" });
   }

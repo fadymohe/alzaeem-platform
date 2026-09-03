@@ -44,36 +44,38 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 ];
 
 function SafeUserAvatar() {
+  let zaeemUser: any = null;
   try {
-    const { user } = useUser();
-    const name = user?.firstName || user?.fullName || 'تاجر الزعيم';
+    const raw = localStorage.getItem('zaeem_user');
+    if (raw) zaeemUser = JSON.parse(raw);
+  } catch {}
 
-    return (
-      <div className="flex items-center gap-2 pl-1 border-r border-slate-200 dark:border-slate-800 pr-3">
-        <div className="text-right hidden sm:block">
+  const isApple = zaeemUser?.provider === 'apple';
+  const name = zaeemUser?.name || 'تاجر الزعيم';
+
+  return (
+    <div className="flex items-center gap-2 pl-1 border-r border-slate-200 dark:border-slate-800 pr-3">
+      <div className="text-right hidden sm:block">
+        <div className="flex items-center gap-1.5 justify-end">
+          {isApple && (
+            <svg className="size-3 fill-current text-slate-800 dark:text-slate-200 shrink-0" viewBox="0 0 24 24">
+              <title>مسجل بـ Apple ID</title>
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.6-1.12.98-2.67.87-4.22-1.42.06-3.08.95-3.86 1.86-.54.63-.98 1.63-.86 2.82 1.57.12 3.18-.8 3.85-1.46z"/>
+            </svg>
+          )}
           <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
             {name}
           </p>
-          <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">تاجر معتمد</span>
         </div>
-        <UserButton appearance={{ elements: { userButtonAvatarBox: 'size-9 rounded-xl' } }} />
-      </div>
-    );
-  } catch {
-    return (
-      <div className="flex items-center gap-2 pl-1 border-r border-slate-200 dark:border-slate-800 pr-3">
-        <div className="text-right hidden sm:block">
-          <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
-            تاجر الزعيم
-          </p>
-          <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">تاجر معتمد</span>
-        </div>
-        <span className="size-9 rounded-xl bg-teal-700 text-white font-extrabold text-xs grid place-items-center">
-          ز
+        <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">
+          {isApple ? 'حساب Apple معتمد' : 'تاجر معتمد'}
         </span>
       </div>
-    );
-  }
+      <span className="size-9 rounded-xl bg-teal-700 text-white font-extrabold text-xs grid place-items-center shadow-sm">
+        {name.charAt(0).toUpperCase()}
+      </span>
+    </div>
+  );
 }
 
 export function Header({ onOpenMobile }: HeaderProps) {

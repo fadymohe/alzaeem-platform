@@ -215,7 +215,7 @@ function RoutedApp() {
               plan: meta.plan || 'free',
               orderLimit: meta.order_limit || 5
             }));
-            window.location.hash = '#/dashboard';
+            window.location.hash = '#/onboarding';
             window.location.reload();
           } else {
             setOauthProcessing(false);
