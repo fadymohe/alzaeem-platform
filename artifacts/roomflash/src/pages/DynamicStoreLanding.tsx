@@ -54,33 +54,65 @@ export function DynamicStoreLanding() {
 
   const [loading, setLoading] = useState(true);
 
-  // جلب بيانات المتجر والمنتج الحقيقية من الـ API
+  // جلب بيانات المتجر والمنتج الحقيقية من السيرفر أو الذاكرة المحلية
   useEffect(() => {
     let isMounted = true;
+
+    // 1. فحص الذاكرة المحلية أولاً للعرض الفوري
+    try {
+      const storedOnboarded = localStorage.getItem("zaeem_onboarded_store");
+      const storedStore = localStorage.getItem("zaeem_store_data");
+      const activeData = storedOnboarded ? JSON.parse(storedOnboarded) : (storedStore ? JSON.parse(storedStore) : null);
+
+      if (activeData) {
+        const localSub = (activeData.subdomain || "").replace(".za3em.shop", "").toLowerCase();
+        if (localSub === cleanSubdomain || cleanSubdomain === "zero" || cleanSubdomain === "demo") {
+          setStore({
+            id: 1,
+            name: activeData.storeName || `متجر ${cleanSubdomain}`,
+            subdomain: cleanSubdomain,
+            templateId: activeData.selectedTheme || "shoppingcart.1.2.7",
+          });
+          if (activeData.product) {
+            setProduct({
+              id: 1,
+              title: activeData.product.name || "منتج العرض الحصري",
+              description: activeData.slogan || "منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام.",
+              price: Number(activeData.product.price) || 45000,
+              compareAtPrice: Math.round((Number(activeData.product.price) || 45000) * 1.3),
+              imageUrl: activeData.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Local store parse fallback:", e);
+    }
+
+    // 2. مزامنة البيانات الحية من السيرفر
     async function loadTenantData() {
       try {
-        setLoading(true);
         const res = await fetch(`/api/tenant/stores/${cleanSubdomain}`);
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.store) {
-            setStore({
-              id: data.store.id,
-              name: data.store.name,
-              subdomain: data.store.subdomain,
-              templateId: data.store.templateId || "easyorders-flash",
-            });
+            setStore((prev) => ({
+              ...prev,
+              id: data.store.id || prev.id,
+              name: data.store.name || prev.name,
+              subdomain: data.store.subdomain || prev.subdomain,
+              templateId: data.store.templateId || prev.templateId || "shoppingcart.1.2.7",
+            }));
             if (data.product) {
-              setProduct({
-                id: data.product.id,
-                title: data.product.title || data.product.name,
-                description: data.product.description || "",
-                price: Math.round(data.product.price || 450), // جنيه مصري صحيح
-                compareAtPrice: Math.round(data.product.price * 1.5),
-                imageUrl:
-                  data.product.imageUrl ||
-                  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80",
-              });
+              setProduct((prev) => ({
+                ...prev,
+                id: data.product.id || prev.id,
+                title: data.product.title || data.product.name || prev.title,
+                description: data.product.description || prev.description,
+                price: Number(data.product.price) || prev.price,
+                compareAtPrice: Math.round((Number(data.product.price) || prev.price) * 1.3),
+                imageUrl: data.product.imageUrl || prev.imageUrl,
+              }));
             }
           }
         }
@@ -136,30 +168,29 @@ export function DynamicStoreLanding() {
           <span className="text-emerald-400 font-bold">https://{cleanSubdomain}.za3em.shop</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-slate-400">معاينة القالب:</span>
-          <button
-            type="button"
-            onClick={() => setStore((prev) => ({ ...prev, templateId: "easyorders-flash" }))}
-            className={`px-2.5 py-1 rounded-lg font-black transition-colors ${
-              store.templateId === "easyorders-flash"
-                ? "bg-emerald-500 text-slate-950"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            EasyOrders Flash (COD)
-          </button>
-          <button
-            type="button"
-            onClick={() => setStore((prev) => ({ ...prev, templateId: "minimal-luxury" }))}
-            className={`px-2.5 py-1 rounded-lg font-black transition-colors ${
-              store.templateId === "minimal-luxury"
-                ? "bg-amber-500 text-slate-950"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            Minimal Luxury
-          </button>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <span className="font-bold text-slate-400 text-[11px] shrink-0">تبديل القالب:</span>
+          {[
+            { id: "shoppingcart.1.2.7", label: "سلة التسوق الشاملة" },
+            { id: "volt", label: "فولت الزمردي" },
+            { id: "rose", label: "روز بوتيك" },
+            { id: "nitro", label: "نيترو الرياضي" },
+            { id: "sepia", label: "هاير الملكي" },
+            { id: "easyorders-flash", label: "فلاش لاندينج (COD)" },
+          ].map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setStore((prev) => ({ ...prev, templateId: t.id }))}
+              className={`px-2.5 py-1 rounded-lg text-xs font-black transition-colors shrink-0 ${
+                store.templateId === t.id
+                  ? "bg-teal-500 text-slate-950 shadow-sm"
+                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import {
   TemplateStore,
 } from "./EasyOrdersFlashTemplate";
 import { MinimalLuxuryTemplate } from "./MinimalLuxuryTemplate";
+import { StoreTemplates, type TemplateId } from "../storefront/StoreTemplates";
 
 interface DynamicTemplateRendererProps {
   templateId?: string;
@@ -14,7 +15,7 @@ interface DynamicTemplateRendererProps {
 }
 
 export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = ({
-  templateId = "easyorders-flash",
+  templateId = "shoppingcart.1.2.7",
   store,
   product,
   onPlaceOrder,
@@ -22,9 +23,16 @@ export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = (
   const cleanTemplateId = (templateId || "").toLowerCase().trim();
 
   switch (cleanTemplateId) {
+    case "easyorders-flash":
+      return (
+        <EasyOrdersFlashTemplate
+          store={store}
+          product={product}
+          onPlaceOrder={onPlaceOrder}
+        />
+      );
+
     case "minimal-luxury":
-    case "sepia":
-    case "rose":
       return (
         <MinimalLuxuryTemplate
           store={store}
@@ -33,17 +41,31 @@ export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = (
         />
       );
 
-    case "easyorders-flash":
     case "shoppingcart.1.2.7":
     case "volt":
+    case "rose":
     case "nitro":
-    default:
+    case "sepia":
+    case "oret":
+    default: {
+      const validTemplateId: TemplateId =
+        cleanTemplateId === "volt" ||
+        cleanTemplateId === "rose" ||
+        cleanTemplateId === "nitro" ||
+        cleanTemplateId === "sepia" ||
+        cleanTemplateId === "oret"
+          ? (cleanTemplateId as TemplateId)
+          : "shoppingcart.1.2.7";
+
       return (
-        <EasyOrdersFlashTemplate
-          store={store}
-          product={product}
-          onPlaceOrder={onPlaceOrder}
+        <StoreTemplates
+          storeName={store.name}
+          subdomain={store.subdomain}
+          activeTemplateId={validTemplateId}
+          standalone={true}
         />
       );
+    }
   }
 };
+
