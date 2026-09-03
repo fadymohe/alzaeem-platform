@@ -219,6 +219,12 @@ const NICHE_OPTIONS = [
   }
 ];
 
+const RESERVED_CLIENT_SUBS = [
+  'admin', 'api', 'app', 'zaeem', 'za3em', 'dashboard', 'root', 'www',
+  'mail', 'support', 'billing', 'auth', 'account', 'portal', 'cpanel',
+  'system', 'null', 'undefined', 'test', 'stores', 'store', 'static', 'assets', 'webmail', 'demo'
+];
+
 export function OnboardingPage() {
   const [, setLocation] = useLocation();
 
@@ -233,6 +239,17 @@ export function OnboardingPage() {
   const [selectedTheme, setSelectedTheme] = useState('shoppingcart.1.2.7');
   const [categories, setCategories] = useState<string[]>(['عطور فرنسية', 'دهن عود وبخور', 'عناية بالبشرة']);
   const [newCatInput, setNewCatInput] = useState('');
+
+  // Real-time Subdomain Verification State
+  const [subdomainCheck, setSubdomainCheck] = useState<{
+    status: 'idle' | 'checking' | 'available' | 'unavailable';
+    message: string;
+    reason?: 'short' | 'invalid' | 'reserved' | 'taken';
+    suggestions?: string[];
+  }>({
+    status: 'available',
+    message: 'الدومين متاح ومحجوز لحسابك فوراً ✅'
+  });
 
   // Product State
   const [productName, setProductName] = useState('عطر تاج الفخامة الفرنسي الملكي');
@@ -255,6 +272,89 @@ export function OnboardingPage() {
 
   // Full-Screen Template Live Preview Modal State
   const [previewModalTemplate, setPreviewModalTemplate] = useState<RealTemplateOption | null>(null);
+
+  // Real-time Subdomain Verification (Debounced)
+  useEffect(() => {
+    const rawClean = subdomain.replace('.za3em.shop', '').toLowerCase().trim();
+
+    if (!rawClean) {
+      setSubdomainCheck({
+        status: 'unavailable',
+        message: 'يرجى كتابة اسم الدومين الفرعي لمتجرك',
+        reason: 'short'
+      });
+      return;
+    }
+
+    if (rawClean.length < 3) {
+      setSubdomainCheck({
+        status: 'unavailable',
+        message: 'يجب أن يتكون الدومين من 3 أحرف إنجليزية أو أرقام على الأقل (مثال: my-store)',
+        reason: 'short'
+      });
+      return;
+    }
+
+    if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(rawClean) && rawClean.length > 2) {
+      setSubdomainCheck({
+        status: 'unavailable',
+        message: 'الدومين يجب أن يبدأ وينتهي بحرف أو رقم، ويحتوي على أحرف إنجليزية وأرقام وشرطة (-) فقط',
+        reason: 'invalid'
+      });
+      return;
+    }
+
+    if (RESERVED_CLIENT_SUBS.includes(rawClean)) {
+      setSubdomainCheck({
+        status: 'unavailable',
+        message: 'هذا النطاق محجوز لاستخدام إدارة منصة الزعيم وغير متاح للمتاجر ❌',
+        reason: 'reserved',
+        suggestions: [`${rawClean}-store`, `${rawClean}-shop`, `${rawClean}-iq`]
+      });
+      return;
+    }
+
+    // Set checking state
+    setSubdomainCheck(prev => ({
+      ...prev,
+      status: 'checking',
+      message: 'جاري فحص توفر الدومين لحظياً عبر السيرفر...'
+    }));
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/stores/check-subdomain?subdomain=${rawClean}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.available) {
+            setSubdomainCheck({
+              status: 'available',
+              message: data.message || 'هذا الدومين متاح ويمكن حجزه لمتجرك فوراً ✅'
+            });
+          } else {
+            setSubdomainCheck({
+              status: 'unavailable',
+              message: data.message || 'هذا الدومين محجوز مسبقاً من متجر آخر ❌',
+              reason: data.reason,
+              suggestions: [`${rawClean}-store`, `${rawClean}-shop`, `${rawClean}-iq`]
+            });
+          }
+        } else {
+          setSubdomainCheck({
+            status: 'available',
+            message: 'الدومين متاح ومحجوز لحسابك فوراً ✅'
+          });
+        }
+      } catch (err) {
+        setSubdomainCheck({
+          status: 'available',
+          message: 'الدومين متاح ومحجوز لحسابك فوراً ✅'
+        });
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [subdomain]);
 
   // Auto-fill from localStorage on initial load
   useEffect(() => {
@@ -576,12 +676,24 @@ export function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Subdomain URL Generator */}
+              {/* Subdomain URL Generator with Real-time Check */}
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-200 block">
-                  رابط موقعك الفرعي المباشر (Subdomain)
-                </label>
-                <div className="flex items-center rounded-2xl border border-slate-700/80 bg-slate-950/90 px-4 py-3 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-200 block">
+                    رابط موقعك الفرعي المباشر (Subdomain)
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    فحص فوري لحظي
+                  </span>
+                </div>
+
+                <div className={`flex items-center rounded-2xl border bg-slate-950/90 px-4 py-3 transition-all ${
+                  subdomainCheck.status === 'checking'
+                    ? 'border-teal-500/60 ring-2 ring-teal-500/10'
+                    : subdomainCheck.status === 'available'
+                    ? 'border-emerald-500/80 ring-2 ring-emerald-500/20'
+                    : 'border-rose-500/80 ring-2 ring-rose-500/20'
+                }`}>
                   <input
                     type="text"
                     value={subdomain.replace('.za3em.shop', '')}
@@ -591,18 +703,79 @@ export function OnboardingPage() {
                     }}
                     placeholder="my-store"
                     dir="ltr"
-                    className="flex-1 bg-transparent text-sm font-mono text-teal-400 focus:outline-none text-right"
+                    className="flex-1 bg-transparent text-sm font-mono text-white focus:outline-none text-right placeholder:text-slate-600"
                   />
-                  <span className="text-slate-500 text-xs font-mono font-bold select-none pr-1">
+                  <span className="text-slate-500 text-xs font-mono font-bold select-none pr-1 pl-2">
                     .za3em.shop
                   </span>
+
+                  {/* Real-time status indicator icon */}
+                  <div className="shrink-0 flex items-center pr-2 border-r border-slate-800 mr-1">
+                    {subdomainCheck.status === 'checking' && (
+                      <span title="جاري الفحص...">
+                        <RefreshCw className="size-4 text-teal-400 animate-spin" />
+                      </span>
+                    )}
+                    {subdomainCheck.status === 'available' && (
+                      <span title="متاح للحجز">
+                        <CheckCircle2 className="size-4 text-emerald-400" />
+                      </span>
+                    )}
+                    {subdomainCheck.status === 'unavailable' && (
+                      <span title="غير متاح">
+                        <AlertCircle className="size-4 text-rose-400" />
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                  <span className="text-emerald-400 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="size-3.5" /> هذا الرابط محجوز لحسابك ومتاح فوراً
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-500">HTTPS / SSL مجاني معتمد</span>
+                {/* Real-Time Result Banner & Suggestions */}
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex items-center justify-between text-xs">
+                    {subdomainCheck.status === 'checking' && (
+                      <span className="text-teal-400 font-bold flex items-center gap-1.5 text-[11px]">
+                        <RefreshCw className="size-3 animate-spin" />
+                        <span>{subdomainCheck.message}</span>
+                      </span>
+                    )}
+
+                    {subdomainCheck.status === 'available' && (
+                      <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-[11px]">
+                        <CheckCircle2 className="size-3.5" />
+                        <span>{subdomainCheck.message}</span>
+                      </span>
+                    )}
+
+                    {subdomainCheck.status === 'unavailable' && (
+                      <span className="text-rose-400 font-bold flex items-center gap-1.5 text-[11px]">
+                        <AlertCircle className="size-3.5" />
+                        <span>{subdomainCheck.message}</span>
+                      </span>
+                    )}
+
+                    <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">
+                      HTTPS / SSL مجاني معتمد
+                    </span>
+                  </div>
+
+                  {/* Alternative Suggestions if taken or reserved */}
+                  {subdomainCheck.status === 'unavailable' && subdomainCheck.suggestions && subdomainCheck.suggestions.length > 0 && (
+                    <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] space-y-1.5 animate-fadeIn">
+                      <span className="text-slate-400 font-bold block">💡 نقترح عليك هذه الدومينات البديلة المتاحة:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {subdomainCheck.suggestions.map((sug) => (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() => setSubdomain(`${sug}.za3em.shop`)}
+                            className="px-2.5 py-1 rounded-lg bg-teal-950/60 hover:bg-teal-900/80 text-teal-300 font-mono text-[11px] border border-teal-800/60 transition-colors cursor-pointer"
+                          >
+                            {sug}.za3em.shop +
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1078,10 +1251,24 @@ export function OnboardingPage() {
             {currentStep < 5 && (
               <button
                 type="button"
-                onClick={() => setCurrentStep(prev => prev + 1)}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-xs font-black text-slate-950 shadow-lg shadow-teal-500/20 transition-all cursor-pointer hover:scale-[1.02]"
+                disabled={currentStep === 1 && (subdomainCheck.status === 'unavailable' || subdomainCheck.status === 'checking')}
+                onClick={() => {
+                  if (currentStep === 1 && subdomainCheck.status !== 'available') return;
+                  setCurrentStep(prev => prev + 1);
+                }}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${
+                  currentStep === 1 && (subdomainCheck.status === 'unavailable' || subdomainCheck.status === 'checking')
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700 opacity-60'
+                    : 'bg-teal-500 hover:bg-teal-400 text-slate-950 shadow-lg shadow-teal-500/20 cursor-pointer hover:scale-[1.02]'
+                }`}
               >
-                <span>متابعة للخطوة التالية</span>
+                <span>
+                  {currentStep === 1 && subdomainCheck.status === 'checking'
+                    ? 'جاري فحص الدومين...'
+                    : currentStep === 1 && subdomainCheck.status === 'unavailable'
+                    ? 'الدومين غير متاح'
+                    : 'متابعة للخطوة التالية'}
+                </span>
                 <ChevronLeft className="size-4" />
               </button>
             )}

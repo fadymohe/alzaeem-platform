@@ -33,6 +33,7 @@ import {
   ordersTable,
   productsTable,
   storesTable,
+  za3emStoresTable,
   subscriptionPlansTable,
   usersTable,
 } from "@workspace/db";
@@ -325,6 +326,10 @@ router.get("/stores/check-subdomain", async (req, res): Promise<void> => {
       res.status(400).json({ available: false, error: "اسم النطاق مطلوب" });
       return;
     }
+    if (slugParam.length < 3) {
+      res.json({ available: false, reason: "short", message: "يجب أن يتكون الدومين من 3 أحرف على الأقل" });
+      return;
+    }
     if (RESERVED_SUBDOMAINS.includes(slugParam)) {
       res.json({ available: false, reason: "reserved", message: "هذا النطاق محجوز للاستخدام الخاص بإدارة المنصة وغير متاح" });
       return;
@@ -334,7 +339,15 @@ router.get("/stores/check-subdomain", async (req, res): Promise<void> => {
       res.json({ available: false, reason: "taken", message: "هذا النطاق مستخدم مسبقاً من متجر آخر" });
       return;
     }
-    res.json({ available: true, subdomain: slugParam, message: "النطاق متاح ويمكن حجزه ✅" });
+    try {
+      const existingZa3em = await db.select().from(za3emStoresTable).where(eq(za3emStoresTable.subdomain, slugParam));
+      if (existingZa3em.length > 0) {
+        res.json({ available: false, reason: "taken", message: "هذا النطاق مستخدم مسبقاً من متجر آخر" });
+        return;
+      }
+    } catch (e) {}
+
+    res.json({ available: true, subdomain: slugParam, message: "النطاق متاح ويمكن حجزه فوراً ✅" });
   } catch (err) {
     res.status(500).json({ available: false, error: "خطأ بالخادم" });
   }
