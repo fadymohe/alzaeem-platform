@@ -386,6 +386,7 @@ export function SignUpPage() {
     };
 
     const userObj = {
+      id: '',
       email: email.trim().toLowerCase(),
       name: `${firstName.trim()} ${lastName.trim()}`,
       phone: formattedPhone,
@@ -395,17 +396,6 @@ export function SignUpPage() {
       loggedIn: true,
       time: new Date().toISOString()
     };
-
-    // Save locally
-    localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-    localStorage.setItem('zaeem_store_data', JSON.stringify(storePayload));
-
-    // Update registered stores
-    const localTaken: string[] = JSON.parse(localStorage.getItem('zaeem_registered_stores') || '[]');
-    if (!localTaken.includes(cleanSubdomain)) {
-      localTaken.push(cleanSubdomain);
-      localStorage.setItem('zaeem_registered_stores', JSON.stringify(localTaken));
-    }
 
     try {
       // 1. Official Supabase Auth Signup (Persists directly to Database!)
@@ -436,7 +426,6 @@ export function SignUpPage() {
         const updateData = await updateRes.json().catch(() => null);
         if (updateData?.id) {
           userObj.id = updateData.id;
-          localStorage.setItem('zaeem_user', JSON.stringify(userObj));
         }
       } else {
         const signupRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/signup', {
@@ -465,7 +454,6 @@ export function SignUpPage() {
         const signupData = await signupRes.json().catch(() => null);
         if (signupData?.user?.id) {
           userObj.id = signupData.user.id;
-          localStorage.setItem('zaeem_user', JSON.stringify(userObj));
         }
       }
 
@@ -475,6 +463,17 @@ export function SignUpPage() {
         body: JSON.stringify(storePayload)
       }).catch(() => null);
     } catch (err) {}
+
+    // Save locally
+    localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+    localStorage.setItem('zaeem_store_data', JSON.stringify(storePayload));
+
+    // Update registered stores
+    const localTaken: string[] = JSON.parse(localStorage.getItem('zaeem_registered_stores') || '[]');
+    if (!localTaken.includes(cleanSubdomain)) {
+      localTaken.push(cleanSubdomain);
+      localStorage.setItem('zaeem_registered_stores', JSON.stringify(localTaken));
+    }
 
     setLoading(false);
     window.location.hash = '#/onboarding';
