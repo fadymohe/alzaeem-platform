@@ -10,6 +10,7 @@ import {
   Zap, Flame, X
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
+import { registerStore, encodeStoreSeed } from '../utils/storeRegistry';
 
 export interface RealTemplateOption {
   id: string;
@@ -267,6 +268,7 @@ export function OnboardingPage() {
     subdomain: string;
     storeName: string;
     templateName: string;
+    seedUrl?: string;
   } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
@@ -456,20 +458,28 @@ export function OnboardingPage() {
       completedAt: new Date().toISOString()
     };
 
-    // 1. Save in local browser storage for instant zero-latency loading
-    localStorage.setItem('zaeem_onboarded_store', JSON.stringify(finalData));
-
-    const existingStoreData = JSON.parse(localStorage.getItem('zaeem_store_data') || '{}');
-    localStorage.setItem('zaeem_store_data', JSON.stringify({
-      ...existingStoreData,
+    // 1. Save in local browser storage and cross-subdomain cookie via central registry!
+    registerStore({
+      subdomain: cleanSub,
       storeName,
-      subdomain: `${cleanSub}.za3em.shop`,
-      selectedTheme,
-      plan: 'free',
-      orderLimit: 5
-    }));
+      slogan,
+      templateId: selectedTheme,
+      categories,
+      product: {
+        id: 1,
+        name: productName,
+        title: productName,
+        price: Number(productPrice) || 45000,
+        compareAtPrice: Math.round((Number(productPrice) || 45000) * 1.3),
+        category: productCategory,
+        image: productImage,
+        imageUrl: productImage,
+        description: slogan,
+      },
+      freeShipmentsRemaining: 5,
+    });
 
-    // 2. Register with server API to bind subdomain and template
+    // 2. Register with server API to bind subdomain and template (if backend is active)
     try {
       await fetch('/api/tenant/stores', {
         method: 'POST',
@@ -491,13 +501,34 @@ export function OnboardingPage() {
 
     setIsLaunching(false);
 
-    // 3. Show Launch Success Celebration Modal
+    // 3. Show Launch Success Celebration Modal with seed URL
     const activeT = REAL_STORE_TEMPLATES.find(t => t.id === selectedTheme) || REAL_STORE_TEMPLATES[0];
+    const seed = encodeStoreSeed({
+      subdomain: cleanSub,
+      storeName,
+      slogan,
+      templateId: selectedTheme,
+      categories,
+      product: {
+        id: 1,
+        name: productName,
+        title: productName,
+        price: Number(productPrice) || 45000,
+        compareAtPrice: Math.round((Number(productPrice) || 45000) * 1.3),
+        category: productCategory,
+        image: productImage,
+        imageUrl: productImage,
+        description: slogan,
+      },
+      freeShipmentsRemaining: 5,
+    });
+
     setLaunchSuccessData({
       open: true,
       subdomain: cleanSub,
       storeName,
-      templateName: activeT.name
+      templateName: activeT.name,
+      seedUrl: `https://${cleanSub}.za3em.shop/#init=${seed}`,
     });
   };
 
@@ -1545,7 +1576,7 @@ export function OnboardingPage() {
             {/* Actions */}
             <div className="space-y-2 pt-2">
               <a
-                href={`/#/store/${launchSuccessData.subdomain}`}
+                href={launchSuccessData.seedUrl || `https://${launchSuccessData.subdomain}.za3em.shop`}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 transition-all cursor-pointer"

@@ -5,6 +5,11 @@ import {
   TemplateProduct,
   TemplateStore,
 } from "../components/landing-templates/EasyOrdersFlashTemplate";
+import {
+  getRegisteredStore,
+  RegisteredStoreData,
+} from "../utils/storeRegistry";
+import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink } from "lucide-react";
 
 export function DynamicStoreLanding() {
   const [matchView, paramsView] = useRoute("/view-store/:subdomain");
@@ -33,69 +38,83 @@ export function DynamicStoreLanding() {
 
   const cleanSubdomain = (rawSub || "zero").toLowerCase().replace(/[^a-z0-9-]/g, "");
 
-  // بيانات المتجر والمنتج
+  // 2. التحقق من السجل المركزي للمتاجر المسجلة فورياً
+  const initialRegisteredData = getRegisteredStore(cleanSubdomain);
+  const isInitiallyKnown =
+    cleanSubdomain === "zero" ||
+    cleanSubdomain === "demo" ||
+    initialRegisteredData !== null;
+
+  const [isStoreRegistered, setIsStoreRegistered] = useState<boolean>(isInitiallyKnown);
+
+  // بيانات المتجر والمنتج المعتمدة
   const [store, setStore] = useState<TemplateStore>({
     id: 1,
-    name: cleanSubdomain === "zero" ? "متجر زيرو إكسبريس" : `متجر ${cleanSubdomain}`,
+    name: initialRegisteredData?.storeName || (cleanSubdomain === "zero" ? "متجر زيرو إكسبريس" : `متجر ${cleanSubdomain}`),
     subdomain: cleanSubdomain,
-    templateId: "easyorders-flash",
+    templateId: initialRegisteredData?.templateId || "shoppingcart.1.2.7",
   });
 
   const [product, setProduct] = useState<TemplateProduct>({
     id: 1,
-    title: "سماعة بلوتوث لاسلكية Ultra Bass عازلة للضوضاء - إصدار 2026",
+    title: initialRegisteredData?.product?.title || initialRegisteredData?.product?.name || "عطر تاج الفخامة الفرنسي الملكي",
     description:
-      "سماعة رأس احترافية مع صوت محيطي 3D نقي وعزل تام للضوضاء، بطارية عملاقة تدوم 48 ساعة متواصلة مع شحن سريع Type-C، متوافقة مع جميع أنواع الهواتف الذكية مع ضمان استبدال رسمي لمدة سنة كاملة.",
-    price: 450, // 450 جنيه مصري صحيح بدون قروش
-    compareAtPrice: 700,
+      initialRegisteredData?.product?.description ||
+      "منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام بعد المعاينة.",
+    price: Number(initialRegisteredData?.product?.price) || 45000,
+    compareAtPrice: Number(initialRegisteredData?.product?.compareAtPrice) || 58000,
     imageUrl:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80",
+      initialRegisteredData?.product?.imageUrl ||
+      initialRegisteredData?.product?.image ||
+      "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
   });
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // جلب بيانات المتجر والمنتج الحقيقية من السيرفر أو الذاكرة المحلية
+  // جلب ومزامنة بيانات المتجر لحظياً
   useEffect(() => {
     let isMounted = true;
 
-    // 1. فحص الذاكرة المحلية أولاً للعرض الفوري
-    try {
-      const storedOnboarded = localStorage.getItem("zaeem_onboarded_store");
-      const storedStore = localStorage.getItem("zaeem_store_data");
-      const activeData = storedOnboarded ? JSON.parse(storedOnboarded) : (storedStore ? JSON.parse(storedStore) : null);
+    // 1. فحص السجل المركزي للمتاجر (كوكيز الدومين المشترك .za3em.shop + الذاكرة المحلية + البذور)
+    const registered = getRegisteredStore(cleanSubdomain);
 
-      if (activeData) {
-        const localSub = (activeData.subdomain || "").replace(".za3em.shop", "").toLowerCase();
-        if (localSub === cleanSubdomain || cleanSubdomain === "zero" || cleanSubdomain === "demo") {
-          setStore({
+    if (registered) {
+      if (isMounted) {
+        setIsStoreRegistered(true);
+        setStore({
+          id: 1,
+          name: registered.storeName || `متجر ${cleanSubdomain}`,
+          subdomain: cleanSubdomain,
+          templateId: registered.templateId || "shoppingcart.1.2.7",
+        });
+        if (registered.product) {
+          setProduct({
             id: 1,
-            name: activeData.storeName || `متجر ${cleanSubdomain}`,
-            subdomain: cleanSubdomain,
-            templateId: activeData.selectedTheme || "shoppingcart.1.2.7",
+            title: registered.product.title || registered.product.name || "منتج العرض الحصري",
+            description: registered.product.description || registered.slogan || "منتج فاخر مع شحن سريع لجميع محافظات العراق.",
+            price: Number(registered.product.price) || 45000,
+            compareAtPrice: Number(registered.product.compareAtPrice) || Math.round((Number(registered.product.price) || 45000) * 1.3),
+            imageUrl: registered.product.imageUrl || registered.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
           });
-          if (activeData.product) {
-            setProduct({
-              id: 1,
-              title: activeData.product.name || "منتج العرض الحصري",
-              description: activeData.slogan || "منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام.",
-              price: Number(activeData.product.price) || 45000,
-              compareAtPrice: Math.round((Number(activeData.product.price) || 45000) * 1.3),
-              imageUrl: activeData.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
-            });
-          }
         }
       }
-    } catch (e) {
-      console.warn("Local store parse fallback:", e);
+      return;
     }
 
-    // 2. مزامنة البيانات الحية من السيرفر
-    async function loadTenantData() {
+    // للمتاجر التجريبية المضمنة
+    if (cleanSubdomain === "zero" || cleanSubdomain === "demo") {
+      if (isMounted) setIsStoreRegistered(true);
+      return;
+    }
+
+    // 2. إذا لم يكن موجوداً في السجل، نحاول فحص الـ API إذا كان السيرفر متاحاً
+    async function checkApiStore() {
       try {
         const res = await fetch(`/api/tenant/stores/${cleanSubdomain}`);
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.store) {
+            setIsStoreRegistered(true);
             setStore((prev) => ({
               ...prev,
               id: data.store.id || prev.id,
@@ -114,16 +133,21 @@ export function DynamicStoreLanding() {
                 imageUrl: data.product.imageUrl || prev.imageUrl,
               }));
             }
+            return;
           }
         }
       } catch (err) {
-        console.warn("Using offline tenant defaults:", err);
-      } finally {
-        if (isMounted) setLoading(false);
+        console.warn("API store check fallback:", err);
+      }
+
+      // إذا وصلنا هنا ولم يتم العثور على المتجر في السجل، فهو غير مسجل
+      if (isMounted) {
+        setIsStoreRegistered(false);
       }
     }
 
-    loadTenantData();
+    checkApiStore();
+
     return () => {
       isMounted = false;
     };
@@ -151,13 +175,130 @@ export function DynamicStoreLanding() {
     });
 
     if (!response.ok) {
-      const err = await response.json();
+      const err = await response.json().catch(() => ({}));
       throw new Error(err.error || "فشل إتمام الطلب");
     }
 
     return await response.json();
   };
 
+  // =========================================================================
+  // حالة عدم وجود المتجر (404 - النطاق الفرعي غير مسجل بعد)
+  // =========================================================================
+  if (!isStoreRegistered && cleanSubdomain !== "zero" && cleanSubdomain !== "demo") {
+    return (
+      <div className="w-full min-h-screen bg-[#070b14] text-white flex flex-col justify-between selection:bg-teal-500 selection:text-slate-950 font-sans" dir="rtl">
+        {/* Top Header */}
+        <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+          <a href="https://www.za3em.shop" className="flex items-center gap-3">
+            <div className="size-10 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 grid place-items-center text-slate-950 font-black text-lg shadow-lg shadow-teal-500/20">
+              ز
+            </div>
+            <div>
+              <h1 className="text-base font-black text-white">منصة الزعيم — العراق</h1>
+              <p className="text-[10px] text-teal-400 font-mono">za3em.shop</p>
+            </div>
+          </a>
+
+          <a
+            href="https://www.za3em.shop"
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-slate-300 border border-slate-700/80 transition-colors"
+          >
+            الرئيسية 🏠
+          </a>
+        </header>
+
+        {/* Center 404 / Claim Domain Banner */}
+        <main className="max-w-2xl mx-auto w-full px-4 py-16 text-center space-y-8 animate-fadeIn">
+          <div className="size-20 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mx-auto grid place-items-center shadow-2xl shadow-amber-500/10">
+            <Globe className="size-10" />
+          </div>
+
+          <div className="space-y-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-800/80 text-amber-300 text-xs font-bold">
+              <AlertTriangle className="size-3.5" />
+              <span>هذا الدومين الفرعي غير مسجل بعد في منصة الزعيم</span>
+            </span>
+
+            <h2 className="text-2xl sm:text-3xl font-black text-white font-mono dir-ltr">
+              https://{cleanSubdomain}.za3em.shop
+            </h2>
+
+            <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+              لم يتم إنشاء أو ربط أي متجر إلكتروني على هذا الرابط حتى الآن.
+              إذا كان هذا الاسم يخص علامتك التجارية أو تجارتك، فيمكنك حجزه فوراً وإطلاق متجرك الإلكتروني في أقل من دقيقتين مجاناً!
+            </p>
+          </div>
+
+          <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4 text-right">
+            <h3 className="text-xs font-black text-slate-300 flex items-center gap-2">
+              <Sparkles className="size-4 text-teal-400" />
+              <span>ماذا ستحصل عند حجز هذا النطاق مع منصة الزعيم؟</span>
+            </h3>
+            <ul className="text-xs text-slate-400 space-y-2 font-medium">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                <span>متجر تسوق حقيقي مع سلة ودفع عند الاستلام (COD).</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                <span>ربط تلقائي مع أسطول شركة الزعيم للشحن في كافة محافظات العراق الـ 18.</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                <span>رصيد 5 شحنات مجانية بالكامل لمتجرك فور التسجيل.</span>
+              </li>
+            </ul>
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-3">
+              <a
+                href={`https://www.za3em.shop/#/onboarding?claim=${cleanSubdomain}`}
+                className="flex-1 py-3.5 px-6 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs text-center shadow-lg shadow-teal-500/20 transition-all cursor-pointer"
+              >
+                🚀 احجز {cleanSubdomain}.za3em.shop وأطلق متجرك الآن
+              </a>
+              <a
+                href="https://www.za3em.shop"
+                className="py-3.5 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs text-center border border-slate-700 transition-colors"
+              >
+                العودة للمنصة الرئيسية 🏠
+              </a>
+            </div>
+          </div>
+
+          {/* Explore Active Live Stores */}
+          <div className="pt-4 border-t border-slate-800/80 text-xs text-slate-400 space-y-3">
+            <p className="font-bold text-slate-300">أو تصفح المتاجر النشطة المعتمدة على المنصة:</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                { sub: "fadymoheb945za3emshop", name: "متجر الزعيم الذهبي" },
+                { sub: "fakhama", name: "متجر الفخامة العراقي" },
+                { sub: "alzaeem", name: "متجر فولت الإلكتروني" },
+                { sub: "zero", name: "متجر زيرو فلاش" },
+              ].map((sample) => (
+                <a
+                  key={sample.sub}
+                  href={`https://${sample.sub}.za3em.shop`}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-teal-300 font-mono text-[11px] border border-slate-800 transition-colors"
+                >
+                  {sample.name} ↗
+                </a>
+              ))}
+            </div>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+          منصة الزعيم للتجارة والشحن السريع في العراق © {new Date().getFullYear()}
+        </footer>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // حالة وجود المتجر الحقيقي (عرض القالب المختار فورياً)
+  // =========================================================================
   return (
     <div className="w-full min-h-screen bg-slate-950">
       {/* شريط اختيار وتبديل القالب السريع للمعاينة */}
@@ -182,9 +323,9 @@ export function DynamicStoreLanding() {
               key={t.id}
               type="button"
               onClick={() => setStore((prev) => ({ ...prev, templateId: t.id }))}
-              className={`px-2.5 py-1 rounded-lg text-xs font-black transition-colors shrink-0 ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-black transition-colors shrink-0 cursor-pointer ${
                 store.templateId === t.id
-                  ? "bg-teal-500 text-slate-950 shadow-sm"
+                  ? "bg-teal-500 text-slate-950 shadow-sm font-bold"
                   : "bg-slate-800 text-slate-300 hover:bg-slate-700"
               }`}
             >

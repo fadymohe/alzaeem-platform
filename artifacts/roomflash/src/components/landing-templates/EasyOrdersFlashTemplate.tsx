@@ -18,8 +18,8 @@ import { SingleButtonShippingSelector } from "../shipping/SingleButtonShippingSe
 import {
   EGYPT_GOVERNORATES,
   GovernorateShipping,
-  formatEGP,
 } from "../../data/egyptShippingData";
+import { formatIQD } from "../../data/iraqData";
 
 export interface TemplateProduct {
   id: number | string;
@@ -86,9 +86,9 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
     return () => clearInterval(timer);
   }, []);
 
-  // حساب باقات العروض بالجنيه المصري الصحيح
+  // حساب باقات العروض بالدينار العراقي الصحيح
   // 1 قطعة: السعر الأساسي
-  // 2 قطعة: خصم 50 ج.م على الإجمالي
+  // 2 قطعة: خصم 5,000 د.ع على الإجمالي
   // 3 قطع: شحن مجاني + خصم إضافي
   const calculatePricing = () => {
     const basePrice = Math.round(product.price);
@@ -96,9 +96,9 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
     let shipping = selectedGov.shippingCost;
 
     if (quantity === 2) {
-      itemsTotal = basePrice * 2 - 50; // توفير 50 ج.م
+      itemsTotal = basePrice * 2 - 5000; // توفير 5,000 د.ع
     } else if (quantity >= 3) {
-      itemsTotal = basePrice * quantity - 100; // توفير 100 ج.م
+      itemsTotal = basePrice * quantity - 10000; // توفير 10,000 د.ع
       shipping = 0; // شحن مجاني
     }
 
@@ -108,7 +108,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
       shipping,
       grandTotal,
       savings: Math.round(
-        (product.compareAtPrice || basePrice + 250) * quantity - itemsTotal
+        (product.compareAtPrice || basePrice + 12000) * quantity - itemsTotal
       ),
     };
   };
@@ -192,7 +192,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
           <div className="flex items-center gap-2">
             <span className="size-2.5 rounded-full bg-red-500 animate-ping" />
             <span className="text-xs font-bold text-slate-300">
-              يشاهد هذا المنتج الآن <strong className="text-emerald-400 font-black font-mono">36 مشترٍ</strong> في مصر
+              يشاهد هذا المنتج الآن <strong className="text-emerald-400 font-black font-mono">36 مشترٍ</strong> في العراق
             </span>
           </div>
 
@@ -248,18 +248,18 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                 {product.title}
               </h2>
 
-              {/* الأسعار بالجنيه المصري الصحيح (INTEGER) */}
+              {/* الأسعار بالدينار العراقي (IQD) */}
               <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 space-y-1">
                 <div className="flex items-baseline gap-3">
                   <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
-                    {formatEGP(product.price)}
+                    {formatIQD(product.price)}
                   </span>
                   <span className="text-sm font-bold font-mono text-slate-500 line-through">
-                    {formatEGP(product.compareAtPrice || product.price + 250)}
+                    {formatIQD(product.compareAtPrice || product.price + 12000)}
                   </span>
                 </div>
                 <p className="text-xs font-bold text-emerald-300">
-                  وفر اليوم {formatEGP(250)} + الدفع نقداً عند استلام الشحنة
+                  وفر اليوم {formatIQD(12000)} + الدفع نقداً عند استلام الشحنة
                 </p>
               </div>
 
@@ -275,7 +275,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
-                  <span>شحن سريع مع شركة بوسطة إكسبريس لجميع محافظات مصر</span>
+                  <span>شحن سريع مع أسطول شركة الزعيم لجميع محافظات العراق</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
@@ -328,19 +328,19 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                     qty: 1,
                     title: "قطعة واحدة",
                     badge: "العرض الأساسي",
-                    price: formatEGP(product.price),
+                    price: formatIQD(product.price),
                   },
                   {
                     qty: 2,
-                    title: "قطعتين (توفير 50 ج.م)",
+                    title: "قطعتين (توفير 5,000 د.ع)",
                     badge: "الأكثر طلباً ⭐",
-                    price: formatEGP(product.price * 2 - 50),
+                    price: formatIQD(product.price * 2 - 5000),
                   },
                   {
                     qty: 3,
                     title: "3 قطع (شحن مجاني)",
                     badge: "أكبر توفير 🎁",
-                    price: formatEGP(product.price * 3 - 100),
+                    price: formatIQD(product.price * 3 - 10000),
                   },
                 ].map((pack) => (
                   <button
@@ -446,11 +446,11 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
               </div>
             </div>
 
-            {/* ملخص الفاتورة بالجنيه المصري الصحيح (INTEGER) */}
+            {/* ملخص الفاتورة بالدينار العراقي (IQD) */}
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <span>سعر المنتجات ({quantity} قطعة):</span>
-                <span className="font-mono font-bold">{formatEGP(itemsTotal)}</span>
+                <span className="font-mono font-bold">{formatIQD(itemsTotal)}</span>
               </div>
 
               <div className="flex items-center justify-between text-xs text-slate-300">
@@ -458,7 +458,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                   مصاريف الشحن ({selectedGov.name} - {selectedGov.estimatedDelivery}):
                 </span>
                 <span className="font-mono font-bold text-emerald-400">
-                  {shipping === 0 ? "مجاني 🎁" : formatEGP(shipping)}
+                  {shipping === 0 ? "مجاني 🎁" : formatIQD(shipping)}
                 </span>
               </div>
 
@@ -472,7 +472,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                   </span>
                 </div>
                 <span className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
-                  {formatEGP(grandTotal)}
+                  {formatIQD(grandTotal)}
                 </span>
               </div>
             </div>
@@ -487,7 +487,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
               <span>
                 {isSubmitting
                   ? "جاري تأكيد الطلب وإصدار البوليصة..."
-                  : `تأكيد طلب الشراء الآن (${formatEGP(grandTotal)})`}
+                  : `تأكيد طلب الشراء الآن (${formatIQD(grandTotal)})`}
               </span>
             </button>
 
@@ -528,7 +528,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
         <div>
           <span className="text-[10px] text-slate-400 block">الإجمالي بالدفع عند الاستلام:</span>
           <span className="text-lg font-black font-mono text-emerald-400">
-            {formatEGP(grandTotal)}
+            {formatIQD(grandTotal)}
           </span>
         </div>
 
@@ -564,19 +564,19 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">رقم بوليصة الشحن (Waybill):</span>
                 <span className="font-mono font-black text-emerald-400 text-sm">
-                  {orderSuccess.shipping?.trackingNumber || "BST-EG-948123"}
+                  {orderSuccess.shipping?.trackingNumber || "ZAEEM-IQ-948123"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">شركة الشحن المسؤولة:</span>
                 <span className="font-bold text-white">
-                  {orderSuccess.shipping?.shippingCompany || "Bosta Express"}
+                  {orderSuccess.shipping?.shippingCompany || "شركة الزعيم للشحن"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">المبلغ المطلوب عند الاستلام:</span>
                 <span className="font-mono font-black text-emerald-400">
-                  {formatEGP(grandTotal)}
+                  {formatIQD(grandTotal)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
