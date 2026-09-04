@@ -145,32 +145,28 @@ export function TransformationDiagram({ isAr = true }: TransformationDiagramProp
                     isCurrent ? 'scale-[1.015]' : 'opacity-95'
                   }`}
                 >
-                  {/* Left Column: The Solution (Light Blue / Indigo card with checkmark) */}
+                  {/* Column 1 (RIGHT in RTL): The Problem / العيوب (Light Red / Pink card with red dot) */}
                   <div
-                    className={`relative rounded-2xl sm:rounded-3xl py-3.5 sm:py-4 px-4 sm:px-6 transition-all duration-300 flex items-center justify-end gap-3 text-right shadow-xs ${
+                    className={`relative rounded-2xl sm:rounded-3xl py-3.5 sm:py-4 px-4 sm:px-6 transition-all duration-300 flex items-center gap-3 text-right shadow-xs ${
                       isCurrent
-                        ? 'bg-[#ebf2ff] border-2 border-indigo-300/90 shadow-md shadow-indigo-100/60 -translate-x-1'
-                        : 'bg-[#f0f4ff] border border-indigo-200/60 hover:bg-[#eaf1ff] hover:border-indigo-300'
+                        ? 'bg-[#fff0f2] border-2 border-rose-300/90 shadow-md shadow-rose-100/60 translate-x-1'
+                        : 'bg-[#fff5f6] border border-rose-200/60 hover:bg-[#ffeff1] hover:border-rose-300'
                     }`}
                   >
-                    {/* Solution Text */}
-                    <span className="font-black text-xs sm:text-sm md:text-base text-slate-800 tracking-tight flex-1 text-right">
-                      {row.solution}
-                    </span>
-
-                    {/* Circular Checkmark Badge (matching amber check circle in image) */}
-                    <div
-                      className={`size-5 sm:size-6 rounded-full border flex items-center justify-center shrink-0 transition-transform duration-300 ${
-                        isCurrent
-                          ? 'border-amber-400 bg-amber-100 text-amber-700 scale-110 shadow-xs'
-                          : 'border-amber-300/80 bg-amber-50/90 text-amber-600'
+                    {/* Red Dot Bullet on the outer edge */}
+                    <span
+                      className={`size-2 sm:size-2.5 rounded-full bg-rose-500 shrink-0 transition-transform duration-300 ${
+                        isCurrent ? 'scale-125 ring-4 ring-rose-200' : ''
                       }`}
-                    >
-                      <Check className="size-3 sm:size-3.5 stroke-[3]" />
-                    </div>
+                    />
+
+                    {/* Problem Text */}
+                    <span className="font-bold text-xs sm:text-sm md:text-base text-slate-700 tracking-tight flex-1 text-right">
+                      {row.problem}
+                    </span>
                   </div>
 
-                  {/* Center Node: Circular Arrow Button pointing Right -> Left (RTL Flow) */}
+                  {/* Column 2 (CENTER): Circular Arrow Button pointing from Right (Problems) to Left (Solutions) */}
                   <div className="relative z-10 shrink-0">
                     <div
                       className={`size-8 sm:size-9 rounded-full bg-white border flex items-center justify-center transition-all duration-300 shadow-sm ${
@@ -187,25 +183,29 @@ export function TransformationDiagram({ isAr = true }: TransformationDiagramProp
                     </div>
                   </div>
 
-                  {/* Right Column: The Problem (Light Red / Pink card with red dot) */}
+                  {/* Column 3 (LEFT in RTL): The Solution / المميزات (Light Blue / Indigo card with checkmark) */}
                   <div
-                    className={`relative rounded-2xl sm:rounded-3xl py-3.5 sm:py-4 px-4 sm:px-6 transition-all duration-300 flex items-center justify-end gap-3 text-right shadow-xs ${
+                    className={`relative rounded-2xl sm:rounded-3xl py-3.5 sm:py-4 px-4 sm:px-6 transition-all duration-300 flex items-center gap-3 text-right shadow-xs ${
                       isCurrent
-                        ? 'bg-[#fff0f2] border-2 border-rose-300/90 shadow-md shadow-rose-100/60'
-                        : 'bg-[#fff5f6] border border-rose-200/60 hover:bg-[#ffeff1] hover:border-rose-300'
+                        ? 'bg-[#ebf2ff] border-2 border-indigo-300/90 shadow-md shadow-indigo-100/60 -translate-x-1'
+                        : 'bg-[#f0f4ff] border border-indigo-200/60 hover:bg-[#eaf1ff] hover:border-indigo-300'
                     }`}
                   >
-                    {/* Problem Text */}
-                    <span className="font-bold text-xs sm:text-sm md:text-base text-slate-700 tracking-tight flex-1 text-right">
-                      {row.problem}
-                    </span>
-
-                    {/* Red Dot Bullet (matching Image 1) */}
-                    <span
-                      className={`size-2 sm:size-2.5 rounded-full bg-rose-500 shrink-0 transition-transform duration-300 ${
-                        isCurrent ? 'scale-125 ring-4 ring-rose-200' : ''
+                    {/* Circular Checkmark Badge on the inner edge near the arrow */}
+                    <div
+                      className={`size-5 sm:size-6 rounded-full border flex items-center justify-center shrink-0 transition-transform duration-300 ${
+                        isCurrent
+                          ? 'border-amber-400 bg-amber-100 text-amber-700 scale-110 shadow-xs'
+                          : 'border-amber-300/80 bg-amber-50/90 text-amber-600'
                       }`}
-                    />
+                    >
+                      <Check className="size-3 sm:size-3.5 stroke-[3]" />
+                    </div>
+
+                    {/* Solution Text */}
+                    <span className="font-black text-xs sm:text-sm md:text-base text-slate-800 tracking-tight flex-1 text-right">
+                      {row.solution}
+                    </span>
                   </div>
                 </div>
               );
