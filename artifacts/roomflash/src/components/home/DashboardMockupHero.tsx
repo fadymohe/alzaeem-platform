@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'wouter';
-import { Play } from 'lucide-react';
 
 interface DashboardMockupHeroProps {
   isAr?: boolean;
@@ -9,7 +8,6 @@ interface DashboardMockupHeroProps {
 export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
   const [activeOrderIndex, setActiveOrderIndex] = useState(0);
   const [isChartHovered, setIsChartHovered] = useState(false);
-  const [chartTooltipPos, setChartTooltipPos] = useState({ x: 0, y: 0, show: false });
 
   // Live order ticker animation to simulate real-time incoming orders
   useEffect(() => {
@@ -46,16 +44,9 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
     }
   ];
 
-  const scrollToHowItWorks = () => {
-    const el = document.getElementById('how-it-works');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
   return (
     <div className="relative mx-auto max-w-5xl px-2 sm:px-4 pb-16 pt-4">
-      {/* Background vertical column grid effect matching screenshot */}
+      {/* Background vertical column grid effect */}
       <div className="absolute inset-0 -top-10 -bottom-10 pointer-events-none flex justify-around opacity-30 z-0">
         <div className="w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
         <div className="w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
@@ -112,7 +103,7 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
                   onMouseEnter={() => setActiveOrderIndex(idx)}
                   className={`rounded-2xl border p-3.5 sm:p-4 flex items-center justify-between transition-all duration-300 cursor-pointer ${
                     isActive
-                      ? 'border-blue-300 bg-blue-50/40 shadow-md shadow-blue-500/10 -translate-y-0.5'
+                      ? 'border-emerald-400/80 bg-emerald-50/50 shadow-md shadow-emerald-500/10 -translate-y-0.5'
                       : 'border-slate-100 bg-[#f8fafc]/90 hover:border-slate-200 hover:bg-white'
                   }`}
                 >
@@ -132,8 +123,8 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
                       <span
                         className={`size-2.5 rounded-full shrink-0 transition-all duration-300 ${
                           isActive
-                            ? 'bg-blue-600 scale-125 ring-4 ring-blue-100 shadow-xs shadow-blue-500'
-                            : 'bg-blue-600'
+                            ? 'bg-emerald-600 scale-125 ring-4 ring-emerald-100 shadow-xs shadow-emerald-500'
+                            : 'bg-emerald-600'
                         }`}
                       />
                     </div>
@@ -152,7 +143,7 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
                   <span className="text-[11px] font-bold text-slate-400">
                     {isAr ? 'شحنة اتحجزت' : 'Shipment Booked'}
                   </span>
-                  <div className="flex items-center gap-1.5 text-blue-600 font-black text-xs sm:text-sm font-mono mt-0.5">
+                  <div className="flex items-center gap-1.5 text-teal-700 font-black text-xs sm:text-sm font-mono mt-0.5">
                     <span>TRK-29841</span>
                     <span className="text-base leading-none animate-arrow-slide">→</span>
                   </div>
@@ -189,13 +180,13 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
                 </span>
               </div>
 
-              {/* Card 3 (Right of top row): Revenue in soft lavender/blue tint */}
-              <div className="rounded-2xl border border-blue-100 bg-[#eff6ff] p-3 sm:p-4 flex flex-col justify-center text-right transition-all duration-200 hover:scale-[1.02] relative overflow-hidden">
-                <span className="text-lg sm:text-2xl font-black text-blue-600 font-mono tracking-tight">
+              {/* Card 3 (Right of top row): Revenue in soft emerald/teal tint */}
+              <div className="rounded-2xl border border-teal-100 bg-[#ecfdf5] p-3 sm:p-4 flex flex-col justify-center text-right transition-all duration-200 hover:scale-[1.02] relative overflow-hidden">
+                <span className="text-lg sm:text-2xl font-black text-teal-700 font-mono tracking-tight">
                   19,410 <span className="text-xs sm:text-sm font-bold">{isAr ? 'ج.م' : 'EGP'}</span>
                 </span>
                 {/* Subtle light shimmer line */}
-                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none animate-shimmer" />
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none animate-shimmer" />
               </div>
 
               {/* Overlaid Floating WhatsApp Notification (Top-Right over Revenue) */}
@@ -212,14 +203,14 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
               </div>
             </div>
 
-            {/* Middle: Smooth Wavy Area Line Chart matching the exact visual in the image */}
+            {/* Middle: Smooth Wavy Area Line Chart in Emerald Green */}
             <div
               className="rounded-2xl border border-slate-100 bg-[#f8fafc]/90 p-3 sm:p-4 relative overflow-hidden h-36 sm:h-44 flex flex-col justify-end group cursor-pointer"
               onMouseEnter={() => setIsChartHovered(true)}
               onMouseLeave={() => setIsChartHovered(false)}
             >
               {/* Background gradient subtle glow */}
-              <div className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-teal-50/20 to-transparent pointer-events-none" />
 
               {/* Interactive Tooltip on Hover */}
               {isChartHovered && (
@@ -238,15 +229,15 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
                 >
                   <defs>
                     <linearGradient id="dashboardAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.24" />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.01" />
+                      <stop offset="0%" stopColor="#0d9488" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#0d9488" stopOpacity="0.01" />
                     </linearGradient>
 
                     {/* Animated moving wave shimmer along curve */}
                     <linearGradient id="curveWaveShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#2563eb" />
-                      <stop offset="50%" stopColor="#60a5fa" />
-                      <stop offset="100%" stopColor="#2563eb" />
+                      <stop offset="0%" stopColor="#0f766e" />
+                      <stop offset="50%" stopColor="#14b8a6" />
+                      <stop offset="100%" stopColor="#0f766e" />
                     </linearGradient>
                   </defs>
 
@@ -271,7 +262,7 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
                        C 305,78 335,85 365,72 
                        C 400,58 440,68 500,60"
                     fill="none"
-                    stroke="#2563eb"
+                    stroke="#0f766e"
                     strokeWidth="3.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -283,15 +274,15 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
                     cx="500"
                     cy="60"
                     r={isChartHovered ? '6' : '4.5'}
-                    fill="#2563eb"
+                    fill="#0f766e"
                     className="transition-all duration-300"
                   />
                   <circle
                     cx="500"
                     cy="60"
                     r={isChartHovered ? '14' : '9'}
-                    fill="#3b82f6"
-                    opacity="0.35"
+                    fill="#14b8a6"
+                    opacity="0.4"
                     className="animate-ping"
                   />
                 </svg>
@@ -313,10 +304,10 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
         {/* ======================================================== */}
         <div className="absolute -bottom-6 sm:-bottom-7 left-1/2 -translate-x-1/2 z-30">
           <div className="rounded-full border border-slate-200/90 bg-white py-2 px-4 sm:px-6 shadow-2xl shadow-slate-300/80 flex items-center gap-3 sm:gap-6 backdrop-blur-md">
-            {/* Button (Left side of pill) */}
+            {/* Button (Left side of pill, branded Emerald / Teal) */}
             <Link
               href="/sign-up"
-              className="relative overflow-hidden inline-flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm px-5 sm:px-7 py-2.5 shadow-lg shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 whitespace-nowrap group"
+              className="relative overflow-hidden inline-flex items-center justify-center rounded-full bg-teal-700 hover:bg-teal-800 text-white font-black text-xs sm:text-sm px-5 sm:px-7 py-2.5 shadow-lg shadow-teal-700/30 transition-all hover:scale-105 active:scale-95 whitespace-nowrap group"
             >
               <span className="relative z-10">{isAr ? 'ابدأ متجرك مجانًا' : 'Start Free Store'}</span>
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent group-hover:animate-shimmer" />

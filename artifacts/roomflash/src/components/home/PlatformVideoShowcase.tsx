@@ -125,7 +125,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
           {isAr ? (
             <>
               شاهد كيف تعمل المنصة{' '}
-              <span className="bg-gradient-to-r from-teal-700 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-500 bg-clip-text text-transparent">
                 من أول نقرة حتى استلام الكاش
               </span>
             </>
@@ -341,20 +341,20 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
 
             {/* SCENE 3: Cash Collection & Payouts */}
             {currentStep === 3 && (
-              <div className="w-full max-w-md rounded-2xl border border-blue-900/60 bg-slate-900/95 p-5 shadow-2xl backdrop-blur-sm animate-fadeIn">
+              <div className="w-full max-w-md rounded-2xl border border-teal-900/60 bg-slate-900/95 p-5 shadow-2xl backdrop-blur-sm animate-fadeIn">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-                  <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
+                  <div className="flex items-center gap-2 text-xs font-bold text-teal-400">
                     <Wallet className="size-5" />
                     <span>محفظة التاجر الإلكترونية</span>
                   </div>
-                  <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-teal-500/20 text-teal-300 border border-teal-500/30 px-2.5 py-0.5 rounded-full font-bold">
                     إيداع فوري
                   </span>
                 </div>
 
-                <div className="text-center py-4 bg-gradient-to-b from-blue-950/40 to-transparent rounded-2xl border border-blue-800/40 mb-3">
+                <div className="text-center py-4 bg-gradient-to-b from-teal-950/40 to-transparent rounded-2xl border border-teal-800/40 mb-3">
                   <span className="text-xs text-slate-400 block mb-1">إجمالي الأرباح الصافية المحصلة</span>
-                  <div className="text-3xl sm:text-4xl font-black text-blue-400 font-mono tracking-tight animate-pulse">
+                  <div className="text-3xl sm:text-4xl font-black text-emerald-400 font-mono tracking-tight animate-pulse">
                     19,410 <span className="text-sm font-bold text-white">{isAr ? 'ج.م' : 'EGP'}</span>
                   </div>
                   <span className="text-[11px] text-emerald-400 font-bold mt-1 inline-flex items-center gap-1">
@@ -376,7 +376,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
             {/* Timeline Scrubber Progress */}
             <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
               <div
-                className="bg-gradient-to-r from-teal-500 to-blue-500 h-full rounded-full transition-all duration-75"
+                className="bg-gradient-to-r from-teal-500 to-emerald-400 h-full rounded-full transition-all duration-75"
                 style={{ width: `${progress}%` }}
               />
             </div>
