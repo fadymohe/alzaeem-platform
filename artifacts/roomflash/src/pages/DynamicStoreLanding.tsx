@@ -53,6 +53,9 @@ export function DynamicStoreLanding() {
     name: initialRegisteredData?.storeName || (cleanSubdomain === "zero" ? "متجر زيرو إكسبريس" : `متجر ${cleanSubdomain}`),
     subdomain: cleanSubdomain,
     templateId: initialRegisteredData?.templateId || "shoppingcart.1.2.7",
+    storeCode: initialRegisteredData?.storeCode || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
+    logoUrl: initialRegisteredData?.logoUrl,
+    bannerUrl: initialRegisteredData?.bannerUrl,
   });
 
   const [product, setProduct] = useState<TemplateProduct>({
@@ -86,6 +89,9 @@ export function DynamicStoreLanding() {
           name: registered.storeName || `متجر ${cleanSubdomain}`,
           subdomain: cleanSubdomain,
           templateId: registered.templateId || "shoppingcart.1.2.7",
+          storeCode: registered.storeCode || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
+          logoUrl: registered.logoUrl,
+          bannerUrl: registered.bannerUrl,
         });
         if (registered.product) {
           setProduct({
@@ -299,41 +305,50 @@ export function DynamicStoreLanding() {
   // =========================================================================
   // حالة وجود المتجر الحقيقي (عرض القالب المختار فورياً)
   // =========================================================================
+  const isDebugMode = searchParams.get("debug") === "1" || searchParams.get("admin") === "1";
+
   return (
     <div className="w-full min-h-screen bg-slate-950">
-      {/* شريط اختيار وتبديل القالب السريع للمعاينة */}
-      <div className="bg-slate-900/90 border-b border-slate-800 text-xs text-slate-300 px-4 py-2 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50">
-        <div className="flex items-center gap-2 font-mono">
-          <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="font-black text-white">النطاق المباشر:</span>
-          <span className="text-emerald-400 font-bold">https://{cleanSubdomain}.za3em.shop</span>
-        </div>
+      {/* شريط اختيار وتبديل القالب السريع يظهر فقط عند تفعيل وضع الفحص debug=1 */}
+      {isDebugMode && (
+        <div className="bg-slate-900/90 border-b border-slate-800 text-xs text-slate-300 px-4 py-2 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50">
+          <div className="flex items-center gap-2 font-mono">
+            <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="font-black text-white">النطاق المباشر:</span>
+            <span className="text-emerald-400 font-bold">https://{cleanSubdomain}.za3em.shop</span>
+            {store.storeCode && (
+              <span className="bg-blue-900/60 text-blue-300 px-2 py-0.5 rounded text-[10px] font-mono border border-blue-700/50">
+                {store.storeCode}
+              </span>
+            )}
+          </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          <span className="font-bold text-slate-400 text-[11px] shrink-0">تبديل القالب:</span>
-          {[
-            { id: "shoppingcart.1.2.7", label: "سلة التسوق الشاملة" },
-            { id: "volt", label: "فولت الزمردي" },
-            { id: "rose", label: "روز بوتيك" },
-            { id: "nitro", label: "نيترو الرياضي" },
-            { id: "sepia", label: "هاير الملكي" },
-            { id: "easyorders-flash", label: "فلاش لاندينج (COD)" },
-          ].map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setStore((prev) => ({ ...prev, templateId: t.id }))}
-              className={`px-2.5 py-1 rounded-lg text-xs font-black transition-colors shrink-0 cursor-pointer ${
-                store.templateId === t.id
-                  ? "bg-teal-500 text-slate-950 shadow-sm font-bold"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            <span className="font-bold text-slate-400 text-[11px] shrink-0">تبديل القالب:</span>
+            {[
+              { id: "shoppingcart.1.2.7", label: "سلة التسوق الشاملة" },
+              { id: "volt", label: "فولت الزمردي" },
+              { id: "rose", label: "روز بوتيك" },
+              { id: "nitro", label: "نيترو الرياضي" },
+              { id: "sepia", label: "هاير الملكي" },
+              { id: "easyorders-flash", label: "فلاش لاندينج (COD)" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setStore((prev) => ({ ...prev, templateId: t.id }))}
+                className={`px-2.5 py-1 rounded-lg text-xs font-black transition-colors shrink-0 cursor-pointer ${
+                  store.templateId === t.id
+                    ? "bg-teal-500 text-slate-950 shadow-sm font-bold"
+                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* محرك القوالب الديناميكي */}
       <DynamicTemplateRenderer

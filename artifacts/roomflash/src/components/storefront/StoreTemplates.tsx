@@ -130,6 +130,19 @@ interface StoreTemplatesProps {
   activeTemplateId?: TemplateId;
   standalone?: boolean;
   onTemplateChange?: (id: TemplateId) => void;
+  customProduct?: {
+    id?: number | string;
+    title?: string;
+    name?: string;
+    description?: string;
+    price: number;
+    compareAtPrice?: number;
+    imageUrl?: string;
+    image?: string;
+    category?: string;
+  };
+  storeCode?: string;
+  logoUrl?: string;
 }
 
 export function StoreTemplates({
@@ -137,7 +150,10 @@ export function StoreTemplates({
   subdomain = 'fady',
   activeTemplateId = 'shoppingcart.1.2.7',
   standalone = false,
-  onTemplateChange
+  onTemplateChange,
+  customProduct,
+  storeCode,
+  logoUrl
 }: StoreTemplatesProps) {
   const [currentThemeId, setCurrentThemeId] = useState<TemplateId>(activeTemplateId);
   const [cartCount, setCartCount] = useState(1);
@@ -158,7 +174,25 @@ export function StoreTemplates({
   const [custPhone, setCustPhone] = useState('');
   const [custCity, setCustCity] = useState('بغداد');
 
-  const productsList = getStoredProducts();
+  const baseProducts = getStoredProducts();
+  const productsList: StoreProduct[] = customProduct ? [
+    {
+      id: 999,
+      name: customProduct.title || customProduct.name || 'المنتج المختار',
+      price: Number(customProduct.price) || 45000,
+      oldPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
+      image: customProduct.imageUrl || customProduct.image || baseProducts[0].image,
+      category: customProduct.category || 'المنتجات المميزة',
+      stock: 35,
+      rating: 5,
+      reviewsCount: 32,
+      salesCount: 84,
+      isFeatured: true,
+      description: customProduct.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'
+    },
+    ...baseProducts.filter(p => p.name !== (customProduct.title || customProduct.name))
+  ] : baseProducts;
+
   const theme = TEMPLATES_MAP[currentThemeId] || TEMPLATES_MAP.volt;
   const fullDomain = `${subdomain}.za3em.shop`;
 

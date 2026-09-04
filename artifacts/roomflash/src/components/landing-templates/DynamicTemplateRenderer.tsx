@@ -63,6 +63,9 @@ export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = (
           subdomain={store.subdomain}
           activeTemplateId={validTemplateId}
           standalone={true}
+          customProduct={product}
+          storeCode={store.storeCode}
+          logoUrl={store.logoUrl}
         />
       );
     }

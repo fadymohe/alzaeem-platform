@@ -47,16 +47,46 @@ export function SignInPage() {
 
   const isAr = lang === 'ar';
 
-  // Handle return from Google / Apple OAuth
+  const completeLoginRedirect = (userObj: any, meta: any = {}) => {
+    try {
+      const onboardedRaw = localStorage.getItem('zaeem_onboarded_store');
+      const onboarded = onboardedRaw ? JSON.parse(onboardedRaw) : null;
+      const storeCode = onboarded?.storeCode || meta?.store_code || `ZAEEM-${Math.floor(100000 + Math.random() * 900000)}`;
+      const storeName = onboarded?.storeName || meta?.store_name || userObj.storeName || `متجر ${userObj.name}`;
+      const subdomain = onboarded?.subdomain ? (onboarded.subdomain.includes('.za3em.shop') ? onboarded.subdomain : `${onboarded.subdomain}.za3em.shop`) : (meta?.subdomain || userObj.subdomain);
+      const selectedTheme = onboarded?.templateId || meta?.selected_theme || 'shoppingcart.1.2.7';
+
+      const fullStoreData = {
+        ...userObj,
+        storeName,
+        subdomain,
+        selectedTheme,
+        storeCode,
+        plan: meta?.plan || 'free',
+        orderLimit: meta?.order_limit || 5,
+        categories: onboarded?.categories || ['عام'],
+        product: onboarded?.product
+      };
+
+      localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+      localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
+    } catch (e) {
+      localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+    }
+
+    window.location.hash = '#/dashboard';
+    window.location.reload();
+  };
+
   useEffect(() => {
-    const hash = window.location.hash || '';
-    if (hash.includes('access_token=')) {
-      const match = hash.match(/access_token=([^&]+)/);
-      const token = match ? match[1] : null;
-      if (token) {
+    // Check if coming back from Supabase Google OAuth
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      if (accessToken) {
         fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
           }
         })
@@ -70,9 +100,7 @@ export function SignInPage() {
               loggedIn: true,
               time: new Date().toISOString()
             };
-            localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-            window.location.hash = '#/onboarding';
-            setLocation('/onboarding');
+            completeLoginRedirect(userObj, user.user_metadata);
           }
         })
         .catch(() => null);
@@ -132,15 +160,8 @@ export function SignInPage() {
             loggedIn: true,
             time: new Date().toISOString()
           };
-          localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-          localStorage.setItem('zaeem_store_data', JSON.stringify({
-            ...userObj,
-            plan: meta.plan || 'free',
-            orderLimit: meta.order_limit || 5
-          }));
           setLoading(false);
-          window.location.hash = '#/dashboard';
-          window.location.reload();
+          completeLoginRedirect(userObj, meta);
           return;
         }
       } else {
@@ -271,15 +292,8 @@ export function SignInPage() {
           loggedIn: true,
           time: new Date().toISOString()
         };
-        localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-        localStorage.setItem('zaeem_store_data', JSON.stringify({
-          ...userObj,
-          plan: meta.plan || 'free',
-          orderLimit: meta.order_limit || 5
-        }));
         setOtpLoading(false);
-        window.location.hash = '#/dashboard';
-        window.location.reload();
+        completeLoginRedirect(userObj, meta);
         return;
       }
 
@@ -304,15 +318,8 @@ export function SignInPage() {
           loggedIn: true,
           time: new Date().toISOString()
         };
-        localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-        localStorage.setItem('zaeem_store_data', JSON.stringify({
-          ...userObj,
-          plan: 'free',
-          orderLimit: 5
-        }));
         setOtpLoading(false);
-        window.location.hash = '#/dashboard';
-        window.location.reload();
+        completeLoginRedirect(userObj, { plan: 'free', order_limit: 5 });
         return;
       }
 

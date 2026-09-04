@@ -12,6 +12,9 @@ export interface RegisteredStoreData {
   storeName: string;
   slogan?: string;
   templateId: string;
+  storeCode?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
   categories?: string[];
   product?: {
     id?: number;
@@ -160,11 +163,16 @@ export function decodeStoreSeed(seedStr: string): RegisteredStoreData | null {
  */
 export function registerStore(data: RegisteredStoreData): void {
   const cleanSub = data.subdomain.replace(".za3em.shop", "").toLowerCase().trim();
+  const generatedCode = data.storeCode || `ZAEEM-${Math.floor(100000 + Math.random() * 900000)}`;
   const normalizedData: RegisteredStoreData = {
     ...data,
     subdomain: cleanSub,
     storeName: data.storeName || `متجر ${cleanSub}`,
     templateId: data.templateId || "shoppingcart.1.2.7",
+    storeCode: generatedCode,
+    logoUrl: data.logoUrl,
+    bannerUrl: data.bannerUrl,
+    createdAt: data.createdAt || new Date().toISOString(),
   };
 
   if (typeof window === "undefined") return;
@@ -182,6 +190,9 @@ export function registerStore(data: RegisteredStoreData): void {
       storeName: normalizedData.storeName,
       subdomain: `${cleanSub}.za3em.shop`,
       selectedTheme: normalizedData.templateId,
+      storeCode: generatedCode,
+      logoUrl: normalizedData.logoUrl,
+      bannerUrl: normalizedData.bannerUrl,
       plan: "free",
       orderLimit: 5,
     }));
@@ -288,4 +299,93 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
  */
 export function isSubdomainRegistered(subdomain: string): boolean {
   return getRegisteredStore(subdomain) !== null;
+}
+
+export const RESERVED_SUBDOMAINS_LIST = [
+  'admin', 'api', 'app', 'zaeem', 'za3em', 'dashboard', 'root', 'www',
+  'mail', 'support', 'billing', 'auth', 'account', 'portal', 'cpanel',
+  'system', 'null', 'undefined', 'test', 'stores', 'store', 'static', 'assets', 'webmail', 'demo'
+];
+
+/**
+ * Robust real-time subdomain check combining local registry, cookies, reserved list, and API
+ */
+export async function checkSubdomainAvailability(rawSubdomain: string): Promise<{
+  available: boolean;
+  reason?: 'short' | 'invalid' | 'reserved' | 'taken';
+  message: string;
+  suggestions?: string[];
+}> {
+  const clean = (rawSubdomain || '').replace('.za3em.shop', '').toLowerCase().trim();
+
+  if (!clean) {
+    return {
+      available: false,
+      reason: 'short',
+      message: 'يرجى كتابة اسم الدومين الفرعي لمتجرك',
+    };
+  }
+
+  if (clean.length < 3) {
+    return {
+      available: false,
+      reason: 'short',
+      message: 'يجب أن يتكون الدومين من 3 أحرف إنجليزية أو أرقام على الأقل',
+    };
+  }
+
+  if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(clean)) {
+    return {
+      available: false,
+      reason: 'invalid',
+      message: 'الدومين يجب أن يبدأ وينتهي بحرف أو رقم، ويحتوي على أحرف إنجليزية وأرقام وشرطة (-) فقط',
+    };
+  }
+
+  if (RESERVED_SUBDOMAINS_LIST.includes(clean)) {
+    return {
+      available: false,
+      reason: 'reserved',
+      message: 'هذا النطاق محجوز لاستخدام إدارة منصة الزعيم وغير متاح للمتاجر',
+      suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`],
+    };
+  }
+
+  // Check known registry & cookies & built-ins
+  if (isSubdomainRegistered(clean)) {
+    return {
+      available: false,
+      reason: 'taken',
+      message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً من متجر آخر`,
+      suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
+    };
+  }
+
+  // Check backend API
+  try {
+    const res = await fetch(`/api/stores/check-subdomain?subdomain=${clean}`);
+    if (res.ok) {
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        if (!data.available) {
+          return {
+            available: false,
+            reason: data.reason || 'taken',
+            message: data.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً من متجر آخر`,
+            suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`],
+          };
+        }
+      } catch {
+        // Non-JSON response (e.g., HTML fallback), ignore
+      }
+    }
+  } catch (err) {
+    console.warn('API subdomain check fallback:', err);
+  }
+
+  return {
+    available: true,
+    message: `هذا النطاق (${clean}.za3em.shop) متاح ويمكنك حجزه لمتجرك فوراً`,
+  };
 }

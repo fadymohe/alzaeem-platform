@@ -35,6 +35,9 @@ export interface TemplateStore {
   name: string;
   subdomain: string;
   templateId?: string;
+  storeCode?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
 }
 
 interface EasyOrdersFlashTemplateProps {
