@@ -247,3 +247,32 @@
 .animate-flow-down {
   animation: flowDown 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
+
+@keyframes scrollStoreDown {
+  0% {
+    transform: translateY(0);
+  }
+  8% {
+    transform: translateY(0);
+  }
+  48% {
+    transform: translateY(calc(-100% + 560px));
+  }
+  58% {
+    transform: translateY(calc(-100% + 560px));
+  }
+  92% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-store-scroll {
+  animation: scrollStoreDown 16s ease-in-out infinite;
+}
+
+.animate-store-scroll-pause:hover {
+  animation-play-state: paused;
+}

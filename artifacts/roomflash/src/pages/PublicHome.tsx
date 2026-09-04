@@ -5,6 +5,8 @@ import { Logo } from '../components/common/Logo';
 import { DashboardMockupHero } from '../components/home/DashboardMockupHero';
 import { PlatformVideoShowcase } from '../components/home/PlatformVideoShowcase';
 import { TransformationDiagram } from '../components/home/TransformationDiagram';
+import { EcosystemRadialHub } from '../components/home/EcosystemRadialHub';
+import { TemplatesShowcase } from '../components/home/TemplatesShowcase';
 import {
   Sparkles, ArrowLeft, ArrowRight, CheckCircle2, XCircle, ShoppingBag,
 
@@ -18,7 +20,6 @@ import { formatIQD } from '../data/iraqData';
 export function PublicHomePage() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [activeStep, setActiveStep] = useState(0);
-  const [selectedTemplateTab, setSelectedTemplateTab] = useState<'brisk' | 'nova' | 'classic' | 'aurit'>('brisk');
 
   const isAr = lang === 'ar';
 
@@ -247,113 +248,14 @@ export function PublicHomePage() {
         <TransformationDiagram isAr={isAr} />
 
         {/* ========================================================================= */}
-        {/* 5️⃣ TEMPLATES SHOWCASE SECTION (from Image 1) */}
+        {/* 4.5️⃣ UNIFIED ECOSYSTEM RADIAL HUB (from Image 1 with Al-Zaeem Logo) */}
         {/* ========================================================================= */}
-        <section id="templates" className="py-20 px-4 mx-auto max-w-6xl text-center">
-          <span className="inline-block rounded-full bg-teal-50 border border-teal-200 px-3.5 py-1 text-xs font-extrabold text-teal-800 mb-3">
-            {t.templatesBadge}
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black text-slate-900">
-            {t.templatesHeading}
-          </h2>
-          <p className="text-xs md:text-sm font-medium text-slate-500 mt-2 max-w-xl mx-auto">
-            {t.templatesSubheading}
-          </p>
+        <EcosystemRadialHub isAr={isAr} />
 
-          {/* Template Selector Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-8 mb-10">
-            {[
-              { id: 'brisk', label: isAr ? 'بريسك' : 'Brisk', tag: isAr ? 'أزياء وإكسسوار' : 'Fashion & Accessories' },
-              { id: 'nova', label: isAr ? 'نوفا' : 'Nova', tag: isAr ? 'عبايات وأقمشة' : 'Abayas & Fabrics' },
-              { id: 'classic', label: isAr ? 'كلاسيك' : 'Classic', tag: isAr ? 'عطور ومستلزمات' : 'Perfumes & Beauty' },
-              { id: 'aurit', label: isAr ? 'أوريت' : 'Aurit', tag: isAr ? 'إلكترونيات وهدايا' : 'Electronics & Gifts' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setSelectedTemplateTab(tab.id as any)}
-                className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-extrabold transition-all border ${selectedTemplateTab === tab.id
-                  ? 'border-red-300 bg-red-50 text-red-700 shadow-md ring-2 ring-red-200'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-              >
-                <span>{tab.label}</span>
-                <span className="text-[10px] font-normal opacity-80">({tab.tag})</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Store Browser Window Mockup */}
-          <div className="relative mx-auto max-w-4xl rounded-3xl border border-slate-200 bg-white p-3 md:p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-red-400" />
-                <span className="size-3 rounded-full bg-amber-400" />
-                <span className="size-3 rounded-full bg-emerald-400" />
-              </div>
-              <div className="rounded-full bg-slate-100 border border-slate-200/80 px-4 py-1 text-[11px] font-mono text-slate-500">
-                ● store.zaeem.iq
-              </div>
-            </div>
-
-            {/* Active Template Preview Content */}
-            <div className="rounded-2xl border border-slate-100 bg-amber-50/30 p-6 text-slate-900 space-y-6">
-              <div className="grid md:grid-cols-2 items-center gap-6 text-right">
-                <div className="space-y-3">
-                  <span className="inline-block rounded-full bg-teal-100 text-teal-800 text-[10px] font-extrabold px-3 py-1">
-                    {isAr ? 'مجموعة الصيف 2026' : 'Summer Collection 2026'}
-                  </span>
-                  <h3 className="text-2xl md:text-4xl font-black">
-                    {isAr ? 'مغامرات الصيف' : 'Summer Adventures'}
-                  </h3>
-                  <p className="text-xs text-slate-600">
-                    {isAr ? 'استقبل موسم الشمس الدافئة مع مجموعتنا الجديدة والأنيقة.' : 'Embrace the sun with our new luxury curated store collection.'}
-                  </p>
-                  <button className="rounded-full bg-slate-900 text-white font-extrabold text-xs px-6 py-2.5 hover:bg-teal-700 transition-colors">
-                    {isAr ? 'تسوق الآن' : 'Shop Now'}
-                  </button>
-                </div>
-                <div className="relative h-48 rounded-2xl overflow-hidden bg-slate-200">
-                  <img
-                    src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&auto=format&fit=crop&q=80"
-                    alt="Store Preview Banner"
-                    className="size-full object-cover"
-                  />
-                </div>
-              </div>
-
-              {/* Categories Pills */}
-              <div className="pt-4 border-t border-slate-200/60">
-                <h4 className="text-xs font-black text-slate-700 mb-3 text-right">{isAr ? 'التصنيفات' : 'Categories'}</h4>
-                <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                  {[
-                    isAr ? 'ملابس' : 'Apparel',
-                    isAr ? 'عطور' : 'Perfumes',
-                    isAr ? 'ساعات' : 'Watches',
-                    isAr ? 'حقائب' : 'Bags',
-                    isAr ? 'نظارات' : 'Eyewear'
-                  ].map((cat, i) => (
-                    <span key={i} className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-extrabold text-slate-700 shadow-sm">
-                      {cat}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-xs font-bold text-slate-400 mt-6">
-            {t.templateFooterNote}
-          </p>
-
-          <div className="mt-6">
-            <Link
-              href="/sign-up"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-xs font-extrabold text-slate-800 hover:bg-slate-50 shadow-sm transition-all"
-            >
-              <span>{t.tryTemplatesBtn}</span>
-            </Link>
-          </div>
-        </section>
+        {/* ========================================================================= */}
+        {/* 5️⃣ TEMPLATES SHOWCASE SECTION (from Image 2 & 3 with Downward Scrolling) */}
+        {/* ========================================================================= */}
+        <TemplatesShowcase isAr={isAr} />
 
         {/* ========================================================================= */}
         {/* 6️⃣ REAL MERCHANT STORIES SECTION (from Image 1) */}
