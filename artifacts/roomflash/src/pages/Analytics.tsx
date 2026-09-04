@@ -157,7 +157,7 @@ export function AnalyticsPage() {
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
           <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
-            مخطط حركة المبيعات بالجنيه المصري (EGP)
+            مخطط حركة المبيعات بالدينار العراقي (IQD)
           </h3>
           <span className="text-xs font-bold text-teal-700">تحديث تلقائي</span>
         </div>

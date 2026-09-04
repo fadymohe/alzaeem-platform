@@ -92,10 +92,10 @@ const APPLICATIONS: AppItem[] = [
     badgeColor: 'bg-slate-500/10 text-slate-700 dark:text-slate-400',
   },
   {
-    id: 'vodafone-cash',
-    name: 'المحافظ الإلكترونية (Vodafone Cash & InstaPay)',
+    id: 'zain-cash',
+    name: 'المحافظ الإلكترونية (Zain Cash & Qi Card)',
     category: 'الدفع',
-    description: 'تحصيل الأموال مباشرة عبر المحافظ الإلكترونية وإنستاباي والدفع عند الاستلام.',
+    description: 'تحصيل الأموال مباشرة عبر محفظة زين كاش وبطاقات كي كارد والدفع عند الاستلام.',
     status: 'متاح قريباً',
     icon: CreditCard,
   },

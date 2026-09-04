@@ -97,7 +97,7 @@ export function SubscriptionsPage() {
             <CreditCard className="size-4" /> الاشتراكات والفوترة
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            خطط الأسعار والفوترة بالجنيه المصري
+            خطط الأسعار والفوترة بالدينار العراقي
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             اختر الخطة المناسبة لحجم تجارتك وشحناتك اليومية مع شركة الزعيم.

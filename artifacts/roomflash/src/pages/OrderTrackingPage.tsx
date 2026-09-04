@@ -12,7 +12,7 @@ import {
   ArrowRight,
   AlertCircle,
 } from "lucide-react";
-import { formatEGP } from "../data/egyptShippingData";
+import { formatIQD } from "../data/iraqData";
 
 export function OrderTrackingPage() {
   const [query, setQuery] = useState("");
@@ -70,7 +70,7 @@ export function OrderTrackingPage() {
             <div>
               <h1 className="font-extrabold text-base text-white">تتبع الشحنات الحي</h1>
               <span className="text-xs text-emerald-400 font-bold">
-                منصة za3em.shop • شبكة بوسطة إكسبريس مصر
+                منصة za3em.shop • أسطول شركة الزعيم للشحن - العراق
               </span>
             </div>
           </div>
@@ -174,7 +174,7 @@ export function OrderTrackingPage() {
                     المبلغ المطلوب نقداً (COD):
                   </span>
                   <span className="font-black text-sm font-mono text-emerald-400 block">
-                    {formatEGP(trackingData.tracking.codAmount)}
+                    {formatIQD(trackingData.tracking.codAmount)}
                   </span>
                 </div>
               </div>

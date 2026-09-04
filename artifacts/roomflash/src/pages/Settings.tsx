@@ -154,10 +154,10 @@ export function SettingsPage() {
                 </label>
                 <select
                   disabled
-                  value="Egypt"
+                  value="Iraq"
                   className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-sm font-bold outline-none cursor-not-allowed"
                 >
-                  <option value="Egypt">جمهورية مصر العربية (EGP ج.م)</option>
+                  <option value="Iraq">جمهورية العراق (IQD د.ع)</option>
                 </select>
               </div>
             </div>

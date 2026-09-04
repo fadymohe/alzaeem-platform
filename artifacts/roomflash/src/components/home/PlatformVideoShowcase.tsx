@@ -249,7 +249,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
                       <Store className="size-8" />
                     </div>
                     <span className="text-xs font-bold text-slate-200 text-center">تيشيرت براند الزعيم</span>
-                    <span className="text-[11px] font-black text-teal-400 font-mono text-center mt-1">+390 EGP</span>
+                    <span className="text-[11px] font-black text-teal-400 font-mono text-center mt-1">+35,000 د.ع</span>
                   </div>
 
                   <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 flex flex-col justify-between">
@@ -257,7 +257,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
                       <Sparkles className="size-8" />
                     </div>
                     <span className="text-xs font-bold text-slate-200 text-center">حقيبة جلد كلاسيك</span>
-                    <span className="text-[11px] font-black text-blue-400 font-mono text-center mt-1">+600 EGP</span>
+                    <span className="text-[11px] font-black text-blue-400 font-mono text-center mt-1">+45,000 د.ع</span>
                   </div>
                 </div>
 
@@ -287,7 +287,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
                 <div className="space-y-3">
                   <div className="rounded-xl bg-[#202c33] p-3 text-right text-xs text-slate-200 max-w-[85%] ml-auto border border-emerald-900/30">
                     <p className="leading-relaxed">
-                      أهلاً أحمد! 👋 تم استلام طلبك رقم <span className="text-emerald-400 font-mono font-bold">#1004</span> (تيشيرت أوفرسايز - جدة / الجيزة).
+                      أهلاً أحمد! 👋 تم استلام طلبك رقم <span className="text-emerald-400 font-mono font-bold">#1004</span> (تيشيرت أوفرسايز - بغداد / الكرخ).
                     </p>
                     <p className="mt-1 text-[11px] text-slate-400">
                       هل تود تأكيد شحن الطلب فوراً لعنوانك؟
@@ -333,7 +333,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
                   <div className="p-3 rounded-xl bg-white text-slate-900 flex flex-col items-center justify-center">
                     <span className="text-[10px] font-bold text-slate-500 mb-1">بوليصة شحن معتمدة ZAEEM</span>
                     <div className="h-8 w-48 bg-[repeating-linear-gradient(to_right,#000_0px,#000_2px,transparent_2px,transparent_4px)]" />
-                    <span className="text-[10px] font-mono font-black mt-1">#1004 · TRK-29841 · COD: +390 EGP</span>
+                    <span className="text-[10px] font-mono font-black mt-1">#1004 · TRK-29841 · COD: +35,000 د.ع</span>
                   </div>
                 </div>
               </div>
@@ -355,7 +355,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
                 <div className="text-center py-4 bg-gradient-to-b from-teal-950/40 to-transparent rounded-2xl border border-teal-800/40 mb-3">
                   <span className="text-xs text-slate-400 block mb-1">إجمالي الأرباح الصافية المحصلة</span>
                   <div className="text-3xl sm:text-4xl font-black text-emerald-400 font-mono tracking-tight animate-pulse">
-                    19,410 <span className="text-sm font-bold text-white">{isAr ? 'ج.م' : 'EGP'}</span>
+                    19,410,000 <span className="text-sm font-bold text-white">{isAr ? 'د.ع' : 'IQD'}</span>
                   </div>
                   <span className="text-[11px] text-emerald-400 font-bold mt-1 inline-flex items-center gap-1">
                     <CheckCircle2 className="size-3" />
@@ -365,7 +365,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300">
                   <span>طلب سحب للأرباح بنقرة واحدة</span>
-                  <span className="text-teal-400 font-bold">تحويل بنكي / محفظة فودافون / كاش</span>
+                  <span className="text-teal-400 font-bold">تحويل بنكي / محفظة زين كاش / كاش</span>
                 </div>
               </div>
             )}

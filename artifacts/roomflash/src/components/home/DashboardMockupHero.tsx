@@ -20,26 +20,26 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
   const orders = [
     {
       id: '1004',
-      name: isAr ? 'تيشيرت أوفرسايز · جدة' : 'Oversized T-Shirt · Jeddah',
-      price: '+390 EGP',
+      name: isAr ? 'تيشيرت أوفرسايز · بغداد' : 'Oversized T-Shirt · Baghdad',
+      price: isAr ? '+35,000 د.ع' : '+35,000 IQD',
       time: isAr ? 'منذ ثوانٍ' : 'Just now'
     },
     {
       id: '1003',
-      name: isAr ? 'حقيبة جلد · الجيزة' : 'Leather Bag · Giza',
-      price: '+600 EGP',
+      name: isAr ? 'حقيبة جلد · البصرة' : 'Leather Bag · Basra',
+      price: isAr ? '+45,000 د.ع' : '+45,000 IQD',
       time: isAr ? 'منذ 3 دقائق' : '3m ago'
     },
     {
       id: '1001',
-      name: isAr ? 'ساعة ذكية · القاهرة' : 'Smart Watch · Cairo',
-      price: '+640 EGP',
+      name: isAr ? 'ساعة ذكية · أربيل' : 'Smart Watch · Erbil',
+      price: isAr ? '+55,000 د.ع' : '+55,000 IQD',
       time: isAr ? 'منذ 8 دقائق' : '8m ago'
     },
     {
       id: '1002',
-      name: isAr ? 'تيشيرت أوفرسايز · الجيزة' : 'Oversized T-Shirt · Giza',
-      price: '+450 EGP',
+      name: isAr ? 'تيشيرت أوفرسايز · النجف' : 'Oversized T-Shirt · Najaf',
+      price: isAr ? '+32,000 د.ع' : '+32,000 IQD',
       time: isAr ? 'منذ 14 دقيقة' : '14m ago'
     }
   ];
@@ -183,7 +183,7 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
               {/* Card 3 (Right of top row): Revenue in soft emerald/teal tint */}
               <div className="rounded-2xl border border-teal-100 bg-[#ecfdf5] p-3 sm:p-4 flex flex-col justify-center text-right transition-all duration-200 hover:scale-[1.02] relative overflow-hidden">
                 <span className="text-lg sm:text-2xl font-black text-teal-700 font-mono tracking-tight">
-                  19,410 <span className="text-xs sm:text-sm font-bold">{isAr ? 'ج.م' : 'EGP'}</span>
+                  19,410,000 <span className="text-xs sm:text-sm font-bold">{isAr ? 'د.ع' : 'IQD'}</span>
                 </span>
                 {/* Subtle light shimmer line */}
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none animate-shimmer" />
@@ -216,7 +216,7 @@ export function DashboardMockupHero({ isAr = true }: DashboardMockupHeroProps) {
               {isChartHovered && (
                 <div className="absolute top-3 right-4 z-20 rounded-xl bg-slate-900/90 text-white text-[11px] font-bold px-3 py-1.5 shadow-lg backdrop-blur-xs flex items-center gap-2 animate-fadeIn pointer-events-none">
                   <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>{isAr ? 'أعلى ذروة مبيعات اليوم: +4,250 ج.م' : 'Peak Sales Today: +4,250 EGP'}</span>
+                  <span>{isAr ? 'أعلى ذروة مبيعات اليوم: +4,250,000 د.ع' : 'Peak Sales Today: +4,250,000 IQD'}</span>
                 </div>
               )}
 

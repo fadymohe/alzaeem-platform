@@ -42,7 +42,7 @@ export function PublicHomePage() {
     navFaq: isAr ? 'الأسئلة الشائعة' : 'FAQ',
     signIn: isAr ? 'تسجيل الدخول' : 'Sign In',
     startFree: isAr ? 'ابدأ مجاناً' : 'Start Free',
-    countryBadge: isAr ? 'مصر' : 'Egypt',
+    countryBadge: isAr ? 'العراق' : 'Iraq',
 
     // Dashboard Mockup
     liveBadge: isAr ? 'مباشر' : 'LIVE',
@@ -455,7 +455,7 @@ export function PublicHomePage() {
               {/* Card 1 */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm text-right flex flex-col justify-between hover:shadow-md transition-shadow">
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900 mb-4">{isAr ? 'متجر أزياء — القاهرة / بغداد' : 'Fashion Store — Baghdad'}</h4>
+                  <h4 className="font-extrabold text-sm text-slate-900 mb-4">{isAr ? 'متجر أزياء — بغداد' : 'Fashion Store — Baghdad'}</h4>
                   <div className="space-y-2 mb-6">
                     <div className="flex items-center gap-2 text-xs text-red-600 font-medium">
                       <span className="size-2 rounded-full bg-red-500" />

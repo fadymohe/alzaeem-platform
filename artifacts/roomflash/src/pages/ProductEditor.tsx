@@ -127,7 +127,7 @@ export function ProductEditorPage() {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              السعر بالجنيه المصري (ج.م) <span className="text-red-500">*</span>
+              السعر بالدينار العراقي (د.ع) <span className="text-red-500">*</span>
             </label>
             <input
               required

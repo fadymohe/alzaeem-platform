@@ -46,7 +46,7 @@ export function ProductsPage() {
             إدارة المنتجات والمخزون
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            أضف ورتب بضاعتك وحدد الأسعار بالجنيه المصري.
+            أضف ورتب بضاعتك وحدد الأسعار بالدينار العراقي.
           </p>
         </div>
 
