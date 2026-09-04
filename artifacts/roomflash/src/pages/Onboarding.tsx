@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
 import { registerStore, encodeStoreSeed, checkSubdomainAvailability } from '../utils/storeRegistry';
+import { getStoredProducts, saveStoredProducts, type StoreProduct } from '../data/storeState';
 
 export interface RealTemplateOption {
   id: string;
@@ -445,9 +446,14 @@ export function OnboardingPage() {
 
   // Final Complete & Online Launch Store
   const handleCompleteAndLaunch = async () => {
-    setIsLaunching(true);
-
     const cleanSub = subdomain.replace('.za3em.shop', '').toLowerCase().trim();
+
+    if (subdomainCheck.status === 'unavailable') {
+      alert(`عذراً، النطاق الفرعي (${cleanSub}.za3em.shop) غير متاح أو محجوز مسبقاً. يرجى اختيار اسم متاح أولاً.`);
+      return;
+    }
+
+    setIsLaunching(true);
 
     const payload = {
       storeCode,
@@ -472,7 +478,30 @@ export function OnboardingPage() {
       freeShipmentsRemaining: 5,
     };
 
-    // 1. Register store in local storage and cross-domain cookie
+    // 1. Save custom product directly to store state so it is live in catalog & dashboard
+    try {
+      const customStoreProduct: StoreProduct = {
+        id: 1,
+        name: productName || 'منتج المتجر الحصري',
+        sku: `PRD-${cleanSub.toUpperCase()}`,
+        description: slogan || 'منتج أصلي معتمد مع شحن سريع لجميع محافظات العراق ودفع عند الاستلام',
+        price: Number(productPrice) || 45000,
+        compareAtPrice: Math.round((Number(productPrice) || 45000) * 1.3),
+        stock: 50,
+        lowStockThreshold: 5,
+        category: productCategory || 'عام',
+        status: 'active',
+        imageUrl: productImage || 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop&q=80',
+        weightGrams: 500
+      };
+      const curProducts = getStoredProducts();
+      const updatedProds = [customStoreProduct, ...curProducts.filter(p => p.id !== 1 && p.name !== customStoreProduct.name)];
+      saveStoredProducts(updatedProds);
+    } catch (e) {
+      console.warn('Failed saving custom product to store state:', e);
+    }
+
+    // 2. Register store in local storage, cookies, and reserved list
     registerStore(payload);
 
     // Also persist in zaeem_onboarded_store for immediate restoration upon login
@@ -484,7 +513,7 @@ export function OnboardingPage() {
       }));
     } catch {}
 
-    // 2. Register with server API to bind subdomain and template
+    // 3. Register with server API to permanently bind subdomain and template in stores.json
     try {
       await fetch('/api/tenant/stores', {
         method: 'POST',

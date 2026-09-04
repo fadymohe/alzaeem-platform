@@ -196,26 +196,58 @@ function RoutedApp() {
           if (user && user.email) {
             const meta = user.user_metadata || {};
             const cleanSlug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            // 1. Recover saved onboarding store settings if available
+            let onboarded: any = null;
+            try {
+              const rawOnb = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+              if (rawOnb) onboarded = JSON.parse(rawOnb);
+            } catch {}
+
+            const storeCode = onboarded?.storeCode || meta.store_code || `ZAEEM-${cleanSlug.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
+            const storeName = onboarded?.storeName || meta.store_name || `متجر ${meta.full_name || cleanSlug}`;
+            const subdomain = onboarded?.subdomain ? (onboarded.subdomain.includes('.za3em.shop') ? onboarded.subdomain : `${onboarded.subdomain}.za3em.shop`) : `${cleanSlug}.za3em.shop`;
+            const selectedTheme = onboarded?.templateId || onboarded?.selectedTheme || meta.selected_theme || 'shoppingcart.1.2.7';
+
             const userObj = {
               id: user.id,
               email: user.email,
               name: meta.full_name || meta.name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : user.email.split('@')[0]),
               phone: meta.phone || user.phone || '+9647700000000',
               governorate: meta.governorate || 'بغداد',
-              storeName: meta.store_name || user.email.split('@')[0],
-              subdomain: meta.subdomain || `${cleanSlug}.za3em.shop`,
+              storeName,
+              subdomain,
               token: token,
               provider: user.app_metadata?.provider || 'google',
               loggedIn: true,
               time: new Date().toISOString()
             };
-            localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-            localStorage.setItem('zaeem_store_data', JSON.stringify({
+
+            const fullStoreData = {
               ...userObj,
+              storeName,
+              subdomain,
+              selectedTheme,
+              storeCode,
+              logoUrl: onboarded?.logoUrl,
+              bannerUrl: onboarded?.bannerUrl,
               plan: meta.plan || 'free',
-              orderLimit: meta.order_limit || 5
-            }));
-            window.location.hash = '#/onboarding';
+              orderLimit: meta.order_limit || 5,
+              categories: onboarded?.categories || ['عام'],
+              product: onboarded?.product
+            };
+
+            localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+            localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
+            if (!onboarded) {
+              localStorage.setItem('zaeem_onboarded_store', JSON.stringify(fullStoreData));
+            }
+
+            // Remove hash token and redirect DIRECTLY to Dashboard
+            try {
+              window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
+            } catch {}
+            window.location.hash = '#/dashboard';
             window.location.reload();
           } else {
             setOauthProcessing(false);

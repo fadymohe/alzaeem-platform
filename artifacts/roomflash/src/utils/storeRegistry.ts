@@ -161,7 +161,7 @@ export function decodeStoreSeed(seedStr: string): RegisteredStoreData | null {
 /**
  * Save a store to both localStorage and the shared root-domain cookie
  */
-export function registerStore(data: RegisteredStoreData): void {
+export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
   const cleanSub = data.subdomain.replace(".za3em.shop", "").toLowerCase().trim();
   const generatedCode = data.storeCode || `ZAEEM-${Math.floor(100000 + Math.random() * 900000)}`;
   const normalizedData: RegisteredStoreData = {
@@ -175,40 +175,72 @@ export function registerStore(data: RegisteredStoreData): void {
     createdAt: data.createdAt || new Date().toISOString(),
   };
 
-  if (typeof window === "undefined") return;
+  if (typeof window !== "undefined") {
+    try {
+      // 1. Save in local registry map in localStorage
+      const localMapRaw = localStorage.getItem("zaeem_stores_registry");
+      const localMap: Record<string, RegisteredStoreData> = localMapRaw ? JSON.parse(localMapRaw) : {};
+      localMap[cleanSub] = normalizedData;
+      localStorage.setItem("zaeem_stores_registry", JSON.stringify(localMap));
 
-  try {
-    // 1. Save in local registry map in localStorage
-    const localMapRaw = localStorage.getItem("zaeem_stores_registry");
-    const localMap: Record<string, RegisteredStoreData> = localMapRaw ? JSON.parse(localMapRaw) : {};
-    localMap[cleanSub] = normalizedData;
-    localStorage.setItem("zaeem_stores_registry", JSON.stringify(localMap));
+      // 2. Save in array of registered subdomains
+      const arrRaw = localStorage.getItem("zaeem_registered_stores");
+      const arr: string[] = arrRaw ? JSON.parse(arrRaw) : [];
+      if (!arr.includes(cleanSub)) {
+        arr.push(cleanSub);
+        localStorage.setItem("zaeem_registered_stores", JSON.stringify(arr));
+      }
 
-    // Also update legacy single keys for fast fallback
-    localStorage.setItem("zaeem_onboarded_store", JSON.stringify(normalizedData));
-    localStorage.setItem("zaeem_store_data", JSON.stringify({
-      storeName: normalizedData.storeName,
-      subdomain: `${cleanSub}.za3em.shop`,
-      selectedTheme: normalizedData.templateId,
-      storeCode: generatedCode,
-      logoUrl: normalizedData.logoUrl,
-      bannerUrl: normalizedData.bannerUrl,
-      plan: "free",
-      orderLimit: 5,
-    }));
-  } catch (err) {
-    console.warn("Error saving store to localStorage:", err);
+      // 3. Update legacy single keys for fast fallback and onboarding persistence
+      localStorage.setItem("zaeem_onboarded_store", JSON.stringify(normalizedData));
+      localStorage.setItem("zaeem_store_data", JSON.stringify({
+        storeName: normalizedData.storeName,
+        subdomain: `${cleanSub}.za3em.shop`,
+        selectedTheme: normalizedData.templateId,
+        templateId: normalizedData.templateId,
+        storeCode: generatedCode,
+        logoUrl: normalizedData.logoUrl,
+        bannerUrl: normalizedData.bannerUrl,
+        plan: "free",
+        orderLimit: 5,
+        categories: normalizedData.categories || ["عام"],
+        product: normalizedData.product
+      }));
+    } catch (err) {
+      console.warn("Error saving store to localStorage:", err);
+    }
+
+    try {
+      // 4. Save in shared cookie on .za3em.shop so all subdomains immediately receive it!
+      const cookieMapRaw = getCookie("zaeem_stores_registry");
+      const cookieMap: Record<string, RegisteredStoreData> = cookieMapRaw ? JSON.parse(cookieMapRaw) : {};
+      cookieMap[cleanSub] = normalizedData;
+      setCrossSubdomainCookie("zaeem_stores_registry", JSON.stringify(cookieMap));
+    } catch (err) {
+      console.warn("Error saving store to cookie:", err);
+    }
+
+    // 5. Asynchronously persist to server API for persistent reservation in server_data/stores.json
+    try {
+      fetch("/api/tenant/stores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeCode: generatedCode,
+          name: normalizedData.storeName,
+          subdomain: cleanSub,
+          templateId: normalizedData.templateId,
+          productTitle: normalizedData.product?.name || normalizedData.product?.title,
+          productPrice: normalizedData.product?.price,
+          productImage: normalizedData.product?.image || normalizedData.product?.imageUrl,
+          logoUrl: normalizedData.logoUrl,
+          bannerUrl: normalizedData.bannerUrl,
+        })
+      }).catch((e) => console.warn("Background server store register fallback:", e));
+    } catch {}
   }
 
-  try {
-    // 2. Save in shared cookie on .za3em.shop so all subdomains immediately receive it!
-    const cookieMapRaw = getCookie("zaeem_stores_registry");
-    const cookieMap: Record<string, RegisteredStoreData> = cookieMapRaw ? JSON.parse(cookieMapRaw) : {};
-    cookieMap[cleanSub] = normalizedData;
-    setCrossSubdomainCookie("zaeem_stores_registry", JSON.stringify(cookieMap));
-  } catch (err) {
-    console.warn("Error saving store to cookie:", err);
-  }
+  return normalizedData;
 }
 
 /**
@@ -280,6 +312,22 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
             categories: onboarded.categories,
             product: onboarded.product,
             freeShipmentsRemaining: onboarded.freeShipmentsRemaining || 5,
+          };
+        }
+      }
+    } catch {}
+
+    // 4b. Check registered subdomains array in localStorage
+    try {
+      const regArrRaw = localStorage.getItem("zaeem_registered_stores");
+      if (regArrRaw) {
+        const regArr: string[] = JSON.parse(regArrRaw);
+        if (regArr.includes(cleanSub)) {
+          return {
+            subdomain: cleanSub,
+            storeName: `متجر ${cleanSub}`,
+            templateId: "shoppingcart.1.2.7",
+            freeShipmentsRemaining: 5,
           };
         }
       }

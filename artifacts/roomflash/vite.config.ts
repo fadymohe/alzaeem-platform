@@ -2,8 +2,8 @@ import path from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
-
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
+import { zaeemApiPlugin } from './vite-api-plugin';
 
 const rawPort = process.env.PORT || '5000';
 const port = Number(rawPort) || 5000;
@@ -12,6 +12,7 @@ const basePath = process.env.BASE_PATH || './';
 export default defineConfig({
   base: basePath,
   plugins: [
+    zaeemApiPlugin(),
     react(),
     tailwindcss({ optimize: false }),
     runtimeErrorOverlay(),

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Store as StoreIcon, ExternalLink, Copy, Check, Sparkles, Globe, Layers, Eye, RefreshCw, Zap, CheckCircle2 } from 'lucide-react';
 import { StoreTemplates, type TemplateId, TEMPLATES_MAP } from '../components/storefront/StoreTemplates';
 import { getStoredOrders, getStoredProducts } from '../data/storeState';
+import { getRegisteredStore, type RegisteredStoreData } from '../utils/storeRegistry';
 
 export function StorePage() {
   const [copied, setCopied] = useState(false);
@@ -10,6 +11,7 @@ export function StorePage() {
   const [subdomain, setSubdomain] = useState('zero');
   const [activeTemplate, setActiveTemplate] = useState<TemplateId>('shoppingcart.1.2.7');
   const [createdSuccessAlert, setCreatedSuccessAlert] = useState(false);
+  const [storeData, setStoreData] = useState<RegisteredStoreData | null>(null);
 
   useEffect(() => {
     try {
@@ -25,6 +27,16 @@ export function StorePage() {
         const cleanSub = targetSub.toLowerCase().replace(/[^a-z0-9-]/g, '');
         setSubdomain(cleanSub);
         setSubdomainInput(cleanSub);
+
+        const registered = getRegisteredStore(cleanSub);
+        if (registered) {
+          if (registered.storeName) setStoreName(registered.storeName);
+          if (registered.templateId && TEMPLATES_MAP[registered.templateId as TemplateId]) {
+            setActiveTemplate(registered.templateId as TemplateId);
+          }
+          setStoreData(registered);
+          return;
+        }
       }
 
       const stored = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
@@ -39,6 +51,7 @@ export function StorePage() {
         if (parsed.selectedTheme && TEMPLATES_MAP[parsed.selectedTheme as TemplateId]) {
           setActiveTemplate(parsed.selectedTheme as TemplateId);
         }
+        setStoreData(parsed);
       }
     } catch (e) {}
   }, []);
@@ -184,6 +197,9 @@ export function StorePage() {
           subdomain={subdomain}
           activeTemplateId={activeTemplate}
           onTemplateChange={handleTemplateChange}
+          customProduct={storeData?.product}
+          storeCode={storeData?.storeCode}
+          logoUrl={storeData?.logoUrl}
         />
       </div>
     </div>
