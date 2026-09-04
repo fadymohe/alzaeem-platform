@@ -142,3 +142,83 @@
 
 .rf-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
 .rf-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / .3); border-radius: 8px; }
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes floatDelayed {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes arrowSlide {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: floatDelayed 4.5s ease-in-out infinite 1.2s;
+}
+
+.animate-arrow-slide {
+  animation: arrowSlide 1.8s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmerSweep 3s infinite;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out both;
+}

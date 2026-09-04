@@ -2,8 +2,11 @@ import { useState } from 'react';
 
 import { Link } from 'wouter';
 import { Logo } from '../components/common/Logo';
+import { DashboardMockupHero } from '../components/home/DashboardMockupHero';
+import { PlatformVideoShowcase } from '../components/home/PlatformVideoShowcase';
 import {
   Sparkles, ArrowLeft, ArrowRight, CheckCircle2, XCircle, ShoppingBag,
+
   Truck, BarChart3, ShieldCheck, PhoneCall, Globe, Layers, Zap, MessageSquare,
   FileSpreadsheet, AlertCircle, Clock, PackageCheck, Repeat, ChevronLeft,
   Smartphone, Monitor, Play, Check, TrendingUp, Users, DollarSign, Wallet,
@@ -28,8 +31,8 @@ export function PublicHomePage() {
     ctaPrimary: isAr ? 'ابدأ متجرك الآن مجاناً' : 'Start Your Free Store Now',
     ctaSecondary: isAr ? 'شاهد كيف تعمل المنصة' : 'Watch How It Works',
     trustText: isAr
-      ? 'مجاناً لأول 20 طلباً — بدون بطاقة ائتمان — بدون عمولة على المبيعات'
-      : 'Free for first 20 orders — No credit card required — 0% sales commission',
+      ? 'مجاناً لأول 5 طلبات — بدون بطاقة ائتمان — بدون عمولة على المبيعات'
+      : 'Free for first 5 orders — No credit card required — 0% sales commission',
     navFeatures: isAr ? 'المميزات' : 'Features',
     navShipping: isAr ? 'الشحن والتوصيل' : 'Shipping',
     navPricing: isAr ? 'الأسعار' : 'Pricing',
@@ -106,7 +109,15 @@ export function PublicHomePage() {
             </div>
 
             {/* Nav Links With Smooth Scrolling */}
-            <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-600">
+            <nav className="hidden lg:flex items-center gap-6 text-xs font-bold text-slate-600">
+              <button
+                type="button"
+                onClick={() => scrollToSection('how-it-works')}
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 text-teal-800 bg-teal-50/80 px-3 py-1 rounded-full border border-teal-100 hover:bg-teal-100/70"
+              >
+                <Play className="size-3 text-teal-600 fill-teal-600" />
+                <span>{isAr ? 'كيف تعمل المنصة' : 'How It Works'}</span>
+              </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('features')}
@@ -201,13 +212,14 @@ export function PublicHomePage() {
               {isAr ? <ArrowLeft className="size-4" /> : <ArrowRight className="size-4" />}
             </Link>
 
-            <a
-              href="#demo"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-7 py-4 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all"
+            <button
+              type="button"
+              onClick={() => scrollToSection('how-it-works')}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-7 py-4 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all cursor-pointer hover:scale-105 active:scale-95"
             >
               <Play className="size-4 text-teal-700 fill-teal-700" />
               <span>{t.ctaSecondary}</span>
-            </a>
+            </button>
           </div>
 
           <p className="mt-5 text-xs font-bold text-slate-400">
@@ -216,81 +228,17 @@ export function PublicHomePage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* 3️⃣ INTERACTIVE DASHBOARD MOCKUP */}
+        {/* 3️⃣ INTERACTIVE DASHBOARD MOCKUP (Extracted from provided design) */}
         {/* ========================================================================= */}
-        <section id="demo" className="mx-auto max-w-6xl px-4 pb-20">
-          <div className="relative rounded-3xl border border-slate-200/90 bg-white p-3 md:p-6 shadow-2xl shadow-slate-200/80">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-red-400" />
-                <span className="size-3 rounded-full bg-amber-400" />
-                <span className="size-3 rounded-full bg-emerald-400" />
-                <span className="mx-3 text-xs font-bold text-slate-400 hidden sm:inline">{t.dashboardTitle}</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200/60 px-3 py-1 text-[11px] font-extrabold text-emerald-700">
-                <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
-                <span>{t.liveBadge}</span>
-              </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-2xl border border-teal-100 bg-teal-50/40 p-4">
-                <span className="text-xs font-bold text-slate-500">{t.statSales}</span>
-                <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{formatIQD(19020000)}</p>
-                <span className="text-[11px] font-bold text-teal-700 mt-1 block">{t.statSalesNote}</span>
-              </div>
-
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                <span className="text-xs font-bold text-slate-500">{t.statOrders}</span>
-                <p className="text-2xl font-black text-slate-900 mt-1 font-mono">48</p>
-                <span className="text-[11px] font-bold text-slate-500 mt-1 block">{t.statOrdersNote}</span>
-              </div>
-
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                <span className="text-xs font-bold text-slate-500">{t.statCustomers}</span>
-                <p className="text-2xl font-black text-slate-900 mt-1 font-mono">32</p>
-                <span className="text-[11px] font-bold text-emerald-600 mt-1 block">{t.statCustomersNote}</span>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/40 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-extrabold text-slate-700">{isAr ? 'مؤشر نمو المبيعات بالأيام' : 'Daily Sales Growth Chart'}</span>
-                <span className="text-[11px] font-bold text-slate-400">{isAr ? 'بغداد والفرع الرئيسي' : 'Baghdad Main Branch'}</span>
-              </div>
-              <div className="h-32 w-full flex items-end gap-2 pt-4">
-                {[35, 45, 60, 50, 75, 90, 110, 130, 120, 145, 160, 190].map((h, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-                    <div
-                      className="w-full rounded-t-lg bg-gradient-to-t from-teal-700 to-teal-500 transition-all group-hover:bg-teal-400"
-                      style={{ height: `${(h / 190) * 100}%` }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="absolute -top-6 -right-4 hidden md:block">
-              <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-white p-3.5 shadow-xl shadow-emerald-500/10">
-                <MessageSquare className="size-5 text-emerald-600" />
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 block">{isAr ? 'تأكيد تلقائي' : 'Auto Confirm'}</span>
-                  <p className="text-xs font-extrabold text-slate-900">{t.whatsappOverlay}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute -bottom-6 -left-4 hidden md:block">
-              <div className="flex items-center gap-2.5 rounded-2xl border border-teal-200 bg-white p-3.5 shadow-xl shadow-teal-500/10">
-                <Truck className="size-5 text-teal-700" />
-                <div>
-                  <span className="text-[10px] font-bold text-teal-700 block">{isAr ? 'أسطول الشحن' : 'Fleet Shipping'}</span>
-                  <p className="text-xs font-extrabold text-slate-900">{t.shippingOverlay}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        <section id="demo" className="mx-auto max-w-6xl px-2 sm:px-4 pb-16">
+          <DashboardMockupHero isAr={isAr} />
         </section>
+
+        {/* ========================================================================= */}
+        {/* 3.5️⃣ PLATFORM ANIMATED VIDEO SHOWCASE (Anchored by #how-it-works) */}
+        {/* ========================================================================= */}
+        <PlatformVideoShowcase isAr={isAr} />
+
 
         {/* ========================================================================= */}
         {/* 4️⃣ PROBLEM VS SOLUTION SECTION */}
