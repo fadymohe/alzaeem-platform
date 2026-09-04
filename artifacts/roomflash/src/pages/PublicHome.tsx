@@ -4,6 +4,7 @@ import { Link } from 'wouter';
 import { Logo } from '../components/common/Logo';
 import { DashboardMockupHero } from '../components/home/DashboardMockupHero';
 import { PlatformVideoShowcase } from '../components/home/PlatformVideoShowcase';
+import { TransformationDiagram } from '../components/home/TransformationDiagram';
 import {
   Sparkles, ArrowLeft, ArrowRight, CheckCircle2, XCircle, ShoppingBag,
 
@@ -241,90 +242,9 @@ export function PublicHomePage() {
 
 
         {/* ========================================================================= */}
-        {/* 4️⃣ PROBLEM VS SOLUTION SECTION */}
+        {/* 4️⃣ TRANSFORMATION DIAGRAM (Before vs After with Al-Zaeem Engine) */}
         {/* ========================================================================= */}
-        <section className="bg-slate-50/80 border-y border-slate-200/60 py-20 px-4">
-          <div className="mx-auto max-w-6xl">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <span className="inline-block rounded-full bg-red-50 border border-red-200/80 px-3.5 py-1 text-xs font-extrabold text-red-700 mb-3">
-                {t.beforeBadge}
-              </span>
-              <h2 className="text-2xl md:text-4xl font-black text-slate-900">
-                {t.beforeTitle}
-              </h2>
-              <p className="text-xs md:text-sm font-medium text-slate-500 mt-2">
-                {t.beforeSubtitle}
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-20">
-              <div className="rounded-2xl border border-red-200/80 bg-red-50/40 p-5 transform -rotate-1 hover:rotate-0 transition-transform">
-                <XCircle className="size-6 text-red-500 mb-3" />
-                <h4 className="font-extrabold text-sm text-slate-900">{isAr ? 'رسائل واتساب متناثرة' : 'Scattered WhatsApp DMs'}</h4>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{isAr ? 'ضياع الطلبات بين الرسائل وتأخر الرد على الزبائن.' : 'Lost orders in chat histories and delayed responses.'}</p>
-              </div>
-
-              <div className="rounded-2xl border border-red-200/80 bg-red-50/40 p-5 transform rotate-1 hover:rotate-0 transition-transform">
-                <FileSpreadsheet className="size-6 text-red-500 mb-3" />
-                <h4 className="font-extrabold text-sm text-slate-900">{isAr ? 'ملفات إكسل مبعثرة' : 'Messy Excel Sheets'}</h4>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{isAr ? 'تتبع يدوي مرهق لكل شحنة وعدم دقة الأرقام.' : 'Exhausting manual tracking for each parcel and mismatching figures.'}</p>
-              </div>
-
-              <div className="rounded-2xl border border-red-200/80 bg-red-50/40 p-5 transform -rotate-1 hover:rotate-0 transition-transform">
-                <Clock className="size-6 text-red-500 mb-3" />
-                <h4 className="font-extrabold text-sm text-slate-900">{isAr ? '«أين طلبي؟»' : '«Where is my order?»'}</h4>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{isAr ? 'عملاء ينتظرون التتبع واستفسارات مستمرة بدون جواب.' : 'Customers waiting for status updates without answers.'}</p>
-              </div>
-
-              <div className="rounded-2xl border border-red-200/80 bg-red-50/40 p-5 transform rotate-1 hover:rotate-0 transition-transform">
-                <AlertCircle className="size-6 text-red-500 mb-3" />
-                <h4 className="font-extrabold text-sm text-slate-900">{isAr ? 'أرباح بالتخمين' : 'Guessing Profits'}</h4>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{isAr ? 'نفاد مفاجئ للمخزون وغياب التقارير المالية الدقيقة.' : 'Sudden stockouts and lack of clear financial insight.'}</p>
-              </div>
-            </div>
-
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <span className="inline-block rounded-full bg-teal-50 border border-teal-200 px-3.5 py-1 text-xs font-extrabold text-teal-800 mb-3">
-                {t.afterBadge}
-              </span>
-              <h3 className="text-2xl md:text-4xl font-black text-slate-900">
-                {t.afterTitle}
-              </h3>
-            </div>
-
-            <div className="space-y-4 max-w-4xl mx-auto">
-              {[
-                {
-                  before: isAr ? 'رسائل واتساب متناثرة وضياع الطلبات' : 'Scattered WhatsApp chats and lost orders',
-                  after: isAr ? 'منظومة طلبات موحدة مع تأكيد واتساب تلقائي بنقرة واحدة ✓' : 'Unified order engine with 1-click WhatsApp auto confirm ✓'
-                },
-                {
-                  before: isAr ? 'ملفات إكسل مبعثرة وتتبع يدوي لكل شحنة' : 'Messy spreadsheets and manual tracking',
-                  after: isAr ? 'تزامن تلقائي للمخزون والطلبات لحظة بلحظة ✓' : 'Real-time inventory and order synchronization ✓'
-                },
-                {
-                  before: isAr ? 'متابعة يدوية مع المندوب واستفسارات العملاء' : 'Manual calls with couriers & impatient buyers',
-                  after: isAr ? 'ربط فوري وشحن مباشر لـ 18 محافظة مع تتبع كود ZAEEM ✓' : 'Direct dispatch to 18 governorates with ZAEEM tracking code ✓'
-                },
-                {
-                  before: isAr ? 'أرباح تُحسب بالتخمين ونفاد المخزون' : 'Guessing profits and running out of stock',
-                  after: isAr ? 'تحليلات مالية وتقارير أرباح لحظية لكل محافظة ومنتج ✓' : 'Instant financial reports & profit metrics per city & item ✓'
-                }
-              ].map((item, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50/60 text-red-900 text-xs font-bold">
-                    <XCircle className="size-4 text-red-500 shrink-0" />
-                    <span>{item.before}</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-teal-50/80 text-teal-900 text-xs font-extrabold">
-                    <CheckCircle2 className="size-4 text-teal-600 shrink-0" />
-                    <span>{item.after}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TransformationDiagram isAr={isAr} />
 
         {/* ========================================================================= */}
         {/* 5️⃣ TEMPLATES SHOWCASE SECTION (from Image 1) */}
