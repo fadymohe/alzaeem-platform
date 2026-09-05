@@ -633,6 +633,9 @@ export function SignInPage() {
         provider,
         options: {
           redirectTo: redirectUrl,
+          queryParams: {
+            prompt: 'select_account',
+          },
         },
       });
       if (error) {

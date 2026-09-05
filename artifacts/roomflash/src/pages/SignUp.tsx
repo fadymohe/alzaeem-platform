@@ -581,6 +581,9 @@ export function SignUpPage() {
         provider,
         options: {
           redirectTo: redirectUrl,
+          queryParams: {
+            prompt: 'select_account',
+          },
         },
       });
       if (error) {

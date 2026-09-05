@@ -184,7 +184,7 @@ function RoutedApp() {
     // 1. Check if OAuth error was returned in query params or hash
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
-    const oauthError = searchParams.get('error') || searchParams.get('error_description') || hashParams.get('error') || hashParams.get('error_description');
+    const oauthError = searchParams.get('error_description') || searchParams.get('error') || hashParams.get('error_description') || hashParams.get('error');
 
     if (oauthError) {
       console.warn('OAuth redirect returned error:', oauthError);
