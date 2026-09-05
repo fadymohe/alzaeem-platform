@@ -297,3 +297,77 @@ export async function fetchCloudStoreByUser(email: string, ownerId?: string): Pr
 
   return null;
 }
+
+/**
+ * Save a customer to the central Neon cloud database
+ */
+export async function saveCloudCustomer(customer: {
+  subdomain?: string;
+  name: string;
+  phone: string;
+  email?: string;
+  governorate: string;
+  city: string;
+  address?: string;
+  ordersCount?: number;
+  totalSpent?: number;
+}): Promise<boolean> {
+  try {
+    const cleanSub = (customer.subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    const nameEscaped = (customer.name || '').replace(/'/g, "''");
+    const phoneEscaped = (customer.phone || '').replace(/'/g, "''");
+    const emailEscaped = customer.email ? `'${customer.email.toLowerCase().trim().replace(/'/g, "''")}'` : 'NULL';
+    const govEscaped = (customer.governorate || 'بغداد').replace(/'/g, "''");
+    const cityEscaped = (customer.city || '').replace(/'/g, "''");
+    const addressEscaped = (customer.address || '').replace(/'/g, "''");
+    const ordersCount = Number(customer.ordersCount) || 1;
+    const totalSpent = Number(customer.totalSpent) || 0;
+
+    const query = `
+      INSERT INTO za3em_customers (subdomain, name, phone, email, governorate, city, address, orders_count, total_spent)
+      VALUES ('${cleanSub}', '${nameEscaped}', '${phoneEscaped}', ${emailEscaped}, '${govEscaped}', '${cityEscaped}', '${addressEscaped}', ${ordersCount}, ${totalSpent})
+      RETURNING id;
+    `;
+    const res = await executeSql(query);
+    const success = Boolean(res && Array.isArray(res.rows) && res.rows.length > 0);
+    if (success) {
+      console.log(`[CloudDb] Customer saved successfully to server: ${customer.name} (${customer.phone})`);
+    }
+    return success;
+  } catch (err) {
+    console.warn('[CloudDb] Error saving cloud customer:', err);
+    return false;
+  }
+}
+
+/**
+ * Fetch all customers from the central Neon cloud database
+ */
+export async function fetchCloudCustomers(subdomain?: string): Promise<any[]> {
+  try {
+    const cleanSub = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    let query = `SELECT id, subdomain, name, phone, email, governorate, city, address, orders_count, total_spent, created_at FROM za3em_customers ORDER BY id DESC;`;
+    if (cleanSub) {
+      query = `SELECT id, subdomain, name, phone, email, governorate, city, address, orders_count, total_spent, created_at FROM za3em_customers WHERE subdomain = '${cleanSub}' OR subdomain = '' OR subdomain IS NULL ORDER BY id DESC;`;
+    }
+    const res = await executeSql(query);
+    if (res && Array.isArray(res.rows)) {
+      return res.rows.map((row: any) => ({
+        id: Number(row.id),
+        name: row.name,
+        phone: row.phone,
+        email: row.email || undefined,
+        governorate: row.governorate || 'بغداد',
+        city: row.city || row.governorate || 'بغداد',
+        address: row.address || '',
+        ordersCount: Number(row.orders_count) || 1,
+        totalSpent: Number(row.total_spent) || 0,
+        createdAt: row.created_at,
+      }));
+    }
+    return [];
+  } catch (err) {
+    console.warn('[CloudDb] Error fetching cloud customers:', err);
+    return [];
+  }
+}

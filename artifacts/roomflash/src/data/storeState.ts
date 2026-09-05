@@ -39,6 +39,7 @@ export interface StoreCustomer {
   email?: string;
   city: string;
   governorate: string;
+  address?: string;
   ordersCount: number;
   totalSpent: number;
   lastOrderAt?: string;
@@ -534,22 +535,33 @@ export function saveStoredCustomers(customers: StoreCustomer[]): void {
   localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
 }
 
-export function addStoredCustomer(customer: Omit<StoreCustomer, 'id' | 'ordersCount' | 'totalSpent'>): StoreCustomer {
+export function addStoredCustomer(customer: Omit<StoreCustomer, 'id' | 'ordersCount' | 'totalSpent'> & { ordersCount?: number; totalSpent?: number; address?: string }): StoreCustomer {
   const customers = getStoredCustomers();
   const existingIdx = customers.findIndex(c => c.phone === customer.phone || (c.name === customer.name && c.city === customer.city));
 
+  const ordersCount = typeof customer.ordersCount === 'number' ? customer.ordersCount : 1;
+  const totalSpent = typeof customer.totalSpent === 'number' ? customer.totalSpent : 45000;
+
   if (existingIdx !== -1) {
-    customers[existingIdx].ordersCount += 1;
+    customers[existingIdx].ordersCount += ordersCount;
+    customers[existingIdx].totalSpent += totalSpent;
+    if (customer.address) customers[existingIdx].address = customer.address;
+    if (customer.governorate) customers[existingIdx].governorate = customer.governorate;
     customers[existingIdx].lastOrderAt = new Date().toISOString();
     saveStoredCustomers(customers);
     return customers[existingIdx];
   }
 
   const newCustomer: StoreCustomer = {
-    ...customer,
+    name: customer.name,
+    phone: customer.phone,
+    email: customer.email,
+    city: customer.city,
+    governorate: customer.governorate,
+    address: customer.address || '',
     id: Date.now(),
-    ordersCount: 1,
-    totalSpent: 45000,
+    ordersCount,
+    totalSpent,
     lastOrderAt: new Date().toISOString()
   };
   const updated = [newCustomer, ...customers];
