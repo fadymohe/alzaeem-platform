@@ -6,6 +6,7 @@ import {
   Truck, ShieldCheck, Zap, AlertCircle, Check, Store, Lock, KeyRound, Mail, X, User
 } from 'lucide-react';
 import { IRAQ_GOVERNORATES } from '../data/iraqData';
+import { supabase } from '../utils/supabase';
 
 // Reserved subdomains blocked for merchants
 const RESERVED_SUBDOMAINS = [
@@ -565,16 +566,32 @@ export function SignUpPage() {
     setLocation('/onboarding');
   };
 
-  // Trigger Real Google / Apple OAuth via Supabase
-  const handleOAuthClick = (provider: 'google' | 'apple') => {
+  // Trigger Real Google / Apple OAuth via Supabase Official Client with PKCE
+  const handleOAuthClick = async (provider: 'google' | 'apple') => {
     setOauthLoading(true);
     localStorage.setItem('zaeem_auth_action', 'signup');
     localStorage.removeItem('zaeem_onboarding_completed');
     localStorage.removeItem('zaeem_onboarded_store');
-    const redirectUrl = `${window.location.origin}/`;
-    const authorizeUrl = `https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-    window.location.href = authorizeUrl;
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
+      if (error) {
+        console.error('Supabase OAuth error:', error);
+        setOauthLoading(false);
+        setErrors({ general: isAr ? `فشل إنشاء الحساب بـ Google: ${error.message}` : `OAuth error: ${error.message}` });
+      }
+    } catch (err: any) {
+      console.error('OAuth trigger error:', err);
+      setOauthLoading(false);
+      setErrors({ general: isAr ? 'حدث خطأ أثناء بدء إنشاء الحساب' : 'Failed to initialize OAuth' });
+    }
   };
+
 
   return (
     <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[100dvh] flex flex-col lg:flex-row bg-white text-slate-900 font-sans select-none">

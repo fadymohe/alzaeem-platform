@@ -34,6 +34,9 @@ import { DynamicStoreLanding } from './pages/DynamicStoreLanding';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { SettingsPage } from './pages/Settings';
 import { SupportPage } from './pages/Support';
+import { supabase } from './utils/supabase';
+
+
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL ? import.meta.env.BASE_URL.replace(/\/$/, '') : '';
@@ -173,160 +176,202 @@ function RoutedApp() {
   const [oauthProcessing, setOauthProcessing] = useState<boolean>(() => {
     const hash = window.location.hash || '';
     const search = window.location.search || '';
-    return hash.includes('access_token=') || search.includes('access_token=');
+    return hash.includes('access_token=') || search.includes('access_token=') || search.includes('code=') || hash.includes('code=');
   });
 
-  // Automatic OAuth Hash Token Listener (Google & Apple)
+  // Automatic OAuth Token & PKCE Code Listener via Supabase SDK
   useEffect(() => {
-    const hash = window.location.hash || '';
-    const search = window.location.search || '';
-    const full = hash + search;
-    if (full.includes('access_token=')) {
-      const match = full.match(/access_token=([^&]+)/);
-      const token = match ? match[1] : null;
-      if (token) {
-        fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
-          }
-        })
-        .then(res => res.json())
-        .then(async (user) => {
-          if (user && user.email) {
-            const meta = user.user_metadata || {};
-            const cleanSlug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-            const authAction = localStorage.getItem('zaeem_auth_action') || 'signin';
+    // 1. Check if OAuth error was returned in query params or hash
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
+    const oauthError = searchParams.get('error') || searchParams.get('error_description') || hashParams.get('error') || hashParams.get('error_description');
 
-            // 1. استعلام قاعدة البيانات لمعرفة ما إذا كان للتاجر متجر مسبقاً
-            let dbStore: any = null;
-            try {
-              const uRes = await fetch(`/api/tenant/user-store?email=${encodeURIComponent(user.email)}&ownerId=${encodeURIComponent(user.id)}`);
-              if (uRes.ok) {
-                const uData = await uRes.json();
-                if (uData.hasStore && uData.store) {
-                  dbStore = uData.store;
-                }
-              }
-            } catch (e) {}
-
-            // Check if user already has an established store in database metadata or local storage
-            let onboarded: any = null;
-            try {
-              const rawOnb = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
-              if (rawOnb) onboarded = JSON.parse(rawOnb);
-            } catch {}
-
-            const hasDbStore = Boolean(dbStore || meta.onboarding_completed === true || (meta.store_code && meta.subdomain));
-            const hasLocalStore = Boolean(onboarded?.storeCode && localStorage.getItem('zaeem_onboarding_completed') === 'true');
-            const isReturningMerchant = (authAction === 'signin' && (hasDbStore || hasLocalStore)) || hasDbStore;
-
-            const userObj = {
-              id: user.id,
-              email: user.email,
-              name: meta.full_name || meta.name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : user.email.split('@')[0]),
-              phone: meta.phone || user.phone || '+9647700000000',
-              governorate: meta.governorate || 'بغداد',
-              storeName: dbStore?.name || meta.store_name || onboarded?.storeName || `متجر ${meta.full_name || cleanSlug}`,
-              subdomain: dbStore?.subdomain ? `${dbStore.subdomain}.za3em.shop` : (meta.subdomain || onboarded?.subdomain || `${cleanSlug}.za3em.shop`),
-              token: token,
-              provider: user.app_metadata?.provider || 'google',
-              loggedIn: true,
-              time: new Date().toISOString()
-            };
-
-            localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-
-            if (isReturningMerchant) {
-              // SIGN IN: Restore saved store settings and skip onboarding directly to Dashboard!
-              const cleanStoredSub = dbStore?.subdomain || (meta.subdomain ? meta.subdomain.replace('.za3em.shop', '') : null) || (onboarded?.subdomain ? onboarded.subdomain.replace('.za3em.shop', '') : null) || cleanSlug;
-              const storeCode = dbStore?.storeCode || dbStore?.store_code || meta.store_code || onboarded?.storeCode || `ZAEEM-${cleanStoredSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
-              const storeName = dbStore?.name || meta.store_name || onboarded?.storeName || userObj.storeName;
-              const subdomain = `${cleanStoredSub}.za3em.shop`;
-              const selectedTheme = dbStore?.templateId || dbStore?.template_id || meta.template_id || meta.selected_theme || onboarded?.templateId || 'shoppingcart.1.2.7';
-              const product = dbStore?.product || meta.product || onboarded?.product || {
-                id: 1,
-                title: 'عطر تاج الفخامة الفرنسي الملكي',
-                price: 45000,
-                compareAtPrice: 58000,
-                imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80'
-              };
-
-              const fullStoreData = {
-                ...userObj,
-                storeName,
-                subdomain,
-                selectedTheme,
-                templateId: selectedTheme,
-                storeCode,
-                logoUrl: meta.logo_url || onboarded?.logoUrl,
-                bannerUrl: meta.banner_url || onboarded?.bannerUrl,
-                plan: meta.plan || 'free',
-                orderLimit: meta.order_limit || 5,
-                categories: meta.categories || onboarded?.categories || ['عام'],
-                product
-              };
-
-              localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
-              localStorage.setItem('zaeem_onboarded_store', JSON.stringify(fullStoreData));
-              localStorage.setItem('zaeem_onboarding_completed', 'true');
-              localStorage.setItem('zaeem_auth_action', 'signin');
-
-              // Save product to zaeem_store_products if not present
-              try {
-                const curProds = JSON.parse(localStorage.getItem('zaeem_store_products') || '[]');
-                if (product && (!curProds || curProds.length === 0)) {
-                  localStorage.setItem('zaeem_store_products', JSON.stringify([{
-                    id: 1,
-                    name: product.title || product.name || 'منتج المتجر الحصري',
-                    sku: `PRD-${cleanSlug.toUpperCase()}`,
-                    description: (fullStoreData as any).slogan || 'منتج أصلي فاخر مع شحن سريع وضمان الدفع عند الاستلام',
-                    price: Number(product.price) || 45000,
-                    compareAtPrice: Number(product.compareAtPrice) || 58000,
-                    stock: 50,
-                    lowStockThreshold: 5,
-                    category: product.category || 'عام',
-                    status: 'active',
-                    imageUrl: product.imageUrl || product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
-                    weightGrams: 500
-                  }]));
-                }
-              } catch {}
-
-              try {
-                window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
-              } catch {}
-              window.location.hash = '#/dashboard';
-              window.location.reload();
-            } else {
-              // SIGN UP: New merchant -> Direct to onboarding to prepare their store!
-              localStorage.setItem('zaeem_auth_action', 'signup');
-              localStorage.removeItem('zaeem_onboarding_completed');
-              localStorage.removeItem('zaeem_onboarded_store');
-              localStorage.setItem('zaeem_store_data', JSON.stringify({
-                ...userObj,
-                plan: 'free',
-                orderLimit: 5
-              }));
-
-              try {
-                window.history.replaceState(null, '', window.location.pathname + '#/onboarding');
-              } catch {}
-              window.location.hash = '#/onboarding';
-              window.location.reload();
-            }
-          } else {
-            setOauthProcessing(false);
-          }
-        })
-        .catch(() => {
-          setOauthProcessing(false);
-        });
-        return;
-      }
+    if (oauthError) {
+      console.warn('OAuth redirect returned error:', oauthError);
+      try {
+        const cleanUrl = window.location.pathname + (window.location.hash ? window.location.hash.split('?')[0] : '');
+        window.history.replaceState(null, '', cleanUrl || '/');
+      } catch {}
+      setOauthProcessing(false);
+      return;
     }
-    setOauthProcessing(false);
+
+    let isProcessed = false;
+
+    const handleUserSession = async (user: any, token: string) => {
+      if (isProcessed || !user || !user.email) return;
+      isProcessed = true;
+
+      const meta = user.user_metadata || {};
+      const cleanSlug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      const authAction = localStorage.getItem('zaeem_auth_action') || 'signin';
+
+      // 1. استعلام قاعدة البيانات لمعرفة ما إذا كان للتاجر متجر مسبقاً
+      let dbStore: any = null;
+      try {
+        const uRes = await fetch(`/api/tenant/user-store?email=${encodeURIComponent(user.email)}&ownerId=${encodeURIComponent(user.id)}`);
+        if (uRes.ok) {
+          const uData = await uRes.json();
+          if (uData.hasStore && uData.store) {
+            dbStore = uData.store;
+          }
+        }
+      } catch (e) {}
+
+      // Check if user already has an established store in database metadata or local storage
+      let onboarded: any = null;
+      try {
+        const rawOnb = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+        if (rawOnb) onboarded = JSON.parse(rawOnb);
+      } catch {}
+
+      const hasDbStore = Boolean(dbStore || meta.onboarding_completed === true || (meta.store_code && meta.subdomain));
+      const hasLocalStore = Boolean(onboarded?.storeCode && localStorage.getItem('zaeem_onboarding_completed') === 'true');
+      const isReturningMerchant = (authAction === 'signin' && (hasDbStore || hasLocalStore)) || hasDbStore;
+
+      const userObj = {
+        id: user.id,
+        email: user.email,
+        name: meta.full_name || meta.name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : user.email.split('@')[0]),
+        phone: meta.phone || user.phone || '+9647700000000',
+        governorate: meta.governorate || 'بغداد',
+        storeName: dbStore?.name || meta.store_name || onboarded?.storeName || `متجر ${meta.full_name || cleanSlug}`,
+        subdomain: dbStore?.subdomain ? `${dbStore.subdomain}.za3em.shop` : (meta.subdomain || onboarded?.subdomain || `${cleanSlug}.za3em.shop`),
+        token: token,
+        provider: user.app_metadata?.provider || 'google',
+        loggedIn: true,
+        time: new Date().toISOString()
+      };
+
+      localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+
+      if (isReturningMerchant) {
+        // SIGN IN: Restore saved store settings and skip onboarding directly to Dashboard!
+        const cleanStoredSub = dbStore?.subdomain || (meta.subdomain ? meta.subdomain.replace('.za3em.shop', '') : null) || (onboarded?.subdomain ? onboarded.subdomain.replace('.za3em.shop', '') : null) || cleanSlug;
+        const storeCode = dbStore?.storeCode || dbStore?.store_code || meta.store_code || onboarded?.storeCode || `ZAEEM-${cleanStoredSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const storeName = dbStore?.name || meta.store_name || onboarded?.storeName || userObj.storeName;
+        const subdomain = `${cleanStoredSub}.za3em.shop`;
+        const selectedTheme = dbStore?.templateId || dbStore?.template_id || meta.template_id || meta.selected_theme || onboarded?.templateId || 'shoppingcart.1.2.7';
+        const product = dbStore?.product || meta.product || onboarded?.product || {
+          id: 1,
+          title: 'عطر تاج الفخامة الفرنسي الملكي',
+          price: 45000,
+          compareAtPrice: 58000,
+          imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80'
+        };
+
+        const fullStoreData = {
+          ...userObj,
+          storeName,
+          subdomain,
+          selectedTheme,
+          templateId: selectedTheme,
+          storeCode,
+          logoUrl: meta.logo_url || onboarded?.logoUrl,
+          bannerUrl: meta.banner_url || onboarded?.bannerUrl,
+          plan: meta.plan || 'free',
+          orderLimit: meta.order_limit || 5,
+          categories: meta.categories || onboarded?.categories || ['عام'],
+          product
+        };
+
+        localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
+        localStorage.setItem('zaeem_onboarded_store', JSON.stringify(fullStoreData));
+        localStorage.setItem('zaeem_onboarding_completed', 'true');
+        localStorage.setItem('zaeem_auth_action', 'signin');
+
+        // Save product to zaeem_store_products if not present
+        try {
+          const curProds = JSON.parse(localStorage.getItem('zaeem_store_products') || '[]');
+          if (product && (!curProds || curProds.length === 0)) {
+            localStorage.setItem('zaeem_store_products', JSON.stringify([{
+              id: 1,
+              name: product.title || product.name || 'منتج المتجر الحصري',
+              sku: `PRD-${cleanSlug.toUpperCase()}`,
+              description: (fullStoreData as any).slogan || 'منتج أصلي فاخر مع شحن سريع وضمان الدفع عند الاستلام',
+              price: Number(product.price) || 45000,
+              compareAtPrice: Number(product.compareAtPrice) || 58000,
+              stock: 50,
+              lowStockThreshold: 5,
+              category: product.category || 'عام',
+              status: 'active',
+              imageUrl: product.imageUrl || product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+              weightGrams: 500
+            }]));
+          }
+        } catch {}
+
+        try {
+          window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
+        } catch {}
+        window.location.hash = '#/dashboard';
+        window.location.reload();
+      } else {
+        // SIGN UP: New merchant -> Direct to onboarding to prepare their store!
+        localStorage.setItem('zaeem_auth_action', 'signup');
+        localStorage.removeItem('zaeem_onboarding_completed');
+        localStorage.removeItem('zaeem_onboarded_store');
+        localStorage.setItem('zaeem_store_data', JSON.stringify({
+          ...userObj,
+          plan: 'free',
+          orderLimit: 5
+        }));
+
+        try {
+          window.history.replaceState(null, '', window.location.pathname + '#/onboarding');
+        } catch {}
+        window.location.hash = '#/onboarding';
+        window.location.reload();
+      }
+    };
+
+    // 2. Supabase SDK onAuthStateChange (handles PKCE code exchange automatically)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session && session.user) {
+        handleUserSession(session.user, session.access_token);
+      }
+    });
+
+    // 3. Check existing session / code in URL
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && session.user) {
+        handleUserSession(session.user, session.access_token);
+      } else {
+        // Fallback for legacy access_token in hash
+        const hash = window.location.hash || '';
+        const search = window.location.search || '';
+        const full = hash + search;
+        if (full.includes('access_token=')) {
+          const match = full.match(/access_token=([^&]+)/);
+          const token = match ? match[1] : null;
+          if (token) {
+            fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+              }
+            })
+            .then(r => r.json())
+            .then(u => {
+              if (u && u.email) handleUserSession(u, token);
+              else setOauthProcessing(false);
+            })
+            .catch(() => setOauthProcessing(false));
+            return;
+          }
+        }
+
+        if (!full.includes('code=') && !full.includes('access_token=')) {
+          setOauthProcessing(false);
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
 
   if (oauthProcessing) {
     const authAction = typeof window !== 'undefined' ? localStorage.getItem('zaeem_auth_action') : 'signin';

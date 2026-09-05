@@ -6,8 +6,10 @@ import {
   CheckCircle2, ShieldCheck, KeyRound, RefreshCw, X, User, Sparkles
 } from 'lucide-react';
 import { fetchCloudStoreByUser } from '../utils/cloudDb';
+import { supabase } from '../utils/supabase';
 
 export function SignInPage() {
+
   const [, setLocation] = useLocation();
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password');
@@ -606,14 +608,30 @@ export function SignInPage() {
     }
   };
 
-  // Trigger Real Google / Apple OAuth via Supabase
-  const handleOAuthClick = (provider: 'google' | 'apple') => {
+  // Trigger Real Google / Apple OAuth via Supabase Official Client with PKCE
+  const handleOAuthClick = async (provider: 'google' | 'apple') => {
     setOauthLoading(true);
     localStorage.setItem('zaeem_auth_action', 'signin');
-    const redirectUrl = `${window.location.origin}/`;
-    const authorizeUrl = `https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-    window.location.href = authorizeUrl;
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
+      if (error) {
+        console.error('Supabase OAuth error:', error);
+        setOauthLoading(false);
+        setErrors({ general: isAr ? `فشل تسجيل الدخول بـ Google: ${error.message}` : `OAuth error: ${error.message}` });
+      }
+    } catch (err: any) {
+      console.error('OAuth trigger error:', err);
+      setOauthLoading(false);
+      setErrors({ general: isAr ? 'حدث خطأ أثناء بدء تسجيل الدخول' : 'Failed to initialize OAuth' });
+    }
   };
+
 
   return (
     <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50/80 p-4 text-slate-900 font-sans select-none relative">
