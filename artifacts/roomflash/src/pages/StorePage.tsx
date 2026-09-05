@@ -11,6 +11,7 @@ import { StoreTemplates, type TemplateId, TEMPLATES_MAP } from '../components/st
 import { getStoredOrders, getStoredProducts } from '../data/storeState';
 import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus } from '../utils/storeRegistry';
 import { updateCloudStoreFullSettings, fetchCloudStore } from '../utils/cloudDb';
+import { LandingPageBuilderPage } from './LandingPageBuilder';
 
 export interface ExtendedTemplateConfig {
   id: TemplateId;
@@ -120,6 +121,12 @@ export function StorePage() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [saveSuccessAlert, setSaveSuccessAlert] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Main section tabs: إعدادات المتجر vs صفحات الهبوط
+  const [activeMainTab, setActiveMainTab] = useState<'store' | 'landing'>(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash || '' : '';
+    return hash.includes('tab=landing') || hash.includes('/landing-page') ? 'landing' : 'store';
+  });
 
   // 1. Basic Store Info & Subdomain
   const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
@@ -413,8 +420,41 @@ export function StorePage() {
         </div>
       )}
 
-      {/* Main Form & Configuration Panel */}
-      <form onSubmit={handleSaveAllChanges} className="space-y-6">
+      {/* 🌟 تبويبات قسم المتجر وصفحات الهبوط */}
+      <div className="flex items-center gap-2.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700/80 w-full sm:w-auto">
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('store')}
+          className={`px-6 py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer flex-1 sm:flex-none ${
+            activeMainTab === 'store'
+              ? 'bg-teal-700 text-white shadow-md shadow-teal-700/25 scale-102'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60'
+          }`}
+        >
+          <StoreIcon className="size-4" />
+          <span>أولاً: إعدادات المتجر الإلكتروني والثيمات</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('landing')}
+          className={`px-6 py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer flex-1 sm:flex-none ${
+            activeMainTab === 'landing'
+              ? 'bg-teal-700 text-white shadow-md shadow-teal-700/25 scale-102'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60'
+          }`}
+        >
+          <Sparkles className="size-4 text-amber-400" />
+          <span>ثانياً: قسم صفحة الهبوط (Landing Pages)</span>
+        </button>
+      </div>
+
+      {activeMainTab === 'landing' ? (
+        <LandingPageBuilderPage />
+      ) : (
+        <>
+          {/* Main Form & Configuration Panel */}
+          <form onSubmit={handleSaveAllChanges} className="space-y-6">
         {/* ========================================================================= */}
         {/* 1. اسم المتجر والدومين الفرعي                                           */}
         {/* ========================================================================= */}
@@ -988,6 +1028,8 @@ export function StorePage() {
           </div>
         )}
       </div>
-    </div>
-  );
+    </>
+  )}
+</div>
+);
 }

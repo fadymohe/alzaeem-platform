@@ -10,12 +10,12 @@ import {
   Lock,
   ArrowDown,
 } from "lucide-react";
-import { SingleButtonShippingSelector } from "../shipping/SingleButtonShippingSelector";
 import {
-  EGYPT_GOVERNORATES,
-  GovernorateShipping,
-  formatEGP,
-} from "../../data/egyptShippingData";
+  SingleButtonShippingSelector,
+  IRAQ_GOVERNORATES_LIST,
+  type IraqGovernorateShipping,
+} from "../shipping/SingleButtonShippingSelector";
+import { formatIQD } from "../../data/iraqData";
 import { TemplateProduct, TemplateStore } from "./EasyOrdersFlashTemplate";
 
 interface MinimalLuxuryTemplateProps {
@@ -32,7 +32,7 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
-  const [selectedGov, setSelectedGov] = useState<GovernorateShipping>(EGYPT_GOVERNORATES[0]);
+  const [selectedGov, setSelectedGov] = useState<IraqGovernorateShipping>(IRAQ_GOVERNORATES_LIST[0]);
   const [quantity, setQuantity] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<any>(null);
@@ -106,10 +106,10 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
 
             <div className="pt-2 flex items-baseline gap-3">
               <span className="text-3xl font-black font-mono text-amber-400">
-                {formatEGP(product.price)}
+                {formatIQD(product.price)}
               </span>
               <span className="text-sm line-through text-slate-500 font-mono">
-                {formatEGP(product.price + 200)}
+                {formatIQD(product.compareAtPrice || product.price + 12000)}
               </span>
             </div>
           </div>
@@ -142,7 +142,7 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
                 required
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="01000000000"
+                placeholder="07701234567"
                 dir="ltr"
                 className="w-full h-11 px-4 rounded-xl border border-slate-700 bg-slate-950 text-sm text-white focus:border-amber-500 focus:outline-none text-right"
               />
@@ -172,7 +172,7 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
               <span className="text-xs text-slate-300">الإجمالي المستحق عند الاستلام:</span>
               <span className="text-xl font-black font-mono text-amber-400">
-                {formatEGP(grandTotal)}
+                {formatIQD(grandTotal)}
               </span>
             </div>
 
@@ -181,7 +181,7 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
               disabled={isSubmitting}
               className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-base shadow-lg transition-all"
             >
-              {isSubmitting ? "جاري الإرسال..." : `تأكيد الشراء (${formatEGP(grandTotal)})`}
+              {isSubmitting ? "جاري الإرسال..." : `تأكيد الشراء (${formatIQD(grandTotal)})`}
             </button>
           </form>
         </div>

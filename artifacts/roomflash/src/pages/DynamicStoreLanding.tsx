@@ -183,36 +183,58 @@ export function DynamicStoreLanding() {
 
     // A2. فحص ما إذا كان الرابط مخصصاً لصفحة هبوط معينة (Landing Page Slug)
     if (cleanSlug) {
-      // فحص التخزين المحلي فورياً لسرعة الاستجابة
+      // 1. فحص التخزين المحلي فورياً لسرعة الاستجابة
+      let foundLocal: any = null;
       try {
         const rawLocal = localStorage.getItem('zaeem_local_landing_pages');
         if (rawLocal) {
           const list = JSON.parse(rawLocal);
-          const found = list.find((p: any) => (p.slug || '').toLowerCase() === cleanSlug);
-          if (found && isMounted) {
-            setIsStoreRegistered(true);
-            setLoading(false);
-            setStore((prev) => ({
-              ...prev,
-              templateId: found.template || 'easyorders-flash',
-            }));
-            const pImg = (found.images && found.images[0]) || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80';
-            setProduct({
-              id: found.id || 1,
-              title: found.productName,
-              description: found.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام بعد المعاينة.',
-              price: Number(found.price) || 0,
-              compareAtPrice: Number(found.compareAtPrice) || (Number(found.price) ? Math.round(Number(found.price) * 1.3) : 0),
-              imageUrl: pImg,
-              images: found.images || [pImg],
-              discountTwoItems: found.discountTwoItems,
-              discountThreeItems: found.discountThreeItems,
-            });
-          }
+          foundLocal = list.find((p: any) => (p.slug || '').toLowerCase() === cleanSlug);
         }
       } catch (err) {}
 
-      // الاستعلام من قاعدة بيانات Neon السحابية الحقيقية لصفحة الهبوط
+      // في حال كانت الصفحة هي الصفحة الافتراضية landbidg1 ولم تحفظ بعد في التخزين المحلي
+      const activeData = foundLocal || (cleanSlug === 'landbidg1' ? {
+        id: '1',
+        subdomain: cleanSubdomain,
+        slug: 'landbidg1',
+        productName: 'عطر تاج الفخامة الفرنسي الملكي',
+        images: [
+          'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=800&auto=format&fit=crop&q=80',
+        ],
+        price: 45000,
+        compareAtPrice: 58000,
+        discountTwoItems: 15,
+        discountThreeItems: 25,
+        description: 'عطر فاخر بثبات 48 ساعة وشحن مجاني للـ 3 قطع والدفع عند الاستلام بعد المعاينة لجميع محافظات العراق.',
+        template: 'easyorders-flash',
+        isPublished: true,
+      } : null);
+
+      if (activeData && isMounted) {
+        setIsStoreRegistered(true);
+        setLoading(false);
+        setStore((prev) => ({
+          ...prev,
+          templateId: activeData.template || 'easyorders-flash',
+        }));
+        const pImg = (activeData.images && activeData.images[0]) || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80';
+        setProduct({
+          id: activeData.id || 1,
+          title: activeData.productName,
+          description: activeData.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام بعد المعاينة.',
+          price: Number(activeData.price) || 0,
+          compareAtPrice: Number(activeData.compareAtPrice) || (Number(activeData.price) ? Math.round(Number(activeData.price) * 1.3) : 0),
+          imageUrl: pImg,
+          images: activeData.images || [pImg],
+          discountTwoItems: activeData.discountTwoItems,
+          discountThreeItems: activeData.discountThreeItems,
+        });
+      }
+
+      // 2. الاستعلام من قاعدة بيانات Neon السحابية الحقيقية لصفحة الهبوط
       fetchCloudLandingPageBySlug(cleanSlug, cleanSubdomain).then((cloudPage) => {
         if (cloudPage && isMounted) {
           setIsStoreRegistered(true);
@@ -237,6 +259,20 @@ export function DynamicStoreLanding() {
       }).catch((err) => {
         console.warn('[DynamicStoreLanding] Error fetching landing page:', err);
       });
+
+      // جلب اسم المتجر وحالته دون استبدال منتج صفحة الهبوط
+      fetchCloudStore(cleanSubdomain).then((cloudStore) => {
+        if (cloudStore && isMounted) {
+          if (typeof cloudStore.is_active === 'boolean') {
+            setIsStoreActive(cloudStore.is_active);
+          }
+          if (cloudStore.name) {
+            setStore((prev) => ({ ...prev, name: cloudStore.name }));
+          }
+        }
+      }).catch(() => {});
+
+      return; // انتهاء المعالجة لصفحة الهبوط حتى لا يتم استبدال منتجها بمنتجات المتجر العامة
     }
 
     // B. فحص السجل المباشر

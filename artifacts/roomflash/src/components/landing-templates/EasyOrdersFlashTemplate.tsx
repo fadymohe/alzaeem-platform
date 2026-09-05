@@ -14,11 +14,11 @@ import {
   Award,
   Zap,
 } from "lucide-react";
-import { SingleButtonShippingSelector } from "../shipping/SingleButtonShippingSelector";
 import {
-  EGYPT_GOVERNORATES,
-  GovernorateShipping,
-} from "../../data/egyptShippingData";
+  SingleButtonShippingSelector,
+  IRAQ_GOVERNORATES_LIST,
+  type IraqGovernorateShipping,
+} from "../shipping/SingleButtonShippingSelector";
 import { formatIQD } from "../../data/iraqData";
 
 export interface TemplateProduct {
@@ -69,9 +69,9 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
   const [customerAddress, setCustomerAddress] = useState("");
   const [notes, setNotes] = useState("");
 
-  // اختيار المحافظة والشحن الافتراضي (القاهرة 45 ج.م)
-  const [selectedGov, setSelectedGov] = useState<GovernorateShipping>(
-    EGYPT_GOVERNORATES[0]
+  // اختيار المحافظة والشحن الافتراضي (بغداد 3,000 د.ع)
+  const [selectedGov, setSelectedGov] = useState<IraqGovernorateShipping>(
+    IRAQ_GOVERNORATES_LIST[0]
   );
   const [quantity, setQuantity] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
