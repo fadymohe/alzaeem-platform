@@ -69,10 +69,10 @@ export const ShippingLabelModal: React.FC<ShippingLabelModalProps> = ({
         </div>
 
         {/* ========================================================================= */}
-        {/* OFFICIAL ISOLATED THERMAL SHIPPING LABEL CONTAINER (#shipping-label)       */}
+        {/* OFFICIAL ISOLATED THERMAL SHIPPING LABEL CONTAINER (#print-shipping-card) */}
         {/* ========================================================================= */}
         <div
-          id="shipping-label"
+          id="print-shipping-card"
           dir="rtl"
           className="shipping-label-card bg-white border-2 border-slate-900 p-4 sm:p-5 rounded-2xl text-slate-950 text-right space-y-3.5 print:border-2 print:border-black print:rounded-none print:p-4"
         >
