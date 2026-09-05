@@ -193,6 +193,10 @@ function RoutedApp() {
         window.history.replaceState(null, '', cleanUrl || '/');
       } catch {}
       setOauthProcessing(false);
+      try {
+        sessionStorage.setItem('zaeem_oauth_error', oauthError);
+        window.location.hash = '#/sign-in';
+      } catch {}
       return;
     }
 

@@ -573,7 +573,10 @@ export function SignUpPage() {
     localStorage.removeItem('zaeem_onboarding_completed');
     localStorage.removeItem('zaeem_onboarded_store');
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const canonicalOrigin = typeof window !== 'undefined' && window.location.hostname.includes('za3em.shop')
+        ? 'https://www.za3em.shop'
+        : window.location.origin;
+      const redirectUrl = `${canonicalOrigin}/`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {

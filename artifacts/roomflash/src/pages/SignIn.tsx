@@ -194,6 +194,18 @@ export function SignInPage() {
         .catch(() => null);
       }
     }
+
+    try {
+      const oauthErr = sessionStorage.getItem('zaeem_oauth_error');
+      if (oauthErr) {
+        sessionStorage.removeItem('zaeem_oauth_error');
+        setErrors({
+          general: isAr
+            ? `تنبيه: تعذر إكمال تسجيل الدخول عبر Google (${oauthErr}). يرجى التأكد من اختيار الحساب الصحيح أو تسجيل الدخول بكلمة المرور.`
+            : `Google sign-in could not be completed: ${oauthErr}`
+        });
+      }
+    } catch {}
   }, [setLocation]);
 
   const validateForm = () => {
@@ -613,7 +625,10 @@ export function SignInPage() {
     setOauthLoading(true);
     localStorage.setItem('zaeem_auth_action', 'signin');
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const canonicalOrigin = typeof window !== 'undefined' && window.location.hostname.includes('za3em.shop')
+        ? 'https://www.za3em.shop'
+        : window.location.origin;
+      const redirectUrl = `${canonicalOrigin}/`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
