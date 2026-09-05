@@ -8,6 +8,8 @@ import {
 import { fetchCloudStoreByUser } from '../utils/cloudDb';
 import { supabase } from '../utils/supabase';
 
+const GOOGLE_CLIENT_ID = '142585183945-gtdbluikj92oj5r5qpb902467a4ag95f.apps.googleusercontent.com';
+
 export function SignInPage() {
 
   const [, setLocation] = useLocation();
@@ -207,6 +209,92 @@ export function SignInPage() {
       }
     } catch {}
   }, [setLocation]);
+
+  // 0. Initialize Google Identity Services (GIS) for Direct In-Browser Authentication
+  useEffect(() => {
+    const initGsi = () => {
+      if (typeof window === 'undefined' || !(window as any).google?.accounts?.id) return;
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response: any) => {
+            if (!response?.credential) return;
+            setOauthLoading(true);
+            try {
+              const base64Url = response.credential.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const jsonPayload = decodeURIComponent(
+                atob(base64)
+                  .split('')
+                  .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                  .join('')
+              );
+              const payload = JSON.parse(jsonPayload);
+
+              try {
+                await supabase.auth.signInWithIdToken({
+                  provider: 'google',
+                  token: response.credential,
+                });
+              } catch (se) {
+                console.warn('Supabase signInWithIdToken note:', se);
+              }
+
+              const userObj = {
+                id: `usr_${payload.sub || Date.now()}`,
+                email: payload.email,
+                name: payload.name || (payload.email ? payload.email.split('@')[0] : 'Merchant'),
+                avatar: payload.picture || '',
+                provider: 'google',
+                loggedIn: true,
+                time: new Date().toISOString()
+              };
+
+              await completeLoginRedirect(userObj, {
+                full_name: payload.name,
+                email: payload.email,
+                avatar_url: payload.picture,
+                sub: payload.sub
+              });
+            } catch (err) {
+              console.error('GIS ID token error:', err);
+              setOauthLoading(false);
+              setErrors({ general: isAr ? 'فشل تسجيل الدخول عبر Google' : 'Google sign-in failed' });
+            }
+          }
+        });
+
+        const btnContainer = document.getElementById('google-signin-gis-container');
+        if (btnContainer && !(btnContainer as any)._rendered) {
+          (window as any).google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            width: 380,
+            text: 'signin_with',
+            shape: 'pill'
+          });
+          (btnContainer as any)._rendered = true;
+        }
+      } catch (e) {
+        console.warn('GIS init error:', e);
+      }
+    };
+
+    let timer: any = null;
+    if ((window as any).google?.accounts?.id) {
+      initGsi();
+    } else {
+      timer = setInterval(() => {
+        if ((window as any).google?.accounts?.id) {
+          clearInterval(timer);
+          initGsi();
+        }
+      }, 300);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isAr]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -620,15 +708,12 @@ export function SignInPage() {
     }
   };
 
-  // Trigger Real Google / Apple OAuth via Supabase Official Client with PKCE
-  const handleOAuthClick = async (provider: 'google' | 'apple') => {
+  // Fallback to standard Supabase OAuth Redirect
+  const fallbackToSupabaseOAuth = async (provider: 'google' | 'apple') => {
     setOauthLoading(true);
     localStorage.setItem('zaeem_auth_action', 'signin');
     try {
-      const canonicalOrigin = typeof window !== 'undefined' && window.location.hostname.includes('za3em.shop')
-        ? 'https://www.za3em.shop'
-        : window.location.origin;
-      const redirectUrl = `${canonicalOrigin}/`;
+      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://www.za3em.shop/';
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -648,6 +733,68 @@ export function SignInPage() {
       setOauthLoading(false);
       setErrors({ general: isAr ? 'حدث خطأ أثناء بدء تسجيل الدخول' : 'Failed to initialize OAuth' });
     }
+  };
+
+  // Trigger Direct Google Identity Services Popup (or Supabase fallback)
+  const handleOAuthClick = async (provider: 'google' | 'apple') => {
+    if (provider === 'apple') {
+      return fallbackToSupabaseOAuth(provider);
+    }
+
+    setOauthLoading(true);
+    localStorage.setItem('zaeem_auth_action', 'signin');
+
+    // Strategy 1: Google Identity Services Popup (Instant token in browser, no redirects)
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2) {
+      try {
+        const client = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'email profile openid',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse?.error) {
+              console.warn('Google Identity Services popup error:', tokenResponse);
+              await fallbackToSupabaseOAuth('google');
+              return;
+            }
+            try {
+              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+              });
+              const userInfo = await res.json();
+              if (userInfo && userInfo.email) {
+                const userObj = {
+                  id: `usr_${userInfo.sub || Date.now()}`,
+                  email: userInfo.email,
+                  name: userInfo.name || userInfo.email.split('@')[0],
+                  avatar: userInfo.picture || '',
+                  provider: 'google',
+                  loggedIn: true,
+                  time: new Date().toISOString()
+                };
+                await completeLoginRedirect(userObj, {
+                  full_name: userInfo.name,
+                  email: userInfo.email,
+                  avatar_url: userInfo.picture,
+                  sub: userInfo.sub
+                });
+              } else {
+                await fallbackToSupabaseOAuth('google');
+              }
+            } catch (fetchErr) {
+              console.warn('UserInfo fetch error, falling back:', fetchErr);
+              await fallbackToSupabaseOAuth('google');
+            }
+          }
+        });
+        client.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (gErr) {
+        console.warn('GIS Token client init failed:', gErr);
+      }
+    }
+
+    // Strategy 2: Fallback to Supabase OAuth
+    await fallbackToSupabaseOAuth('google');
   };
 
 
@@ -907,7 +1054,8 @@ export function SignInPage() {
           </div>
 
           {/* Interactive Social Auth Button */}
-          <div>
+          <div className="space-y-2.5">
+            <div id="google-signin-gis-container" className="w-full flex justify-center empty:hidden" />
             <button
               type="button"
               disabled={oauthLoading}
