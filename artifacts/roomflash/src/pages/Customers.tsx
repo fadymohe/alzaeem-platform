@@ -159,8 +159,14 @@ export function CustomersPage() {
         ) : (
           <div className="p-12 text-center space-y-3">
             <Users className="size-10 text-slate-300 mx-auto" />
-            <h3 className="font-bold text-slate-700 dark:text-slate-300">لا يوجد زبائن مطاردين</h3>
-            <p className="text-xs text-slate-500">جرب البحث بكلمة أخرى أو إضافة زبون جديد.</p>
+            <h3 className="font-extrabold text-slate-800 dark:text-slate-200">
+              {customers.length === 0 ? 'لا يوجد زبائن بعد' : 'لا يوجد زبائن مطابقين للبحث'}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              {customers.length === 0
+                ? 'لم يتم تسجيل أي زبائن بعد. بمجرد قيام الزبائن بالطلب من متجرك الإلكتروني، ستتم إضافة بياناتهم وعناوينهم تلقائياً هنا.'
+                : 'جرب البحث باسم أو رقم هاتف مختلف.'}
+            </p>
           </div>
         )}
       </div>

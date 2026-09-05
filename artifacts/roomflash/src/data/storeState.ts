@@ -199,63 +199,7 @@ const INITIAL_ORDERS: StoreOrder[] = [
   }
 ];
 
-const INITIAL_CUSTOMERS: StoreCustomer[] = [
-  {
-    id: 201,
-    name: 'أحمد علي',
-    phone: '+964 770 123 4567',
-    email: 'ahmed.ali@gmail.com',
-    city: 'بغداد — الكرادة',
-    governorate: 'بغداد',
-    ordersCount: 3,
-    totalSpent: 240000,
-    lastOrderAt: new Date().toISOString()
-  },
-  {
-    id: 202,
-    name: 'مريم حسن',
-    phone: '+964 780 987 6543',
-    email: 'maryam.h@yahoo.com',
-    city: 'البصرة — الجزائر',
-    governorate: 'البصرة',
-    ordersCount: 5,
-    totalSpent: 420000,
-    lastOrderAt: new Date(Date.now() - 3600000 * 5).toISOString()
-  },
-  {
-    id: 203,
-    name: 'عمر فاروق',
-    phone: '+964 750 444 3322',
-    email: 'omar.farooq@outlook.com',
-    city: 'أربيل — عينكاوا',
-    governorate: 'أربيل',
-    ordersCount: 2,
-    totalSpent: 130000,
-    lastOrderAt: new Date(Date.now() - 3600000 * 12).toISOString()
-  },
-  {
-    id: 204,
-    name: 'زهراء كاظم',
-    phone: '+964 771 555 6677',
-    email: 'zahraa.k@gmail.com',
-    city: 'النجف — الحنانة',
-    governorate: 'النجف',
-    ordersCount: 4,
-    totalSpent: 310000,
-    lastOrderAt: new Date(Date.now() - 3600000 * 24).toISOString()
-  },
-  {
-    id: 205,
-    name: 'مصطفى البابلي',
-    phone: '+964 781 222 1100',
-    email: 'mustafa.babili@gmail.com',
-    city: 'بابل — الحلة',
-    governorate: 'بابل',
-    ordersCount: 1,
-    totalSpent: 110000,
-    lastOrderAt: new Date(Date.now() - 3600000 * 48).toISOString()
-  }
-];
+const INITIAL_CUSTOMERS: StoreCustomer[] = [];
 
 // Local Storage Keys
 const PRODUCTS_KEY = 'zaeem_store_products';
@@ -449,9 +393,15 @@ export function getStoredCustomers(): StoreCustomer[] {
     const raw = localStorage.getItem(CUSTOMERS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Clean out legacy sample customers (ID 201 to 205)
+      const DUMMY_NAMES = ['أحمد علي', 'مريم حسن', 'عمر فاروق', 'زهراء كاظم', 'مصطفى البابلي'];
       const cleaned = (Array.isArray(parsed) ? parsed : []).filter((c: any) => {
-        const isDummy = c.id >= 201 && c.id <= 205 && (c.email?.includes('gmail.com') || c.email?.includes('yahoo.com'));
+        const isDummy = (c.id >= 200 && c.id <= 210) ||
+          DUMMY_NAMES.includes(c.name) ||
+          c.phone === '+964 770 123 4567' ||
+          c.phone === '+964 780 987 6543' ||
+          c.phone === '+964 750 444 3322' ||
+          c.phone === '+964 771 555 6677' ||
+          c.phone === '+964 781 222 1100';
         return !isDummy;
       });
       if (cleaned.length !== parsed.length) {

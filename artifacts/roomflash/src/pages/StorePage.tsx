@@ -1,14 +1,32 @@
 import { useState, useEffect } from 'react';
 import {
   Store as StoreIcon, ExternalLink, Copy, Check, Sparkles, Globe,
-  Layers, Eye, RefreshCw, Zap, CheckCircle2, Palette, Save, ArrowLeft
+  Layers, Eye, RefreshCw, Zap, CheckCircle2, Palette, Save, ArrowLeft,
+  ArrowUpRight, ShieldCheck, Box, Truck, Package, Store
 } from 'lucide-react';
+import { formatIQD } from '../data/iraqData';
 import { StoreTemplates, type TemplateId, TEMPLATES_MAP } from '../components/storefront/StoreTemplates';
 import { getStoredOrders, getStoredProducts } from '../data/storeState';
 import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus } from '../utils/storeRegistry';
 
+const TEMPLATE_NAMES: Record<string, string> = {
+  'shoppingcart.1.2.7': 'سلة التسوق الشاملة (shoppingcart.1.2.7)',
+  'volt': 'فولت إكسبريس للتقنية (Volt Tech)',
+  'rose': 'روز أتيليه للأزياء والجمال (Rose Atelier)',
+  'nitro': 'نيترو سبورت الرياضي (Nitro Sports)',
+  'sepia': 'هاير الملكي للساعات والعطور (Royal Sepia)',
+  'oret': 'أوريت إكسبريس (Oret Express)',
+  'easyorders-flash': 'فلاش لاندينج للشراء الفوري (EasyOrders Flash)',
+  'nova': 'نوفا الملكي للأزياء (Nova Royal)',
+  'classic': 'كلاسيك الفاخر للعطور (Classic Luxury)',
+  'aurit': 'أوريت التقني للإلكترونيات (Aurit Tech)',
+  'brick': 'بريك التجاري المتقدم (Brick Commerce)',
+};
+
 export function StorePage() {
   const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
   const [subdomainInput, setSubdomainInput] = useState('alzaeem');
   const [subdomain, setSubdomain] = useState('alzaeem');
@@ -181,6 +199,22 @@ export function StorePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard?.writeText(code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyLink = (url: string) => {
+    navigator.clipboard?.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const storeProducts = getStoredProducts();
+  const storeCode = storeData?.storeCode || (typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('zaeem_onboarded_store') || '{}')?.storeCode || `ZAEEM-${subdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`) : 'ZAEEM-882194');
+  const templateLabel = TEMPLATE_NAMES[activeTemplate] || TEMPLATES_MAP[activeTemplate]?.name || activeTemplate;
+
   return (
     <div className="space-y-7 rf-appear">
       {/* Top Title Bar */}
@@ -255,8 +289,176 @@ export function StorePage() {
         </div>
       </div>
 
+      {/* 🌟 كارت المتجر الإلكتروني المباشر والرمز التعريفي الفريد */}
+      <div className="rounded-3xl border border-teal-500/30 bg-gradient-to-br from-[#0c1322] via-[#0d1628] to-[#0a1a24] text-white p-6 md:p-7 shadow-xl relative overflow-hidden">
+        <div className="absolute -top-16 -right-16 size-48 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 size-48 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-5">
+          {/* Top Bar: Store Name & Status Badges */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="size-12 rounded-2xl bg-teal-500/20 border border-teal-500/40 text-teal-300 grid place-items-center shrink-0 shadow-md shadow-teal-500/20">
+                <Store className="size-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-xl md:text-2xl font-black text-white">
+                    {storeName}
+                  </h2>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black transition-colors ${
+                    isStoreActive
+                      ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300'
+                      : 'bg-rose-950/80 border border-rose-500/40 text-rose-300'
+                  }`}>
+                    <span className={`size-2 rounded-full ${isStoreActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                    {isStoreActive ? 'متجرك نشط ومطلق أونلاين' : 'المتجر موقوف مؤقتاً (معطل)'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 font-mono dir-ltr">
+                  <Globe className="size-3.5 text-teal-400 shrink-0" />
+                  <span className="text-teal-300 font-bold">{fullUrl}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleCopyLink(fullUrl)}
+                className="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                {copiedLink ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
+                <span>{copiedLink ? 'تم نسخ الرابط' : 'نسخ الرابط'}</span>
+              </button>
+
+              <a
+                href={`/#/store/${subdomain}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>معاينة داخلية</span>
+                <ExternalLink className="size-3.5" />
+              </a>
+
+              <a
+                href={fullUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-md shadow-teal-500/20 transition-all cursor-pointer"
+              >
+                <span>فتح المتجر الحي أونلاين</span>
+                <ArrowUpRight className="size-4" />
+              </a>
+            </div>
+          </div>
+
+          {/* Core Info Grid: Store Code & Template & Product */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 1. Monospace Store Identifier Box */}
+            <div className="p-4 rounded-2xl bg-slate-950/70 border border-teal-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                  <ShieldCheck className="size-3.5 text-teal-400" />
+                  الرمز التعريفي الفريد لمتجرك
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyCode(storeCode)}
+                  className="text-[11px] font-bold text-teal-400 hover:text-teal-300 flex items-center gap-1 cursor-pointer bg-teal-950/60 px-2 py-0.5 rounded-lg border border-teal-800/60"
+                >
+                  {copiedCode ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                  <span>{copiedCode ? 'تم النسخ' : 'نسخ'}</span>
+                </button>
+              </div>
+              <div className="font-mono text-lg md:text-xl font-black text-teal-300 tracking-wider">
+                {storeCode}
+              </div>
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                يُستخدم لربط المتجر مع بوابات الدفع وزين كاش وعقود الشحن مع شركة الزعيم.
+              </p>
+            </div>
+
+            {/* 2. Bound Website Template Box */}
+            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
+              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                <Layers className="size-3.5 text-blue-400" />
+                قالب المتجر المربوط
+              </span>
+              <div className="text-sm font-extrabold text-white line-clamp-1">
+                {templateLabel}
+              </div>
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                تصميم متجاوب بالكامل وسريع التحميل مع سلة شراء مدمجة ودفع عند الاستلام.
+              </p>
+              <div className="pt-1">
+                <a
+                  href="#themes-section"
+                  className="text-[11px] font-bold text-blue-400 hover:underline inline-flex items-center gap-1"
+                >
+                  <span>تغيير أو تخصيص القالب ↓</span>
+                </a>
+              </div>
+            </div>
+
+            {/* 3. Manually Added Product / Catalog Hook */}
+            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
+              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                <Package className="size-3.5 text-amber-400" />
+                المنتج الأساسي في المتجر
+              </span>
+              <div className="flex items-center gap-2">
+                {storeData?.product?.image || storeData?.product?.imageUrl ? (
+                  <img
+                    src={storeData.product.image || storeData.product.imageUrl}
+                    alt={storeData.product.name || storeData.product.title}
+                    className="size-10 rounded-xl object-cover border border-slate-700 shrink-0"
+                  />
+                ) : (
+                  <div className="size-10 rounded-xl bg-slate-800 grid place-items-center text-slate-400 shrink-0">
+                    <Box className="size-5" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-white truncate">
+                    {storeProducts.length > 0 ? (storeData?.product?.name || storeData?.product?.title || storeProducts[0]?.name) : 'لم يتم إضافة منتجات بعد'}
+                  </p>
+                  <p className="text-xs font-mono font-black text-amber-400">
+                    {storeProducts.length > 0 ? formatIQD(storeData?.product?.price || storeProducts[0]?.price || 0) : '0 د.ع'}
+                  </p>
+                </div>
+              </div>
+              <div className="pt-1">
+                <a
+                  href="/products"
+                  className="text-[11px] font-bold text-amber-400 hover:underline inline-flex items-center gap-1"
+                >
+                  <span>إدارة الكتالوج ({storeProducts.length} منتجات) ←</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Logistics Strip */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80 text-xs text-slate-300">
+            <div className="flex items-center gap-2 font-bold text-teal-300">
+              <Truck className="size-4 text-teal-400 shrink-0" />
+              <span>رصيد 5 شحنات مجانية مفعل لمتجرك مع أسطول الزعيم لتوصيل كافة محافظات العراق!</span>
+            </div>
+            <a
+              href="/shipments/new"
+              className="text-xs font-bold text-teal-400 hover:text-teal-300 underline"
+            >
+              شحن أول طلب الآن ←
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* 🛠️ محرك تعديل الثيمات واسم الموقع والدومين الفرعي */}
-      <div className="rounded-3xl border border-teal-500/30 bg-gradient-to-br from-slate-900 via-[#0d1628] to-slate-950 p-6 md:p-8 shadow-xl space-y-6 text-white">
+      <div id="themes-section" className="rounded-3xl border border-teal-500/30 bg-gradient-to-br from-slate-900 via-[#0d1628] to-slate-950 p-6 md:p-8 shadow-xl space-y-6 text-white">
         <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800/80 pb-4">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-2xl bg-teal-500/20 border border-teal-500/40 text-teal-300 grid place-items-center">
