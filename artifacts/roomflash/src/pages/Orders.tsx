@@ -210,8 +210,14 @@ export function OrdersPage() {
         ) : (
           <div className="p-12 text-center space-y-3">
             <ShoppingCart className="size-10 text-slate-300 mx-auto" />
-            <h3 className="font-bold text-slate-700 dark:text-slate-300">لا توجد طلبات مطابقة</h3>
-            <p className="text-xs text-slate-500">جرب البحث بكلمة أخرى أو إضافة طلب جديد.</p>
+            <h3 className="font-extrabold text-slate-800 dark:text-slate-200">
+              {orders.length === 0 ? 'لا توجد طلبات بعد' : 'لا توجد طلبات مطابقة'}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              {orders.length === 0
+                ? 'لم يتم تسجيل أي طلبات شراء في المتجر بعد. بمجرد قيام الزبائن بالشراء ستظهر هنا تلقائياً بتسلسل order0001.'
+                : 'جرب البحث بكلمة أخرى أو تغيير تصفية الحالة.'}
+            </p>
           </div>
         )}
       </div>

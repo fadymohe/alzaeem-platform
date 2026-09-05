@@ -4,7 +4,7 @@ import {
   Sparkles, ExternalLink, Heart, Clock, Phone, MapPin, X, CheckCircle2
 } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../../data/iraqData';
-import { getStoredProducts, type StoreProduct } from '../../data/storeState';
+import { getStoredProducts, addStoredOrder, type StoreProduct } from '../../data/storeState';
 
 export type TemplateId = 'shoppingcart.1.2.7' | 'volt' | 'rose' | 'nitro' | 'sepia' | 'oret';
 
@@ -202,10 +202,30 @@ export function StoreTemplates({
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!custName || !custPhone) return;
+    if (!custName || !custPhone || !selectedProductModal) return;
+
+    // Save order to merchant dashboard with sequential order0001, order0002...
+    addStoredOrder({
+      customerName: custName,
+      customerPhone: custPhone,
+      customerCity: custCity,
+      address: `العراق — ${custCity}`,
+      total: selectedProductModal.price,
+      itemsCount: 1,
+      status: 'pending',
+      paymentMethod: 'cod',
+      items: [{
+        productName: selectedProductModal.name,
+        quantity: 1,
+        unitPrice: selectedProductModal.price
+      }]
+    });
+
     setOrderSuccessModal(true);
     setSelectedProductModal(null);
     setCartCount(cartCount + 1);
+    setCustName('');
+    setCustPhone('');
   };
 
   const filteredProducts = productsList.filter(p => {

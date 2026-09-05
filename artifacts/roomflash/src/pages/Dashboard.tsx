@@ -181,13 +181,25 @@ export function DashboardPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/shipments/new"
-              className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+              className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
             >
-              <Plus className="size-4" /> إضافة شحنة
+              <Plus className="size-4" /> إضافة شحنة جديدة
+            </Link>
+            <Link
+              href="/shipments/new?type=baghdad"
+              className="px-3.5 py-2.5 bg-teal-950/70 hover:bg-teal-900 text-teal-200 font-bold text-xs rounded-xl border border-teal-500/40 transition-all flex items-center gap-1.5"
+            >
+              <span>🚀</span> شحن سريع بغداد (24h)
+            </Link>
+            <Link
+              href="/shipments/new?type=governorates"
+              className="px-3.5 py-2.5 bg-teal-950/70 hover:bg-teal-900 text-teal-200 font-bold text-xs rounded-xl border border-teal-500/40 transition-all flex items-center gap-1.5"
+            >
+              <span>🚚</span> شحن المحافظات
             </Link>
             <Link
               href="/products/new"
-              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-md transition-all flex items-center gap-1.5"
+              className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-md transition-all flex items-center gap-1.5"
             >
               <Plus className="size-4" /> إضافة منتج
             </Link>
@@ -329,10 +341,10 @@ export function DashboardPage() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-white truncate">
-                    {storeInfo.product?.name || storeInfo.product?.title || (products[0]?.name || 'منتج المتجر')}
+                    {products.length > 0 ? (storeInfo.product?.name || storeInfo.product?.title || products[0]?.name) : 'لم يتم إضافة منتجات بعد'}
                   </p>
                   <p className="text-xs font-mono font-black text-amber-400">
-                    {formatIQD(storeInfo.product?.price || products[0]?.price || 45000)}
+                    {products.length > 0 ? formatIQD(storeInfo.product?.price || products[0]?.price || 0) : '0 د.ع'}
                   </p>
                 </div>
               </div>
@@ -376,8 +388,15 @@ export function DashboardPage() {
           <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono mt-3">
             {formatIQD(totalRevenue)}
           </p>
-          <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-bold">
-            <TrendingUp className="size-3.5" /> <span>+24.8% هذا الشهر</span>
+          <div className="flex items-center gap-1 text-xs mt-2 font-bold">
+            {orders.length === 0 ? (
+              <span className="text-slate-400 font-medium">0 د.ع مبيعات فعلية</span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <TrendingUp className="size-3.5" />
+                <span>{orders.length} طلبات مسجلة</span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -390,10 +409,14 @@ export function DashboardPage() {
             </span>
           </div>
           <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono mt-3">
-            {orders.length} طلبات
+            {orders.length}
           </p>
           <div className="flex items-center gap-1 text-xs text-slate-500 mt-2 font-bold">
-            <span>{deliveredOrdersCount} تم تسليمها بنجاح</span>
+            {orders.length === 0 ? (
+              <span>0 طلبات واردة</span>
+            ) : (
+              <span>{deliveredOrdersCount} تم تسليمها بنجاح</span>
+            )}
           </div>
         </div>
 
@@ -406,10 +429,12 @@ export function DashboardPage() {
             </span>
           </div>
           <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono mt-3">
-            {activeProductsCount} منتجات
+            {activeProductsCount}
           </p>
           <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 mt-2 font-bold">
-            <Link href="/products" className="hover:underline flex items-center gap-1">إدارة المنتجات ←</Link>
+            <Link href="/products" className="hover:underline flex items-center gap-1">
+              {activeProductsCount === 0 ? 'إضافة منتجات (0) ←' : `إدارة المنتجات (${activeProductsCount}) ←`}
+            </Link>
           </div>
         </div>
 
@@ -422,10 +447,12 @@ export function DashboardPage() {
             </span>
           </div>
           <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono mt-3">
-            {customers.length} زبون
+            {customers.length}
           </p>
           <div className="flex items-center gap-1 text-xs text-slate-500 mt-2 font-bold">
-            <Link href="/customers" className="hover:underline">عرض الزبائن ←</Link>
+            <Link href="/customers" className="hover:underline">
+              {customers.length === 0 ? '0 زبائن مسجلين' : `عرض الزبائن (${customers.length}) ←`}
+            </Link>
           </div>
         </div>
       </div>
@@ -452,7 +479,7 @@ export function DashboardPage() {
         </Link>
         <Link
           href="/shipments/new"
-          className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-900 dark:text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all"
+          className="p-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
         >
           <Truck className="size-4" /> إضافة شحنة جديدة
         </Link>
@@ -465,52 +492,83 @@ export function DashboardPage() {
             <h2 className="font-extrabold text-slate-900 dark:text-white text-base">
               أحدث طلبات الشراء
             </h2>
-            <p className="text-xs text-slate-500">الطلبات الواردة حديثاً من المتاجر والدفع عند الاستلام.</p>
+            <p className="text-xs text-slate-500">الطلبات الواردة حديثاً من المتجر الإلكتروني والدفع عند الاستلام.</p>
           </div>
           <Link href="/orders" className="text-xs font-extrabold text-teal-700 dark:text-teal-400 hover:underline">
-            عرض كل الطلبات ←
+            عرض كل الطلبات ({orders.length}) ←
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-bold text-slate-500">
-              <tr>
-                <th className="p-3">رقم الطلب</th>
-                <th className="p-3">الزبون</th>
-                <th className="p-3">المحافظة</th>
-                <th className="p-3">المبلغ</th>
-                <th className="p-3">الحالة</th>
-                <th className="p-3 text-center">إجراء فوري</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {orders.slice(0, 5).map((ord) => (
-                <tr key={ord.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                  <td className="p-3 font-mono font-bold text-teal-700 dark:text-teal-400">{ord.number}</td>
-                  <td className="p-3 font-bold text-slate-900 dark:text-white">{ord.customerName}</td>
-                  <td className="p-3 text-xs text-slate-600 dark:text-slate-300">{ord.customerCity}</td>
-                  <td className="p-3 font-mono font-black text-slate-900 dark:text-white">{formatIQD(ord.total)}</td>
-                  <td className="p-3">
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                      ord.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {ord.status === 'delivered' ? 'تم التسليم' : 'قيد المعالجة'}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => handleAdvanceStatus(ord.id, ord.status)}
-                      className="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-xs font-bold rounded-lg text-slate-700 dark:text-slate-300 hover:text-teal-700 border border-slate-200 dark:border-slate-700"
-                    >
-                      تحديث الحالة
-                    </button>
-                  </td>
+        {orders.length === 0 ? (
+          <div className="py-12 px-4 text-center space-y-3 bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+            <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 grid place-items-center mx-auto">
+              <ShoppingBag className="size-6" />
+            </div>
+            <h3 className="font-extrabold text-slate-800 dark:text-slate-200 text-base">
+              لا توجد طلبات بعد
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              لم تصل أي طلبات شراء بعد إلى متجرك الإلكتروني. شارك رابط متجرك مع الزبائن لبدء استقبال الطلبات وتوليد بوالص الشحن التلقائية.
+            </p>
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+              <a
+                href={liveStoreUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <span>زيارة المتجر وإجراء طلب تجريبي</span>
+                <ExternalLink className="size-3.5" />
+              </a>
+              <Link
+                href="/orders"
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all"
+              >
+                إضافة طلب يدوي
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-sm">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-bold text-slate-500">
+                <tr>
+                  <th className="p-3">رقم الطلب</th>
+                  <th className="p-3">الزبون</th>
+                  <th className="p-3">المحافظة</th>
+                  <th className="p-3">المبلغ</th>
+                  <th className="p-3">الحالة</th>
+                  <th className="p-3 text-center">إجراء فوري</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {orders.slice(0, 5).map((ord) => (
+                  <tr key={ord.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="p-3 font-mono font-bold text-teal-700 dark:text-teal-400">{ord.number}</td>
+                    <td className="p-3 font-bold text-slate-900 dark:text-white">{ord.customerName}</td>
+                    <td className="p-3 text-xs text-slate-600 dark:text-slate-300">{ord.customerCity}</td>
+                    <td className="p-3 font-mono font-black text-slate-900 dark:text-white">{formatIQD(ord.total)}</td>
+                    <td className="p-3">
+                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        ord.status === 'delivered' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                      }`}>
+                        {ord.status === 'delivered' ? 'تم التسليم' : ord.status === 'confirmed' ? 'مؤكد' : ord.status === 'processing' ? 'جاري التجهيز' : 'قيد الانتظار'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => handleAdvanceStatus(ord.id, ord.status)}
+                        className="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-xs font-bold rounded-lg text-slate-700 dark:text-slate-300 hover:text-teal-700 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                      >
+                        تحديث الحالة
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

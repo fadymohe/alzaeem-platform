@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
+import { useLocation } from 'wouter';
 import {
   Truck, Plus, Search, MapPin, Package, Phone, User, DollarSign, FileText,
   CheckCircle2, Clock, AlertTriangle, ArrowLeft, ExternalLink, RefreshCw,
@@ -8,9 +9,58 @@ import {
   IRAQ_GOVERNORATES, SHIPPING_RATES, formatIQD, DEMO_SHIPMENTS,
   type DemoShipment, type Governorate
 } from '../data/iraqData';
+import { getStoredOrders } from '../data/storeState';
 
 export function ShipmentsPage() {
-  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'track' | 'logistics'>('list');
+  const [location] = useLocation();
+
+  const isCreateRoute = () => {
+    if (typeof window === 'undefined') return false;
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    return location === '/shipments/new' ||
+      hash.includes('/shipments/new') ||
+      hash.includes('action=create') ||
+      search.includes('action=create') ||
+      hash.includes('type=');
+  };
+
+  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'track' | 'logistics'>(() => {
+    return isCreateRoute() ? 'create' : 'list';
+  });
+
+  useEffect(() => {
+    if (isCreateRoute()) {
+      setActiveTab('create');
+      if (typeof window !== 'undefined') {
+        const hash = window.location.hash || '';
+        const search = window.location.search || '';
+        if (hash.includes('type=baghdad') || search.includes('type=baghdad')) {
+          setForm(prev => ({ ...prev, governorate: 'بغداد', notes: 'شحن فوري داخل بغداد - تسليم خلال 24 ساعة 🚀' }));
+        } else if (hash.includes('type=governorates') || search.includes('type=governorates')) {
+          setForm(prev => ({ ...prev, governorate: 'البصرة', notes: 'شحن إلى محافظات العراق' }));
+        }
+        if (hash.includes('autofill=true') || search.includes('autofill=true')) {
+          setTimeout(() => {
+            const orders = getStoredOrders();
+            if (orders && orders.length > 0) {
+              const latest = orders[0];
+              setForm(prev => ({
+                ...prev,
+                recipientName: latest.customerName || prev.recipientName,
+                recipientPhone: latest.customerPhone || prev.recipientPhone,
+                address: latest.address || prev.address,
+                codAmount: String(latest.total || 0),
+                itemsCount: String(latest.itemsCount || 1),
+                notes: `شحنة مخصصة للطلب (${latest.number})`,
+              }));
+            }
+          }, 100);
+        }
+      }
+    }
+  }, [location]);
+
   const [shipments, setShipments] = useState<DemoShipment[]>(DEMO_SHIPMENTS);
   const [search, setSearch] = useState('');
   const [selectedGovernorate, setSelectedGovernorate] = useState<string>('الكل');
@@ -33,6 +83,25 @@ export function ShipmentsPage() {
     paymentType: 'cod' as 'cod' | 'prepaid',
     notes: '',
   });
+
+  const handleAutoFillFromLatestOrder = () => {
+    const orders = getStoredOrders();
+    if (!orders || orders.length === 0) {
+      alert('لا توجد طلبات شراء مسجلة بعد في متجرك الإلكتروني لتعبئة بيانات الشحنة منها.');
+      return;
+    }
+    const latest = orders[0];
+    setForm((prev) => ({
+      ...prev,
+      recipientName: latest.customerName || prev.recipientName,
+      recipientPhone: latest.customerPhone || prev.recipientPhone,
+      address: latest.address || prev.address,
+      codAmount: String(latest.total || 0),
+      itemsCount: String(latest.itemsCount || 1),
+      notes: `شحنة تابعة للطلب (${latest.number})`,
+    }));
+    alert(`تمت تعبئة بيانات الشحنة تلقائياً من الطلب (${latest.number}) بنجاح ✅`);
+  };
 
   const handleCreateShipment = (e: FormEvent) => {
     e.preventDefault();
@@ -151,15 +220,50 @@ export function ShipmentsPage() {
       {activeTab === 'create' && (
         <div className="max-w-4xl mx-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <Plus className="size-5 text-teal-700" /> إضافة شحنة جديدة
-            </h2>
+            <div>
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Plus className="size-5 text-teal-700" /> إضافة شحنة جديدة
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                أنشئ بوليصة شحن جديدة مع شركة الزعيم للتوصيل السريع لجميع محافظات العراق
+              </p>
+            </div>
             <button
               onClick={() => setActiveTab('list')}
               className="text-xs font-semibold text-slate-500 hover:text-slate-900 flex items-center gap-1"
             >
               <ArrowLeft className="size-4" /> العودة للقائمة
             </button>
+          </div>
+
+          {/* Quick Actions / Additional Shipment Options */}
+          <div className="mb-6 p-4 rounded-xl bg-teal-50/80 dark:bg-teal-950/30 border border-teal-200/60 dark:border-teal-800/50">
+            <span className="text-xs font-extrabold text-teal-900 dark:text-teal-300 block mb-2">
+              ⚡ خيارات سريعة لإضافة الشحنة:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setForm(prev => ({ ...prev, governorate: 'بغداد', notes: 'شحن فوري داخل بغداد - تسليم خلال 24 ساعة 🚀' }))}
+                className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-teal-300 text-teal-800 dark:text-teal-200 text-xs font-bold hover:bg-teal-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <span>🚀</span> شحن سريع في بغداد (24 ساعة)
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm(prev => ({ ...prev, governorate: 'البصرة', notes: 'شحن محافظات العراق' }))}
+                className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-teal-300 text-teal-800 dark:text-teal-200 text-xs font-bold hover:bg-teal-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <span>🚚</span> شحن كافة المحافظات
+              </button>
+              <button
+                type="button"
+                onClick={handleAutoFillFromLatestOrder}
+                className="px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <Sparkles className="size-3.5" /> تعبئة تلقائية من أحدث طلب بالمتجر
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleCreateShipment} className="space-y-6">
@@ -191,7 +295,7 @@ export function ShipmentsPage() {
                     type="text"
                     value={form.recipientPhone}
                     onChange={(e) => setForm({ ...form, recipientPhone: e.target.value })}
-                    placeholder="01012345678"
+                    placeholder="0770 123 4567"
                     className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm ltr text-right outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
                   />
                 </div>

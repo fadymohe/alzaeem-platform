@@ -266,10 +266,46 @@ const CUSTOMERS_KEY = 'zaeem_store_customers';
 export function getStoredProducts(): StoreProduct[] {
   try {
     const raw = localStorage.getItem(PRODUCTS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Clean out the 5 hardcoded dummy sample products if present
+      const isDummyCatalog = Array.isArray(parsed) && parsed.length === 5 &&
+        parsed.some((p: any) => p.sku === 'SHIRT-001' || p.sku === 'PERFUME-99');
+      
+      if (!isDummyCatalog && Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
   } catch (e) {}
-  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(INITIAL_PRODUCTS));
-  return INITIAL_PRODUCTS;
+
+  // Check if merchant has an onboarded product
+  try {
+    const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+    if (rawStore) {
+      const parsedStore = JSON.parse(rawStore);
+      if (parsedStore.product && (parsedStore.product.name || parsedStore.product.title)) {
+        const realProd: StoreProduct = {
+          id: 1,
+          name: parsedStore.product.title || parsedStore.product.name,
+          sku: `PRD-${(parsedStore.subdomain || 'ZAEEM').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'SHOP'}-001`,
+          description: parsedStore.product.description || parsedStore.slogan || 'منتج أصلي عالي الجودة مع شحن سريع وضمان الدفع عند الاستلام',
+          price: Number(parsedStore.product.price) || 45000,
+          compareAtPrice: Number(parsedStore.product.compareAtPrice) || Math.round((Number(parsedStore.product.price) || 45000) * 1.3),
+          stock: 50,
+          lowStockThreshold: 5,
+          category: parsedStore.category || 'عام',
+          status: 'active',
+          imageUrl: parsedStore.product.imageUrl || parsedStore.product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+          weightGrams: 500
+        };
+        localStorage.setItem(PRODUCTS_KEY, JSON.stringify([realProd]));
+        return [realProd];
+      }
+    }
+  } catch (e) {}
+
+  // Default is empty if merchant has not added any products
+  return [];
 }
 
 export function saveStoredProducts(products: StoreProduct[]): void {
@@ -284,6 +320,9 @@ export function addStoredProduct(product: Omit<StoreProduct, 'id'>): StoreProduc
   };
   const updated = [newProduct, ...products];
   saveStoredProducts(updated);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+  }
   return newProduct;
 }
 
@@ -293,6 +332,9 @@ export function updateStoredProduct(id: number, updates: Partial<StoreProduct>):
   if (idx === -1) return null;
   products[idx] = { ...products[idx], ...updates };
   saveStoredProducts(products);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+  }
   return products[idx];
 }
 
@@ -300,17 +342,59 @@ export function deleteStoredProduct(id: number): boolean {
   const products = getStoredProducts();
   const updated = products.filter(p => p.id !== id);
   saveStoredProducts(updated);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+  }
   return true;
+}
+
+// Helper to determine the next sequential order number: order0001, order0002, order0003...
+export function getNextOrderNumber(existingOrders: StoreOrder[]): string {
+  let maxSeq = 0;
+  for (const o of existingOrders) {
+    const match = o.number?.match(/order(\d+)/i);
+    if (match) {
+      const n = parseInt(match[1], 10);
+      if (n > maxSeq) maxSeq = n;
+    }
+  }
+  const nextSeq = Math.max(maxSeq + 1, existingOrders.length + 1);
+  return `order${String(nextSeq).padStart(4, '0')}`;
 }
 
 // Order Methods
 export function getStoredOrders(): StoreOrder[] {
   try {
     const raw = localStorage.getItem(ORDERS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Clean out legacy fake seed orders (ORD-1001 to ORD-1005)
+      const cleaned = (Array.isArray(parsed) ? parsed : []).filter((o: any) => {
+        const isOldDummy = (o.number?.startsWith('ORD-100') && o.id >= 101 && o.id <= 105) ||
+          (o.customerName === 'أحمد علي' && o.customerPhone?.includes('123 4567')) ||
+          (o.customerName === 'مريم حسن' && o.customerPhone?.includes('987 6543')) ||
+          (o.customerName === 'عمر فاروق' && o.customerPhone?.includes('444 3322'));
+        return !isOldDummy;
+      });
+
+      // Normalize any existing real orders to follow the order0001 format if needed
+      let hasChange = cleaned.length !== parsed.length;
+      cleaned.forEach((ord, index) => {
+        if (!ord.number || !ord.number.toLowerCase().startsWith('order')) {
+          ord.number = `order${String(cleaned.length - index).padStart(4, '0')}`;
+          hasChange = true;
+        }
+      });
+
+      if (hasChange) {
+        saveStoredOrders(cleaned);
+      }
+      return cleaned;
+    }
   } catch (e) {}
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(INITIAL_ORDERS));
-  return INITIAL_ORDERS;
+
+  // Real stores start with 0 orders by default
+  return [];
 }
 
 export function saveStoredOrders(orders: StoreOrder[]): void {
@@ -319,14 +403,31 @@ export function saveStoredOrders(orders: StoreOrder[]): void {
 
 export function addStoredOrder(order: Omit<StoreOrder, 'id' | 'number' | 'createdAt'>): StoreOrder {
   const orders = getStoredOrders();
+  const orderNumber = getNextOrderNumber(orders);
+
   const newOrder: StoreOrder = {
     ...order,
     id: Date.now(),
-    number: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+    number: orderNumber,
     createdAt: new Date().toISOString()
   };
   const updated = [newOrder, ...orders];
   saveStoredOrders(updated);
+
+  // Sync Customer
+  try {
+    addStoredCustomer({
+      name: order.customerName,
+      phone: order.customerPhone,
+      city: order.customerCity,
+      governorate: order.customerCity
+    });
+  } catch {}
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+  }
+
   return newOrder;
 }
 
@@ -336,6 +437,9 @@ export function updateStoredOrderStatus(id: number, nextStatus: StoreOrder['stat
   if (idx === -1) return null;
   orders[idx].status = nextStatus;
   saveStoredOrders(orders);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+  }
   return orders[idx];
 }
 
@@ -343,10 +447,21 @@ export function updateStoredOrderStatus(id: number, nextStatus: StoreOrder['stat
 export function getStoredCustomers(): StoreCustomer[] {
   try {
     const raw = localStorage.getItem(CUSTOMERS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Clean out legacy sample customers (ID 201 to 205)
+      const cleaned = (Array.isArray(parsed) ? parsed : []).filter((c: any) => {
+        const isDummy = c.id >= 201 && c.id <= 205 && (c.email?.includes('gmail.com') || c.email?.includes('yahoo.com'));
+        return !isDummy;
+      });
+      if (cleaned.length !== parsed.length) {
+        saveStoredCustomers(cleaned);
+      }
+      return cleaned;
+    }
   } catch (e) {}
-  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(INITIAL_CUSTOMERS));
-  return INITIAL_CUSTOMERS;
+
+  return [];
 }
 
 export function saveStoredCustomers(customers: StoreCustomer[]): void {
@@ -355,6 +470,15 @@ export function saveStoredCustomers(customers: StoreCustomer[]): void {
 
 export function addStoredCustomer(customer: Omit<StoreCustomer, 'id' | 'ordersCount' | 'totalSpent'>): StoreCustomer {
   const customers = getStoredCustomers();
+  const existingIdx = customers.findIndex(c => c.phone === customer.phone || (c.name === customer.name && c.city === customer.city));
+
+  if (existingIdx !== -1) {
+    customers[existingIdx].ordersCount += 1;
+    customers[existingIdx].lastOrderAt = new Date().toISOString();
+    saveStoredCustomers(customers);
+    return customers[existingIdx];
+  }
+
   const newCustomer: StoreCustomer = {
     ...customer,
     id: Date.now(),
@@ -364,5 +488,8 @@ export function addStoredCustomer(customer: Omit<StoreCustomer, 'id' | 'ordersCo
   };
   const updated = [newCustomer, ...customers];
   saveStoredCustomers(updated);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+  }
   return newCustomer;
 }
