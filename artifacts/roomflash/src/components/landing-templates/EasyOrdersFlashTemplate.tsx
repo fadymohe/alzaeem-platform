@@ -29,6 +29,8 @@ export interface TemplateProduct {
   compareAtPrice?: number;
   imageUrl: string;
   images?: string[];
+  discountTwoItems?: number;
+  discountThreeItems?: number;
 }
 
 export interface TemplateStore {
@@ -97,18 +99,21 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
 
   // حساب باقات العروض بالدينار العراقي الصحيح
   // 1 قطعة: السعر الأساسي
-  // 2 قطعة: خصم 5,000 د.ع على الإجمالي
-  // 3 قطع: شحن مجاني + خصم إضافي
+  // 2 قطعة: نسبة الخصم المحددة (افتراضياً 15%)
+  // 3 قطع: نسبة الخصم المحددة (افتراضياً 25%) + شحن مجاني
   const calculatePricing = () => {
     const basePrice = Math.round(product.price);
     let itemsTotal = basePrice * quantity;
     let shipping = selectedGov.shippingCost;
 
+    const disc2 = typeof product.discountTwoItems === 'number' && product.discountTwoItems >= 0 ? product.discountTwoItems : 15;
+    const disc3 = typeof product.discountThreeItems === 'number' && product.discountThreeItems >= 0 ? product.discountThreeItems : 25;
+
     if (quantity === 2) {
-      itemsTotal = basePrice * 2 - 5000; // توفير 5,000 د.ع
+      itemsTotal = Math.round(basePrice * 2 * (1 - disc2 / 100));
     } else if (quantity >= 3) {
-      itemsTotal = basePrice * quantity - 10000; // توفير 10,000 د.ع
-      shipping = 0; // شحن مجاني
+      itemsTotal = Math.round(basePrice * quantity * (1 - disc3 / 100));
+      shipping = 0; // شحن مجاني عند طلب 3 قطع أو أكثر
     }
 
     const grandTotal = Math.round(itemsTotal + shipping);
@@ -117,7 +122,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
       shipping,
       grandTotal,
       savings: Math.round(
-        (product.compareAtPrice || basePrice + 12000) * quantity - itemsTotal
+        (product.compareAtPrice || basePrice * 1.3) * quantity - itemsTotal
       ),
     };
   };
@@ -363,15 +368,15 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                   },
                   {
                     qty: 2,
-                    title: "قطعتين (توفير 5,000 د.ع)",
+                    title: `قطعتين (خصم ${product.discountTwoItems ?? 15}%)`,
                     badge: "الأكثر طلباً ⭐",
-                    price: formatIQD(product.price * 2 - 5000),
+                    price: formatIQD(Math.round(product.price * 2 * (1 - (product.discountTwoItems ?? 15) / 100))),
                   },
                   {
                     qty: 3,
-                    title: "3 قطع (شحن مجاني)",
-                    badge: "أكبر توفير 🎁",
-                    price: formatIQD(product.price * 3 - 10000),
+                    title: `3 قطع (خصم ${product.discountThreeItems ?? 25}%)`,
+                    badge: "شحن مجاني 🎁",
+                    price: formatIQD(Math.round(product.price * 3 * (1 - (product.discountThreeItems ?? 25) / 100))),
                   },
                 ].map((pack) => (
                   <button
@@ -418,7 +423,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                   required
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="مثال: محمود أحمد عبد الله"
+                  placeholder="مثال: علي حسن عبد الرضا"
                   className="w-full h-11 px-4 rounded-xl border border-slate-700 bg-slate-950 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
@@ -432,7 +437,7 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                   required
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="مثال: 01012345678 أو 011 / 012 / 015"
+                  placeholder="مثال: 07701234567 أو 07801234567 أو 07501234567"
                   dir="ltr"
                   className="w-full h-11 px-4 rounded-xl border border-slate-700 bg-slate-950 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-right"
                 />

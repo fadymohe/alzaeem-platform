@@ -11,7 +11,7 @@ import {
   updateStoreActiveStatus,
   getCookie,
 } from "../utils/storeRegistry";
-import { fetchCloudStore } from "../utils/cloudDb";
+import { fetchCloudStore, fetchCloudLandingPageBySlug } from "../utils/cloudDb";
 import { addStoredOrder } from "../data/storeState";
 import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, PauseCircle, Power } from "lucide-react";
 
@@ -19,6 +19,10 @@ export function DynamicStoreLanding() {
   const [matchView, paramsView] = useRoute("/view-store/:subdomain");
   const [matchStore, paramsStore] = useRoute("/store/:subdomain");
   const [matchLanding, paramsLanding] = useRoute("/landing/:subdomain");
+  const [matchLandingWithSlug, paramsLandingWithSlug] = useRoute("/landing/:subdomain/:slug");
+  const [matchProductSlug, paramsProductSlug] = useRoute("/p/:slug");
+  const [matchProductSlugWithSub, paramsProductSlugWithSub] = useRoute("/p/:subdomain/:slug");
+  const [matchStoreWithSlug, paramsStoreWithSlug] = useRoute("/store/:subdomain/:slug");
 
   // 1. استخراج النطاق الفرعي من Hostname أو Route Params
   const hostMatch = window.location.hostname.match(/^([a-zA-Z0-9-]+)\.za3em\.shop$/i);
@@ -33,25 +37,58 @@ export function DynamicStoreLanding() {
 
   // استخراج النطاق الفرعي من الهاش مباشرة كضمان إضافي مع Wouter HashLocation
   let hashSub = "";
-  if (hash.includes('/store/') || hash.includes('/view-store/') || hash.includes('/landing/')) {
-    const parts = hash.split('?')[0].split('/');
-    const lastPart = parts[parts.length - 1];
-    if (lastPart && lastPart !== 'store' && lastPart !== 'landing' && lastPart !== 'view-store') {
-      hashSub = lastPart;
+  if (hash.includes('/store/') || hash.includes('/view-store/') || hash.includes('/landing/') || hash.includes('/p/')) {
+    const parts = hash.split('?')[0].split('/').filter(Boolean);
+    if (parts.length >= 2 && (parts[0] === 'store' || parts[0] === 'landing' || parts[0] === 'view-store' || parts[0] === 'p')) {
+      hashSub = parts[1];
     }
   }
 
   const rawSub =
     (hostSub && hostSub !== "www" && hostSub !== "za3em")
       ? hostSub
-      : paramsView?.subdomain ||
+      : paramsLandingWithSlug?.subdomain ||
+        paramsProductSlugWithSub?.subdomain ||
+        paramsStoreWithSlug?.subdomain ||
+        paramsView?.subdomain ||
         paramsStore?.subdomain ||
         paramsLanding?.subdomain ||
         hashSub ||
         querySub ||
-        "zero";
+        "alzaeem";
 
-  const cleanSubdomain = (rawSub || "zero").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  const cleanSubdomain = (rawSub || "alzaeem").toLowerCase().replace(/[^a-z0-9-]/g, "");
+
+  // استخراج اسم صفحة الهبوط (Slug) إن وجد (مثل landbidg1)
+  let currentSlug = "";
+  if (paramsLandingWithSlug?.slug) currentSlug = paramsLandingWithSlug.slug;
+  else if (paramsProductSlugWithSub?.slug) currentSlug = paramsProductSlugWithSub.slug;
+  else if (paramsProductSlug?.slug) currentSlug = paramsProductSlug.slug;
+  else if (paramsStoreWithSlug?.slug) currentSlug = paramsStoreWithSlug.slug;
+  else {
+    const qSlug = searchParams.get("slug") || searchParams.get("landing") || searchParams.get("p");
+    if (qSlug) {
+      currentSlug = qSlug;
+    } else {
+      const hashClean = hash.replace(/^#\/?/, "").split("?")[0];
+      const hParts = hashClean.split("/").filter(Boolean);
+      if (hParts.length >= 2 && (hParts[0] === "p" || hParts[0] === "landing" || hParts[0] === "page")) {
+        currentSlug = hParts[hParts.length - 1];
+      } else if (hParts.length === 1 && !["dashboard", "store", "products", "orders", "customers", "shipments", "landing-pages", "analytics", "subscriptions", "marketing", "settings", "support", "sign-in", "sign-up", "onboarding"].includes(hParts[0])) {
+        currentSlug = hParts[0];
+      }
+
+      if (!currentSlug && typeof window !== "undefined") {
+        const pathClean = (window.location.pathname || "").replace(/^\/+/, "").split("?")[0];
+        const pParts = pathClean.split("/").filter(Boolean);
+        if (pParts.length >= 1 && !["view-store", "store", "landing", "p", "dashboard", "api"].includes(pParts[0])) {
+          currentSlug = pParts[0];
+        }
+      }
+    }
+  }
+
+  const cleanSlug = currentSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, "");
 
   // 2. التحقق من السجل المركزي للمتاجر المسجلة فورياً
   const initialRegisteredData = getRegisteredStore(cleanSubdomain);
@@ -142,6 +179,64 @@ export function DynamicStoreLanding() {
     const currentActive = resolveCurrentActive();
     if (typeof currentActive === 'boolean' && isMounted) {
       setIsStoreActive(currentActive);
+    }
+
+    // A2. فحص ما إذا كان الرابط مخصصاً لصفحة هبوط معينة (Landing Page Slug)
+    if (cleanSlug) {
+      // فحص التخزين المحلي فورياً لسرعة الاستجابة
+      try {
+        const rawLocal = localStorage.getItem('zaeem_local_landing_pages');
+        if (rawLocal) {
+          const list = JSON.parse(rawLocal);
+          const found = list.find((p: any) => (p.slug || '').toLowerCase() === cleanSlug);
+          if (found && isMounted) {
+            setIsStoreRegistered(true);
+            setLoading(false);
+            setStore((prev) => ({
+              ...prev,
+              templateId: found.template || 'easyorders-flash',
+            }));
+            const pImg = (found.images && found.images[0]) || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80';
+            setProduct({
+              id: found.id || 1,
+              title: found.productName,
+              description: found.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام بعد المعاينة.',
+              price: Number(found.price) || 0,
+              compareAtPrice: Number(found.compareAtPrice) || (Number(found.price) ? Math.round(Number(found.price) * 1.3) : 0),
+              imageUrl: pImg,
+              images: found.images || [pImg],
+              discountTwoItems: found.discountTwoItems,
+              discountThreeItems: found.discountThreeItems,
+            });
+          }
+        }
+      } catch (err) {}
+
+      // الاستعلام من قاعدة بيانات Neon السحابية الحقيقية لصفحة الهبوط
+      fetchCloudLandingPageBySlug(cleanSlug, cleanSubdomain).then((cloudPage) => {
+        if (cloudPage && isMounted) {
+          setIsStoreRegistered(true);
+          setLoading(false);
+          setStore((prev) => ({
+            ...prev,
+            templateId: cloudPage.template || 'easyorders-flash',
+          }));
+          const pImg = (cloudPage.images && cloudPage.images[0]) || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80';
+          setProduct({
+            id: cloudPage.id || 1,
+            title: cloudPage.productName,
+            description: cloudPage.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام بعد المعاينة.',
+            price: Number(cloudPage.price) || 0,
+            compareAtPrice: Number(cloudPage.compareAtPrice) || (Number(cloudPage.price) ? Math.round(Number(cloudPage.price) * 1.3) : 0),
+            imageUrl: pImg,
+            images: cloudPage.images || [pImg],
+            discountTwoItems: cloudPage.discountTwoItems,
+            discountThreeItems: cloudPage.discountThreeItems,
+          });
+        }
+      }).catch((err) => {
+        console.warn('[DynamicStoreLanding] Error fetching landing page:', err);
+      });
     }
 
     // B. فحص السجل المباشر
@@ -295,7 +390,7 @@ export function DynamicStoreLanding() {
       window.removeEventListener('zaeem_store_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
-  }, [cleanSubdomain]);
+  }, [cleanSubdomain, cleanSlug]);
 
   const handleDirectActivateStore = async () => {
     try {

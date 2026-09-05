@@ -511,3 +511,193 @@ export async function trackCloudShipment(trackCode: string): Promise<CloudShipme
     return null;
   }
 }
+
+export interface CloudLandingPage {
+  id?: number | string;
+  subdomain: string;
+  slug: string;
+  productName: string;
+  images: string[];
+  price: number;
+  compareAtPrice: number;
+  discountTwoItems: number;
+  discountThreeItems: number;
+  description?: string;
+  template?: string;
+  isPublished?: boolean;
+  createdAt?: string;
+}
+
+/**
+ * Save or update a landing page in Neon PostgreSQL
+ */
+export async function saveCloudLandingPage(page: CloudLandingPage): Promise<boolean> {
+  try {
+    const cleanSub = (page.subdomain || 'alzaeem').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    const cleanSlug = (page.slug || 'landbidg1').toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+    const nameEsc = (page.productName || '').replace(/'/g, "''");
+    const descEsc = (page.description || '').replace(/'/g, "''");
+    const templateEsc = (page.template || 'modern').replace(/'/g, "''");
+    const imagesJson = JSON.stringify(page.images || []).replace(/'/g, "''");
+    const priceNum = Number(page.price) || 0;
+    const compareNum = Number(page.compareAtPrice) || priceNum;
+    const disc2 = Number(page.discountTwoItems) || 15;
+    const disc3 = Number(page.discountThreeItems) || 25;
+    const isPub = page.isPublished !== false ? 'TRUE' : 'FALSE';
+
+    const query = `
+      INSERT INTO za3em_landing_pages (subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published)
+      VALUES ('${cleanSub}', '${cleanSlug}', '${nameEsc}', '${imagesJson}'::jsonb, ${priceNum}, ${compareNum}, ${disc2}, ${disc3}, '${descEsc}', '${templateEsc}', ${isPub})
+      ON CONFLICT (subdomain, slug) DO UPDATE
+      SET product_name = EXCLUDED.product_name,
+          images = EXCLUDED.images,
+          price = EXCLUDED.price,
+          compare_at_price = EXCLUDED.compare_at_price,
+          discount_two_items = EXCLUDED.discount_two_items,
+          discount_three_items = EXCLUDED.discount_three_items,
+          description = EXCLUDED.description,
+          template = EXCLUDED.template,
+          is_published = EXCLUDED.is_published
+      RETURNING id, subdomain, slug;
+    `;
+    const res = await executeSql(query);
+    return Boolean(res && Array.isArray(res.rows) && res.rows.length > 0);
+  } catch (err) {
+    console.warn('[CloudDb] Error saving cloud landing page:', err);
+    return false;
+  }
+}
+
+/**
+ * Fetch all landing pages from Neon PostgreSQL
+ */
+export async function fetchCloudLandingPages(subdomain?: string): Promise<CloudLandingPage[]> {
+  try {
+    const cleanSub = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    let query = `SELECT id, subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published, created_at FROM za3em_landing_pages ORDER BY id DESC;`;
+    if (cleanSub) {
+      query = `SELECT id, subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published, created_at FROM za3em_landing_pages WHERE subdomain = '${cleanSub}' OR subdomain = '' OR subdomain IS NULL ORDER BY id DESC;`;
+    }
+    const res = await executeSql(query);
+    if (res && Array.isArray(res.rows)) {
+      return res.rows.map((r: any) => ({
+        id: String(r.id),
+        subdomain: r.subdomain,
+        slug: r.slug,
+        productName: r.product_name,
+        images: Array.isArray(r.images) ? r.images : (typeof r.images === 'string' ? JSON.parse(r.images) : []),
+        price: Number(r.price) || 0,
+        compareAtPrice: Number(r.compare_at_price) || 0,
+        discountTwoItems: Number(r.discount_two_items) || 15,
+        discountThreeItems: Number(r.discount_three_items) || 25,
+        description: r.description || '',
+        template: r.template || 'modern',
+        isPublished: r.is_published !== false,
+        createdAt: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      }));
+    }
+    return [];
+  } catch (err) {
+    console.warn('[CloudDb] Error fetching cloud landing pages:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch a single landing page by slug from Neon PostgreSQL
+ */
+export async function fetchCloudLandingPageBySlug(slug: string, subdomain?: string): Promise<CloudLandingPage | null> {
+  try {
+    const cleanSlug = (slug || '').toLowerCase().trim().replace(/'/g, "''");
+    const cleanSub = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    if (!cleanSlug) return null;
+
+    let query = `SELECT id, subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published, created_at FROM za3em_landing_pages WHERE LOWER(slug) = '${cleanSlug}'`;
+    if (cleanSub) {
+      query += ` AND (LOWER(subdomain) = '${cleanSub}' OR subdomain = '' OR subdomain IS NULL)`;
+    }
+    query += ` ORDER BY id DESC LIMIT 1;`;
+
+    const res = await executeSql(query);
+    if (res && Array.isArray(res.rows) && res.rows.length > 0) {
+      const r = res.rows[0];
+      return {
+        id: String(r.id),
+        subdomain: r.subdomain,
+        slug: r.slug,
+        productName: r.product_name,
+        images: Array.isArray(r.images) ? r.images : (typeof r.images === 'string' ? JSON.parse(r.images) : []),
+        price: Number(r.price) || 0,
+        compareAtPrice: Number(r.compare_at_price) || 0,
+        discountTwoItems: Number(r.discount_two_items) || 15,
+        discountThreeItems: Number(r.discount_three_items) || 25,
+        description: r.description || '',
+        template: r.template || 'modern',
+        isPublished: r.is_published !== false,
+        createdAt: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      };
+    }
+    return null;
+  } catch (err) {
+    console.warn('[CloudDb] Error fetching landing page by slug:', err);
+    return null;
+  }
+}
+
+/**
+ * Delete a landing page from Neon PostgreSQL
+ */
+export async function deleteCloudLandingPage(idOrSlug: string | number, subdomain?: string): Promise<boolean> {
+  try {
+    const cleanSub = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    let where = `id = ${Number(idOrSlug)}`;
+    if (isNaN(Number(idOrSlug))) {
+      where = `slug = '${String(idOrSlug).replace(/'/g, "''")}'`;
+    }
+    if (cleanSub) {
+      where += ` AND (subdomain = '${cleanSub}' OR subdomain IS NULL)`;
+    }
+    const query = `DELETE FROM za3em_landing_pages WHERE ${where} RETURNING id;`;
+    const res = await executeSql(query);
+    return Boolean(res && Array.isArray(res.rows) && res.rows.length > 0);
+  } catch (err) {
+    console.warn('[CloudDb] Error deleting cloud landing page:', err);
+    return false;
+  }
+}
+
+/**
+ * Update full store settings (name, template, font, categories, payment methods, active state) in Neon PostgreSQL
+ */
+export async function updateCloudStoreFullSettings(settings: {
+  subdomain: string;
+  name?: string;
+  templateId?: string;
+  font?: string;
+  categories?: string[];
+  paymentMethods?: any;
+  isActive?: boolean;
+}): Promise<boolean> {
+  try {
+    const cleanSub = (settings.subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    if (!cleanSub) return false;
+
+    const updates: string[] = [];
+    if (settings.name) updates.push(`name = '${settings.name.replace(/'/g, "''")}'`);
+    if (settings.templateId) updates.push(`template_id = '${settings.templateId.replace(/'/g, "''")}'`);
+    if (settings.font) updates.push(`font = '${settings.font.replace(/'/g, "''")}'`);
+    if (settings.categories) updates.push(`categories = '${JSON.stringify(settings.categories).replace(/'/g, "''")}'::jsonb`);
+    if (settings.paymentMethods) updates.push(`payment_methods = '${JSON.stringify(settings.paymentMethods).replace(/'/g, "''")}'::jsonb`);
+    if (typeof settings.isActive === 'boolean') updates.push(`is_active = ${settings.isActive ? 'TRUE' : 'FALSE'}`);
+
+    if (updates.length === 0) return true;
+
+    const query = `UPDATE za3em_stores SET ${updates.join(', ')} WHERE subdomain = '${cleanSub}';`;
+    const res = await executeSql(query);
+    return Boolean(res && !res.error);
+  } catch (err) {
+    console.warn('[CloudDb] Error updating store full settings:', err);
+    return false;
+  }
+}
+
