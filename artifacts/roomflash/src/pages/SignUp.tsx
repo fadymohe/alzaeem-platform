@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { IRAQ_GOVERNORATES } from '../data/iraqData';
 import { supabase } from '../utils/supabase';
+import { checkSubdomainAvailability } from '../utils/storeRegistry';
 
 // Reserved subdomains blocked for merchants
 const RESERVED_SUBDOMAINS = [
@@ -261,7 +262,7 @@ export function SignUpPage() {
 
   const pwdStrength = calculatePasswordStrength(password);
 
-  // Subdomain Debounced Checker (Reliable & Hybrid)
+  // Subdomain Debounced Checker (Direct Neon Database Verification)
   useEffect(() => {
     const cleanSlug = storeSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
     if (!cleanSlug || cleanSlug.length < 3) {
@@ -277,50 +278,30 @@ export function SignUpPage() {
       return;
     }
 
-    // 2. Check local registered stores
-    const localTaken: string[] = JSON.parse(localStorage.getItem('zaeem_registered_stores') || '[]');
-    if (localTaken.includes(cleanSlug)) {
-      setSlugStatus('taken');
-      setSlugMessage(isAr ? 'هذا النطاق مستخدم مسبقاً من متجر آخر، اختر اسماً آخر' : 'Subdomain already taken');
-      return;
-    }
-
     setSlugStatus('checking');
+    setSlugMessage(isAr ? 'جاري التحقق الفعلي من توفر الدومين في السيرفر وقاعدة البيانات...' : 'Checking subdomain availability...');
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/stores/check-subdomain?subdomain=${cleanSlug}`, {
-          headers: { 'Accept': 'application/json' }
-        });
-        const contentType = res.headers.get('content-type') || '';
-
-        if (res.ok && contentType.includes('application/json')) {
-          const data = await res.json().catch(() => null);
-          if (data && data.available === true) {
-            setSlugStatus('available');
-            setSlugMessage(isAr ? `النطاق ${cleanSlug}.za3em.shop متاح للحجز ✅` : `${cleanSlug}.za3em.shop is available ✅`);
-            return;
-          } else if (data && data.reason === 'reserved') {
-            setSlugStatus('reserved');
-            setSlugMessage(data.message || (isAr ? 'هذا النطاق محجوز لإدارة المنصة' : 'Reserved subdomain'));
-            return;
-          } else if (data && (data.reason === 'taken' || data.available === false)) {
-            setSlugStatus('taken');
-            setSlugMessage(data.message || (isAr ? 'هذا النطاق مستخدم مسبقاً من متجر آخر، اختر اسماً آخر' : 'Subdomain already taken'));
-            return;
-          }
+        const result = await checkSubdomainAvailability(cleanSlug, email.trim().toLowerCase());
+        if (result.available) {
+          setSlugStatus('available');
+          setSlugMessage(isAr ? `النطاق ${cleanSlug}.za3em.shop متاح للحجز ✅` : `${cleanSlug}.za3em.shop is available ✅`);
+        } else if (result.reason === 'reserved') {
+          setSlugStatus('reserved');
+          setSlugMessage(result.message || (isAr ? 'هذا النطاق محجوز لإدارة المنصة' : 'Reserved subdomain'));
+        } else {
+          setSlugStatus('taken');
+          setSlugMessage(result.message || (isAr ? 'هذا النطاق مستخدم مسبقاً من متجر آخر، اختر اسماً آخر' : 'Subdomain already taken'));
         }
-      } catch (err) {
-        // network issue
+      } catch {
+        setSlugStatus('available');
+        setSlugMessage(isAr ? `النطاق ${cleanSlug}.za3em.shop متاح للحجز ✅` : `${cleanSlug}.za3em.shop is available ✅`);
       }
-
-      // Default: If not in reserved or taken list, it is 100% available!
-      setSlugStatus('available');
-      setSlugMessage(isAr ? `النطاق ${cleanSlug}.za3em.shop متاح للحجز ✅` : `${cleanSlug}.za3em.shop is available ✅`);
-    }, 350);
+    }, 300);
 
     return () => clearTimeout(timer);
-  }, [storeSlug, isAr]);
+  }, [storeSlug, email, isAr]);
 
   // Handler to Send Real Email OTP via Supabase Auth
   const handleSendOtp = async () => {
@@ -527,6 +508,8 @@ export function SignUpPage() {
       errs.storeSlug = isAr ? 'هذا النطاق محجوز للإدارة ويمنع استخدامه' : 'Reserved subdomain';
     } else if (slugStatus === 'taken') {
       errs.storeSlug = isAr ? 'هذا النطاق مستخدم مسبقاً، اختر اسماً آخر' : 'Subdomain already taken';
+    } else if (slugStatus === 'checking') {
+      errs.storeSlug = isAr ? 'جاري التحقق من توفر الدومين، يرجى الانتظار ثوانٍ معدودة' : 'Checking domain availability, please wait...';
     }
 
     // 5. Password: min 8 chars, letters, numbers, and symbols
@@ -552,7 +535,21 @@ export function SignUpPage() {
     setErrors({});
 
     const formattedPhone = `+964${phoneBody}`;
-    const cleanSubdomain = storeSlug.toLowerCase().trim();
+    const cleanSubdomain = storeSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+
+    // Live verification with cloud database before continuing
+    try {
+      const liveCheck = await checkSubdomainAvailability(cleanSubdomain, email.trim().toLowerCase());
+      if (!liveCheck.available) {
+        setLoading(false);
+        setSlugStatus(liveCheck.reason === 'reserved' ? 'reserved' : 'taken');
+        setSlugMessage(liveCheck.message);
+        setErrors({ storeSlug: liveCheck.message });
+        return;
+      }
+    } catch {
+      // Proceed if network error
+    }
 
     const storePayload = {
       firstName: firstName.trim(),
@@ -656,13 +653,6 @@ export function SignUpPage() {
     localStorage.removeItem('zaeem_onboarding_completed');
     localStorage.removeItem('zaeem_onboarded_store');
     localStorage.setItem('zaeem_store_data', JSON.stringify(storePayload));
-
-    // Update registered stores
-    const localTaken: string[] = JSON.parse(localStorage.getItem('zaeem_registered_stores') || '[]');
-    if (!localTaken.includes(cleanSubdomain)) {
-      localTaken.push(cleanSubdomain);
-      localStorage.setItem('zaeem_registered_stores', JSON.stringify(localTaken));
-    }
 
     setLoading(false);
     window.location.hash = '#/onboarding';

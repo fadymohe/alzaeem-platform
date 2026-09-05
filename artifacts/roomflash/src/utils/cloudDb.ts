@@ -63,31 +63,58 @@ async function executeSql(query: string, params: any[] = []): Promise<any> {
 /**
  * Check if a subdomain is already registered in the central Neon database
  */
-export async function checkCloudSubdomain(subdomain: string): Promise<{
+export async function checkCloudSubdomain(
+  subdomain: string,
+  currentUserEmail?: string,
+  currentOwnerId?: string
+): Promise<{
   available: boolean;
   reason?: 'taken';
   message?: string;
   store?: CloudStoreRecord;
 }> {
-  const clean = (subdomain || '').toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+  const clean = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
   if (!clean || clean.length < 3) {
-    return { available: false, message: 'اسم النطاق غير صالح' };
+    return { available: false, message: 'اسم النطاق يجب أن يكون 3 أحرف على الأقل' };
   }
 
-  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, product FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, product, user_email, owner_id FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
   const result = await executeSql(query);
 
   if (result && Array.isArray(result.rows) && result.rows.length > 0) {
     const row = result.rows[0];
-    return {
-      available: false,
-      reason: 'taken',
-      message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً في قاعدة بيانات منصة الزعيم`,
-      store: row,
-    };
+    const normalizedCurrentEmail = (currentUserEmail || '').toLowerCase().trim();
+    const rowEmail = (row.user_email || '').toLowerCase().trim();
+    const currentOwner = (currentOwnerId || '').trim();
+    const rowOwner = (row.owner_id || '').trim();
+
+    // If this store belongs to the current user (by email or owner ID), it is their own domain!
+    const isOwner = (normalizedCurrentEmail && rowEmail && normalizedCurrentEmail === rowEmail) ||
+                    (currentOwner && rowOwner && currentOwner === rowOwner);
+
+    if (isOwner) {
+      return {
+        available: true,
+        message: `هذا النطاق (${clean}.za3em.shop) خاص بحسابك ومتاح للاستخدام فوراً ✅`,
+        store: row,
+      };
+    }
+
+    // If the store is registered and owned by another user:
+    if (rowEmail || rowOwner) {
+      return {
+        available: false,
+        reason: 'taken',
+        message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً لمتجر آخر`,
+        store: row,
+      };
+    }
   }
 
-  return { available: true };
+  return {
+    available: true,
+    message: `هذا النطاق (${clean}.za3em.shop) متاح ويمكنك حجزه لمتجرك فوراً ✅`
+  };
 }
 
 /**

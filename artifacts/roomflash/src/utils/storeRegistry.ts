@@ -36,101 +36,6 @@ export interface RegisteredStoreData {
 
 // Built-in pre-registered stores & active demo stores
 export const BUILTIN_REGISTERED_STORES: Record<string, RegisteredStoreData> = {
-  "mahmod2": {
-    subdomain: "mahmod2",
-    storeName: "متجر محمود",
-    slogan: "سلة التسوق الشاملة - أفضل المنتجات مع التوصيل السريع لجميع المحافظات",
-    templateId: "shoppingcart.1.2.7",
-    storeCode: "ZAEEM-20XQYZ",
-    categories: ["عام", "عطور", "إلكترونيات"],
-    product: {
-      id: 1,
-      name: "عطر تاج الفخامة الفرنسي الملكي",
-      title: "عطر تاج الفخامة الفرنسي الملكي",
-      price: 45000,
-      compareAtPrice: 58000,
-      image: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
-      imageUrl: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
-      description: "عطر فاخر أصلي مع شحن سريع لكافة محافظات العراق وضمان الدفع عند الاستلام.",
-      category: "عطور",
-    },
-    freeShipmentsRemaining: 5,
-  },
-  "fadymoheb945za3emshop": {
-
-    subdomain: "fadymoheb945za3emshop",
-    storeName: "متجر فادي مهيب",
-    slogan: "أفضل المنتجات المختارة بعناية والتوصيل السريع لباب بيتك",
-    templateId: "shoppingcart.1.2.7",
-    categories: ["عطور رجالي", "عطور نسائي", "بخور ومباخر ملكية"],
-    product: {
-      id: 1,
-      name: "عطر تاج الفخامة الفرنسي الملكي",
-      title: "عطر تاج الفخامة الفرنسي الملكي",
-      price: 45000,
-      compareAtPrice: 58000,
-      image: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
-      imageUrl: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
-      description: "عطر فاخر بثباتية تدوم 48 ساعة مع تركيبة فرنسية ملكية نادرة وتوصيل سريع لباب بيتك.",
-      category: "عطور رجالي",
-    },
-    freeShipmentsRemaining: 5,
-  },
-  "fakhama": {
-    subdomain: "fakhama",
-    storeName: "متجر الفخامة العراقي",
-    slogan: "وجهتك الأولى للتسوق الراقي والشحن السريع لجميع محافظات العراق",
-    templateId: "shoppingcart.1.2.7",
-    categories: ["عطور فرنسية", "دهن عود وبخور", "عناية بالبشرة"],
-    product: {
-      id: 1,
-      name: "عطر تاج الفخامة الفرنسي الملكي",
-      title: "عطر تاج الفخامة الفرنسي الملكي",
-      price: 45000,
-      compareAtPrice: 58000,
-      image: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
-      imageUrl: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
-      description: "أفضل العطور الفاخرة المختارة بعناية مع الشحن المجاني والدفع عند الاستلام.",
-      category: "عطور فرنسية",
-    },
-    freeShipmentsRemaining: 5,
-  },
-  "alzaeem": {
-    subdomain: "alzaeem",
-    storeName: "متجر الزعيم الذهبي",
-    slogan: "أفضل الإلكترونيات والأجهزة الذكية بضمان حقيقي والدفع عند الاستلام",
-    templateId: "volt",
-    categories: ["سماعات بلوتوث", "ساعات ذكية", "شواحن وإكسسوارات"],
-    product: {
-      id: 1,
-      name: "سماعة بلوتوث لاسلكية Ultra Bass عازلة للضوضاء",
-      title: "سماعة بلوتوث لاسلكية Ultra Bass عازلة للضوضاء",
-      price: 45000,
-      compareAtPrice: 60000,
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80",
-      imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80",
-      description: "صوت محيطي نقي وعزل تام للضوضاء مع بطارية تدوم 48 ساعة وضمان استبدال.",
-      category: "سماعات بلوتوث",
-    },
-    freeShipmentsRemaining: 5,
-  },
-  "zero": {
-    subdomain: "zero",
-    storeName: "متجر زيرو إكسبريس",
-    slogan: "متجر تجريبي لاختبار طلبات الشحن السريع",
-    templateId: "easyorders-flash",
-    product: {
-      id: 1,
-      name: "سماعة بلوتوث لاسلكية Ultra Bass عازلة للضوضاء - إصدار 2026",
-      title: "سماعة بلوتوث لاسلكية Ultra Bass عازلة للضوضاء - إصدار 2026",
-      price: 35000,
-      compareAtPrice: 50000,
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80",
-      imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80",
-      description: "سماعة رأس احترافية مع صوت محيطي 3D نقي وعزل تام للضوضاء.",
-    },
-    freeShipmentsRemaining: 5,
-  },
   "demo": {
     subdomain: "demo",
     storeName: "متجر العرض التجريبي",
@@ -425,9 +330,9 @@ export const RESERVED_SUBDOMAINS_LIST = [
 ];
 
 /**
- * Robust real-time subdomain check combining local registry, cookies, reserved list, and API
+ * Robust real-time subdomain check against reserved list and central Neon PostgreSQL Database
  */
-export async function checkSubdomainAvailability(rawSubdomain: string): Promise<{
+export async function checkSubdomainAvailability(rawSubdomain: string, currentUserEmail?: string): Promise<{
   available: boolean;
   reason?: 'short' | 'invalid' | 'reserved' | 'taken';
   message: string;
@@ -468,83 +373,40 @@ export async function checkSubdomainAvailability(rawSubdomain: string): Promise<
     };
   }
 
-  // Check known registry & cookies & built-ins
-  if (isSubdomainRegistered(clean)) {
-    return {
-      available: false,
-      reason: 'taken',
-      message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً من متجر آخر`,
-      suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
-    };
+  // Get current user's email and ID if not explicitly provided
+  let userEmail = currentUserEmail;
+  let ownerId = '';
+  if (typeof window !== 'undefined') {
+    try {
+      const u = localStorage.getItem('zaeem_user');
+      if (u) {
+        const parsed = JSON.parse(u);
+        if (!userEmail) userEmail = parsed?.email || '';
+        ownerId = parsed?.id || '';
+      }
+    } catch {}
   }
 
-  // Check local storage registered stores
+  // Directly check Central Neon Cloud PostgreSQL Database (universal truth over HTTPS)
   try {
-    const localTaken: string[] = JSON.parse(localStorage.getItem('zaeem_registered_stores') || '[]');
-    if (localTaken.includes(clean)) {
-      return {
-        available: false,
-        reason: 'taken',
-        message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً في قائمة المتاجر المسجلة`,
-        suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
-      };
-    }
-  } catch {}
-
-  // 1. Check backend API live DB check (/api/tenant/check-subdomain)
-  try {
-    const res = await fetch(`/api/tenant/check-subdomain?subdomain=${clean}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.available === false) {
-        return {
-          available: false,
-          reason: data.reason || 'taken',
-          message: data.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً لمتجر آخر`,
-          suggestions: data.suggestions || [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
-        };
-      }
-      if (data && data.available === true) {
-        return {
-          available: true,
-          message: data.message || `هذا النطاق (${clean}.za3em.shop) متاح ويمكنك حجزه لمتجرك فوراً ✅`,
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('API /api/tenant/check-subdomain fallback:', err);
-  }
-
-  // 2. Directly check Central Neon Cloud PostgreSQL Database (universal truth over HTTPS)
-  try {
-    const cloudCheck = await checkCloudSubdomain(clean);
+    const cloudCheck = await checkCloudSubdomain(clean, userEmail, ownerId);
     if (cloudCheck && !cloudCheck.available) {
       return {
         available: false,
         reason: 'taken',
-        message: cloudCheck.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً في قاعدة بيانات منصة الزعيم`,
+        message: cloudCheck.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً لمتجر آخر`,
         suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
+      };
+    }
+    if (cloudCheck && cloudCheck.available && cloudCheck.message) {
+      return {
+        available: true,
+        message: cloudCheck.message,
       };
     }
   } catch (cloudErr) {
     console.warn('Direct Neon cloud check error:', cloudErr);
   }
-
-  // 3. Check legacy /api/stores/check-subdomain
-  try {
-    const res = await fetch(`/api/stores/check-subdomain?subdomain=${clean}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.available === false) {
-        return {
-          available: false,
-          reason: data.reason || 'taken',
-          message: data.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً من متجر آخر`,
-          suggestions: data.suggestions || [`${clean}-store`, `${clean}-shop`, `${clean}-iq`],
-        };
-      }
-    }
-  } catch (err) {}
 
   return {
     available: true,

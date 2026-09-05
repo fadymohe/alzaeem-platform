@@ -336,7 +336,12 @@ export function OnboardingPage() {
 
     const timer = setTimeout(async () => {
       try {
-        const checkResult = await checkSubdomainAvailability(rawClean);
+        let currentEmail = '';
+        try {
+          const userRaw = localStorage.getItem('zaeem_user');
+          if (userRaw) currentEmail = JSON.parse(userRaw)?.email || '';
+        } catch {}
+        const checkResult = await checkSubdomainAvailability(rawClean, currentEmail);
         setSubdomainCheck({
           status: checkResult.available ? 'available' : 'unavailable',
           message: checkResult.message,
