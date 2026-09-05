@@ -1,111 +1,15 @@
 {
-  "fakhama": {
-    "subdomain": "fakhama",
-    "name": "متجر الفخامة العراقي",
-    "slogan": "وجهتك الأولى للتسوق الراقي والشحن السريع لجميع محافظات العراق",
+  "demo": {
+    "subdomain": "demo",
+    "name": "متجر العرض التجريبي",
+    "slogan": "معاينة حية لجميع قوالب المتاجر على منصة الزعيم",
     "templateId": "shoppingcart.1.2.7",
-    "storeCode": "ZAEEM-FAKH-8421",
+    "storeCode": "ZAEEM-DEMO-0001",
     "productTitle": "عطر تاج الفخامة الفرنسي الملكي",
     "productPrice": 45000,
-    "productImage": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
     "categories": [
       "عطور فرنسية",
-      "دهن عود وبخور",
-      "عناية بالبشرة"
-    ]
-  },
-  "zero": {
-    "subdomain": "zero",
-    "name": "متجر زيرو إكسبريس",
-    "slogan": "متجر تجريبي لاختبار طلبات الشحن السريع",
-    "templateId": "easyorders-flash",
-    "storeCode": "ZAEEM-ZERO-1001",
-    "productTitle": "سماعة بلوتوث لاسلكية Ultra Bass عازلة للضوضاء",
-    "productPrice": 35000,
-    "productImage": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80",
-    "categories": [
-      "إلكترونيات",
-      "صوتيات"
-    ]
-  },
-  "alzaeem": {
-    "subdomain": "alzaeem",
-    "name": "متجر الزعيم الذهبي",
-    "slogan": "أفضل الإلكترونيات والأجهزة الذكية بضمان حقيقي والدفع عند الاستلام",
-    "templateId": "volt",
-    "storeCode": "ZAEEM-ALZA-7721",
-    "productTitle": "ساعة لومينور بريميوم أوتوماتيك",
-    "productPrice": 85000,
-    "productImage": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80",
-    "categories": [
-      "ساعات ذكية",
       "إلكترونيات"
     ]
-  },
-  "alzaeem-special-test": {
-    "id": 1788559736889,
-    "name": "متجر الاختبار الخاص",
-    "subdomain": "alzaeem-special-test",
-    "templateId": "rose",
-    "storeCode": "ZAEEM-SPEC-9999",
-    "slogan": "أفضل المنتجات المختارة بعناية مع التوصيل السريع لجميع محافظات العراق",
-    "categories": [
-      "عام"
-    ],
-    "product": {
-      "id": 1,
-      "title": "فستان مخملي ملكي",
-      "name": "فستان مخملي ملكي",
-      "price": 75000,
-      "compareAtPrice": 97500,
-      "imageUrl": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600",
-      "image": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600",
-      "description": "منتج فاخر عالي الجودة مع شحن سريع وضمان الدفع عند الاستلام."
-    },
-    "createdAt": "2026-09-04T22:08:56.889Z"
-  },
-  "babil-gold": {
-    "id": 1788560076189,
-    "name": "متجر بابل الذهبي",
-    "subdomain": "babil-gold",
-    "templateId": "rose",
-    "storeCode": "ZAEEM-BABL-5555",
-    "slogan": "أفضل المنتجات المختارة بعناية مع التوصيل السريع لجميع محافظات العراق",
-    "categories": [
-      "عام"
-    ],
-    "product": {
-      "id": 1,
-      "title": "فستان مخملي ملكي",
-      "name": "فستان مخملي ملكي",
-      "price": 65000,
-      "compareAtPrice": 84500,
-      "imageUrl": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
-      "image": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
-      "description": "منتج فاخر عالي الجودة مع شحن سريع وضمان الدفع عند الاستلام."
-    },
-    "createdAt": "2026-09-04T22:14:36.189Z"
-  },
-  "goldstars-test": {
-    "id": 1788578794418,
-    "name": "متجر النجوم الذهبية",
-    "subdomain": "goldstars-test",
-    "templateId": "volt",
-    "storeCode": "ZAEEM-GOLD-9988",
-    "slogan": "فخامة لا تنتهي",
-    "categories": [
-      "عام"
-    ],
-    "product": {
-      "id": 1,
-      "title": "ساعة يد أوتوماتيك فخمة",
-      "name": "ساعة يد أوتوماتيك فخمة",
-      "price": 65000,
-      "compareAtPrice": 84500,
-      "imageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80",
-      "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80",
-      "description": "فخامة لا تنتهي"
-    },
-    "createdAt": "2026-09-05T03:26:34.418Z"
   }
 }

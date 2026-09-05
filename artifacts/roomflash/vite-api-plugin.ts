@@ -21,38 +21,16 @@ export function zaeemApiPlugin(): Plugin {
     }
     // Default initial stores
     return {
-      fakhama: {
-        subdomain: 'fakhama',
-        name: 'متجر الفخامة العراقي',
-        slogan: 'وجهتك الأولى للتسوق الراقي والشحن السريع لجميع محافظات العراق',
+      demo: {
+        subdomain: 'demo',
+        name: 'متجر العرض التجريبي',
+        slogan: 'معاينة حية لجميع قوالب المتاجر على منصة الزعيم',
         templateId: 'shoppingcart.1.2.7',
-        storeCode: 'ZAEEM-FAKH-8421',
+        storeCode: 'ZAEEM-DEMO-0001',
         productTitle: 'عطر تاج الفخامة الفرنسي الملكي',
         productPrice: 45000,
         productImage: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
-        categories: ['عطور فرنسية', 'دهن عود وبخور', 'عناية بالبشرة']
-      },
-      zero: {
-        subdomain: 'zero',
-        name: 'متجر زيرو إكسبريس',
-        slogan: 'متجر تجريبي لاختبار طلبات الشحن السريع',
-        templateId: 'easyorders-flash',
-        storeCode: 'ZAEEM-ZERO-1001',
-        productTitle: 'سماعة بلوتوث لاسلكية Ultra Bass عازلة للضوضاء',
-        productPrice: 35000,
-        productImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
-        categories: ['إلكترونيات', 'صوتيات']
-      },
-      alzaeem: {
-        subdomain: 'alzaeem',
-        name: 'متجر الزعيم الذهبي',
-        slogan: 'أفضل الإلكترونيات والأجهزة الذكية بضمان حقيقي والدفع عند الاستلام',
-        templateId: 'volt',
-        storeCode: 'ZAEEM-ALZA-7721',
-        productTitle: 'ساعة لومينور بريميوم أوتوماتيك',
-        productPrice: 85000,
-        productImage: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80',
-        categories: ['ساعات ذكية', 'إلكترونيات']
+        categories: ['عطور فرنسية', 'إلكترونيات']
       }
     };
   };

@@ -247,8 +247,29 @@ export function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Store Configuration State
-  const [storeName, setStoreName] = useState('متجر الفخامة العراقي');
-  const [subdomain, setSubdomain] = useState('fakhama.za3em.shop');
+  const [storeName, setStoreName] = useState(() => {
+    try {
+      const u = localStorage.getItem('zaeem_user');
+      if (u) {
+        const parsed = JSON.parse(u);
+        if (parsed.name && parsed.name.trim()) return `متجر ${parsed.name.trim().split(' ')[0]}`;
+      }
+    } catch {}
+    return 'متجر الفخامة العراقي';
+  });
+  const [subdomain, setSubdomain] = useState(() => {
+    try {
+      const u = localStorage.getItem('zaeem_user');
+      if (u) {
+        const parsed = JSON.parse(u);
+        if (parsed.email) {
+          const prefix = parsed.email.split('@')[0].toLowerCase().replace(/[^a-z0-9-]/g, '');
+          if (prefix && prefix.length >= 3) return `${prefix}.za3em.shop`;
+        }
+      }
+    } catch {}
+    return 'my-store.za3em.shop';
+  });
   const [slogan, setSlogan] = useState('أفضل المنتجات المختارة بعناية مع التوصيل السريع لجميع محافظات العراق');
   const [selectedNiche, setSelectedNiche] = useState('perfumes');
   const [selectedTheme, setSelectedTheme] = useState('shoppingcart.1.2.7');
@@ -363,15 +384,21 @@ export function OnboardingPage() {
   // Auto-fill from localStorage on initial load if present
   useEffect(() => {
     try {
+      // Remove any legacy taken list from localStorage
+      localStorage.removeItem('zaeem_registered_stores');
+
       const stored = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.storeName) {
           setStoreName(parsed.storeName);
-          const cleanSub = (parsed.subdomain || parsed.storeName)
+        }
+        if (parsed.subdomain) {
+          const cleanSub = parsed.subdomain
             .toLowerCase()
-            .replace(/[^a-z0-9]/g, '') || 'store';
-          setSubdomain(`${cleanSub}.za3em.shop`);
+            .replace('.za3em.shop', '')
+            .replace(/[^a-z0-9-]/g, '');
+          if (cleanSub) setSubdomain(`${cleanSub}.za3em.shop`);
         }
         if (parsed.logoUrl) setLogoUrl(parsed.logoUrl);
         if (parsed.bannerUrl) setBannerUrl(parsed.bannerUrl);

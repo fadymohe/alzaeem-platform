@@ -7,14 +7,6 @@ import {
 } from 'lucide-react';
 import { IRAQ_GOVERNORATES } from '../data/iraqData';
 import { supabase } from '../utils/supabase';
-import { checkSubdomainAvailability } from '../utils/storeRegistry';
-
-// Reserved subdomains blocked for merchants
-const RESERVED_SUBDOMAINS = [
-  'admin', 'api', 'app', 'zaeem', 'za3em', 'dashboard', 'root', 'www',
-  'mail', 'support', 'billing', 'auth', 'account', 'portal', 'cpanel',
-  'system', 'null', 'undefined', 'test', 'stores', 'store', 'static', 'assets'
-];
 
 const GOOGLE_CLIENT_ID = '142585183945-gtdbluikj92oj5r5qpb902467a4ag95f.apps.googleusercontent.com';
 
@@ -27,17 +19,12 @@ export function SignUpPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneBody, setPhoneBody] = useState(''); // 10 digits after +964
-  const [storeSlug, setStoreSlug] = useState('');
   const [governorate, setGovernorate] = useState('بغداد');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Subdomain Availability Check State
-  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'reserved' | 'taken'>('idle');
-  const [slugMessage, setSlugMessage] = useState('');
 
   // Email OTP Verification State
   const [otpSent, setOtpSent] = useState(false);
@@ -262,46 +249,7 @@ export function SignUpPage() {
 
   const pwdStrength = calculatePasswordStrength(password);
 
-  // Subdomain Debounced Checker (Direct Neon Database Verification)
-  useEffect(() => {
-    const cleanSlug = storeSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
-    if (!cleanSlug || cleanSlug.length < 3) {
-      setSlugStatus('idle');
-      setSlugMessage('');
-      return;
-    }
 
-    // 1. Reserved list check
-    if (RESERVED_SUBDOMAINS.includes(cleanSlug)) {
-      setSlugStatus('reserved');
-      setSlugMessage(isAr ? 'هذا النطاق محجوز لإدارة المنصة وغير متاح للاستخدام' : 'This subdomain is reserved for system administration');
-      return;
-    }
-
-    setSlugStatus('checking');
-    setSlugMessage(isAr ? 'جاري التحقق الفعلي من توفر الدومين في السيرفر وقاعدة البيانات...' : 'Checking subdomain availability...');
-
-    const timer = setTimeout(async () => {
-      try {
-        const result = await checkSubdomainAvailability(cleanSlug, email.trim().toLowerCase());
-        if (result.available) {
-          setSlugStatus('available');
-          setSlugMessage(isAr ? `النطاق ${cleanSlug}.za3em.shop متاح للحجز ✅` : `${cleanSlug}.za3em.shop is available ✅`);
-        } else if (result.reason === 'reserved') {
-          setSlugStatus('reserved');
-          setSlugMessage(result.message || (isAr ? 'هذا النطاق محجوز لإدارة المنصة' : 'Reserved subdomain'));
-        } else {
-          setSlugStatus('taken');
-          setSlugMessage(result.message || (isAr ? 'هذا النطاق مستخدم مسبقاً من متجر آخر، اختر اسماً آخر' : 'Subdomain already taken'));
-        }
-      } catch {
-        setSlugStatus('available');
-        setSlugMessage(isAr ? `النطاق ${cleanSlug}.za3em.shop متاح للحجز ✅` : `${cleanSlug}.za3em.shop is available ✅`);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [storeSlug, email, isAr]);
 
   // Handler to Send Real Email OTP via Supabase Auth
   const handleSendOtp = async () => {
@@ -501,18 +449,7 @@ export function SignUpPage() {
       errs.phone = isAr ? 'يجب إدخال 10 أرقام ويبدأ بـ 770 أو 780 أو 790' : 'Must be 10 digits starting with 770, 780, or 790';
     }
 
-    // 4. Subdomain
-    if (!storeSlug || storeSlug.length < 3) {
-      errs.storeSlug = isAr ? 'رابط المتجر يجب أن يكون 3 أحرف على الأقل' : 'Min 3 chars for store URL';
-    } else if (slugStatus === 'reserved') {
-      errs.storeSlug = isAr ? 'هذا النطاق محجوز للإدارة ويمنع استخدامه' : 'Reserved subdomain';
-    } else if (slugStatus === 'taken') {
-      errs.storeSlug = isAr ? 'هذا النطاق مستخدم مسبقاً، اختر اسماً آخر' : 'Subdomain already taken';
-    } else if (slugStatus === 'checking') {
-      errs.storeSlug = isAr ? 'جاري التحقق من توفر الدومين، يرجى الانتظار ثوانٍ معدودة' : 'Checking domain availability, please wait...';
-    }
-
-    // 5. Password: min 8 chars, letters, numbers, and symbols
+    // 3. Password: min 8 chars, letters, numbers, and symbols
     if (!password || password.length < 8) {
       errs.password = isAr ? 'كلمة المرور يجب ألا تقل عن 8 أحرف' : 'Password must be at least 8 characters';
     } else if (pwdStrength.score < 3) {
@@ -535,21 +472,6 @@ export function SignUpPage() {
     setErrors({});
 
     const formattedPhone = `+964${phoneBody}`;
-    const cleanSubdomain = storeSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
-
-    // Live verification with cloud database before continuing
-    try {
-      const liveCheck = await checkSubdomainAvailability(cleanSubdomain, email.trim().toLowerCase());
-      if (!liveCheck.available) {
-        setLoading(false);
-        setSlugStatus(liveCheck.reason === 'reserved' ? 'reserved' : 'taken');
-        setSlugMessage(liveCheck.message);
-        setErrors({ storeSlug: liveCheck.message });
-        return;
-      }
-    } catch {
-      // Proceed if network error
-    }
 
     const storePayload = {
       firstName: firstName.trim(),
@@ -558,8 +480,8 @@ export function SignUpPage() {
       phone: formattedPhone,
       governorate,
       country: 'Iraq',
-      storeName: storeSlug,
-      subdomain: cleanSubdomain,
+      storeName: `${firstName.trim()}`,
+      subdomain: '',
       password
     };
 
@@ -569,14 +491,15 @@ export function SignUpPage() {
       name: `${firstName.trim()} ${lastName.trim()}`,
       phone: formattedPhone,
       governorate,
-      storeName: storeSlug,
-      subdomain: `${cleanSubdomain}.za3em.shop`,
+      storeName: `${firstName.trim()}`,
+      subdomain: '',
+      onboarding_completed: false,
       loggedIn: true,
       time: new Date().toISOString()
     };
 
     try {
-      // 1. Official Supabase Auth Signup (Persists directly to Database!)
+      // 1. Official Supabase Auth Signup (Persists account credentials!)
       if (supabaseAccessToken) {
         const updateRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
           method: 'PUT',
@@ -594,8 +517,7 @@ export function SignUpPage() {
               last_name: lastName.trim(),
               phone: formattedPhone,
               governorate,
-              store_name: storeSlug,
-              subdomain: `${cleanSubdomain}.za3em.shop`,
+              onboarding_completed: false,
               plan: 'free',
               order_limit: 5
             }
@@ -622,8 +544,7 @@ export function SignUpPage() {
               last_name: lastName.trim(),
               phone: formattedPhone,
               governorate,
-              store_name: storeSlug,
-              subdomain: `${cleanSubdomain}.za3em.shop`,
+              onboarding_completed: false,
               plan: 'free',
               order_limit: 5
             }
@@ -634,12 +555,6 @@ export function SignUpPage() {
           userObj.id = signupData.user.id;
         }
       }
-
-      await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(storePayload)
-      }).catch(() => null);
     } catch (err) {}
 
     // ضمان وجود رمز تعريفي فريد للحساب
@@ -647,11 +562,14 @@ export function SignUpPage() {
       userObj.id = `ZAEEM-ACC-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
     }
 
-    // Save locally
-    localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-    localStorage.setItem('zaeem_auth_action', 'signup');
+    // Clear any previous poisoned registration data
+    localStorage.removeItem('zaeem_registered_stores');
     localStorage.removeItem('zaeem_onboarding_completed');
     localStorage.removeItem('zaeem_onboarded_store');
+
+    // Save user session & pass basic name info to onboarding
+    localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+    localStorage.setItem('zaeem_auth_action', 'signup');
     localStorage.setItem('zaeem_store_data', JSON.stringify(storePayload));
 
     setLoading(false);
@@ -996,50 +914,6 @@ export function SignUpPage() {
               </div>
             </div>
 
-            {/* 4. Subdomain Input (Clean Label) */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 block">
-                {isAr ? 'نطاق المتجر المطلوب *' : 'Store Subdomain *'}
-              </label>
-              <div
-                dir="ltr"
-                className={`flex items-center rounded-2xl border bg-slate-50/50 overflow-hidden transition-all ${
-                  slugStatus === 'reserved' || slugStatus === 'taken' || errors.storeSlug
-                    ? 'border-red-400 bg-red-50/20'
-                    : slugStatus === 'available'
-                    ? 'border-emerald-500 bg-emerald-50/10'
-                    : 'border-slate-200 focus-within:border-teal-600 focus-within:bg-white'
-                }`}
-              >
-                <input
-                  type="text"
-                  required
-                  value={storeSlug}
-                  onChange={(e) => setStoreSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  placeholder="baghdad-store"
-                  className="w-full px-4 py-2.5 text-xs font-mono text-slate-900 bg-transparent focus:outline-none"
-                />
-                <span className="bg-slate-200/60 px-3 py-2.5 text-xs font-mono font-bold text-slate-600 border-l border-slate-200 shrink-0">
-                  .za3em.shop
-                </span>
-              </div>
-
-              {/* Subdomain Feedback Status */}
-              {slugStatus === 'checking' && (
-                <p className="text-[10px] font-bold text-slate-400">جاري فحص التوفر...</p>
-              )}
-              {slugStatus === 'available' && (
-                <p className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                  <Check className="size-3" /> {slugMessage}
-                </p>
-              )}
-              {(slugStatus === 'reserved' || slugStatus === 'taken') && (
-                <p className="text-[10px] font-bold text-red-600 flex items-center gap-1">
-                  <AlertCircle className="size-3" /> {slugMessage}
-                </p>
-              )}
-              {errors.storeSlug && <p className="text-[10px] text-red-500 font-bold">{errors.storeSlug}</p>}
-            </div>
 
             {/* 5. Password with Complexity Rule & Strength Meter */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1112,7 +986,7 @@ export function SignUpPage() {
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 rounded-2xl bg-teal-700 hover:bg-teal-800 py-3.5 text-xs font-extrabold text-white shadow-xl shadow-teal-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 mt-3 cursor-pointer"
             >
-              <span>{loading ? (isAr ? 'جاري التحقق وإنشاء المتجر...' : 'Creating store...') : (isAr ? 'تأكيد البيانات وإنشاء المتجر (مجاناً)' : 'Create Free Store')}</span>
+              <span>{loading ? (isAr ? 'جاري إنشاء الحساب...' : 'Creating account...') : (isAr ? 'إنشاء الحساب ومتابعة إعداد المتجر (مجاناً)' : 'Create Account & Continue')}</span>
               {isAr ? <ArrowLeft className="size-4" /> : <ArrowRight className="size-4" />}
             </button>
           </form>

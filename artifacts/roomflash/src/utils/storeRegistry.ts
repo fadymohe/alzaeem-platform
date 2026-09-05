@@ -125,15 +125,10 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
       localMap[cleanSub] = normalizedData;
       localStorage.setItem("zaeem_stores_registry", JSON.stringify(localMap));
 
-      // 2. Save in array of registered subdomains
-      const arrRaw = localStorage.getItem("zaeem_registered_stores");
-      const arr: string[] = arrRaw ? JSON.parse(arrRaw) : [];
-      if (!arr.includes(cleanSub)) {
-        arr.push(cleanSub);
-        localStorage.setItem("zaeem_registered_stores", JSON.stringify(arr));
-      }
+      // Clean up legacy array if present
+      localStorage.removeItem("zaeem_registered_stores");
 
-      // 3. Update legacy single keys for fast fallback and onboarding persistence
+      // 2. Update single keys for onboarding persistence
       localStorage.setItem("zaeem_onboarded_store", JSON.stringify(normalizedData));
       localStorage.setItem("zaeem_onboarding_completed", "true");
       localStorage.setItem("zaeem_auth_action", "signin");
@@ -271,13 +266,14 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
       }
     } catch {}
 
-    // 4. Check single onboarded store in localStorage
+    // 4. Check single onboarded store in localStorage if onboarding is completed
     try {
       const onboardedRaw = localStorage.getItem("zaeem_onboarded_store");
-      if (onboardedRaw) {
+      const isCompleted = localStorage.getItem("zaeem_onboarding_completed") === "true";
+      if (onboardedRaw && isCompleted) {
         const onboarded = JSON.parse(onboardedRaw);
         const onbSub = (onboarded.subdomain || "").replace(".za3em.shop", "").toLowerCase().trim();
-        if (onbSub === cleanSub) {
+        if (onbSub === cleanSub && onboarded.storeCode) {
           return {
             subdomain: cleanSub,
             storeName: onboarded.storeName || `متجر ${cleanSub}`,
@@ -286,22 +282,6 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
             categories: onboarded.categories,
             product: onboarded.product,
             freeShipmentsRemaining: onboarded.freeShipmentsRemaining || 5,
-          };
-        }
-      }
-    } catch {}
-
-    // 4b. Check registered subdomains array in localStorage
-    try {
-      const regArrRaw = localStorage.getItem("zaeem_registered_stores");
-      if (regArrRaw) {
-        const regArr: string[] = JSON.parse(regArrRaw);
-        if (regArr.includes(cleanSub)) {
-          return {
-            subdomain: cleanSub,
-            storeName: `متجر ${cleanSub}`,
-            templateId: "shoppingcart.1.2.7",
-            freeShipmentsRemaining: 5,
           };
         }
       }
