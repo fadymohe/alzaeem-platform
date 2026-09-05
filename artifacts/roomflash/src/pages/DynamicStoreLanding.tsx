@@ -95,6 +95,8 @@ export function DynamicStoreLanding() {
   const isInitiallyKnown =
     cleanSubdomain === "zero" ||
     cleanSubdomain === "demo" ||
+    cleanSubdomain === "alzaeem" ||
+    Boolean(cleanSlug) ||
     initialRegisteredData !== null;
 
   const [isStoreRegistered, setIsStoreRegistered] = useState<boolean>(isInitiallyKnown);
