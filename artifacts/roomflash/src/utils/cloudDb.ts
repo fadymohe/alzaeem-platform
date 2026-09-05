@@ -1,0 +1,165 @@
+/**
+ * Cloud Database Service for za3em.shop
+ * 
+ * Provides universal, cross-subdomain, direct PostgreSQL access over HTTPS
+ * (powered by Neon HTTP SQL API). Works identically on za3em.shop, any subdomain (*.za3em.shop),
+ * and local development without relying on local server files or browser-isolated storage.
+ */
+
+const NEON_HTTP_ENDPOINT = 'https://ep-divine-meadow-axnl1tvy-pooler.c-4.us-east-2.aws.neon.tech/sql';
+const NEON_CONN_STRING = 'postgresql://neondb_owner:npg_c7prHhSn5FsV@ep-divine-meadow-axnl1tvy-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require';
+
+export interface CloudStoreRecord {
+  id?: number;
+  name: string;
+  subdomain: string;
+  template_id: string;
+  store_code: string;
+  slogan?: string;
+  logo_url?: string;
+  banner_url?: string;
+  categories?: string[];
+  product?: {
+    id?: number;
+    title?: string;
+    name?: string;
+    price: number;
+    compareAtPrice?: number;
+    imageUrl?: string;
+    image?: string;
+    description?: string;
+    category?: string;
+  };
+  created_at?: string;
+}
+
+/**
+ * Execute an arbitrary SQL query against Neon PostgreSQL over HTTPS
+ */
+async function executeSql(query: string, params: any[] = []): Promise<any> {
+  try {
+    const res = await fetch(NEON_HTTP_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Neon-Connection-String': NEON_CONN_STRING,
+      },
+      body: JSON.stringify({ query, params }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.warn('[CloudDb] HTTP Error:', res.status, errText);
+      return null;
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.warn('[CloudDb] Network Error:', err);
+    return null;
+  }
+}
+
+/**
+ * Check if a subdomain is already registered in the central Neon database
+ */
+export async function checkCloudSubdomain(subdomain: string): Promise<{
+  available: boolean;
+  reason?: 'taken';
+  message?: string;
+  store?: CloudStoreRecord;
+}> {
+  const clean = (subdomain || '').toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+  if (!clean || clean.length < 3) {
+    return { available: false, message: 'اسم النطاق غير صالح' };
+  }
+
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, product FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
+  const result = await executeSql(query);
+
+  if (result && Array.isArray(result.rows) && result.rows.length > 0) {
+    const row = result.rows[0];
+    return {
+      available: false,
+      reason: 'taken',
+      message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً في قاعدة بيانات منصة الزعيم`,
+      store: row,
+    };
+  }
+
+  return { available: true };
+}
+
+/**
+ * Persist or update a store in the central Neon database
+ */
+export async function saveCloudStore(store: {
+  storeName: string;
+  subdomain: string;
+  templateId: string;
+  storeCode?: string;
+  slogan?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  categories?: string[];
+  product?: any;
+}): Promise<boolean> {
+  const cleanSub = (store.subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+  if (!cleanSub) return false;
+
+  const nameEscaped = (store.storeName || `متجر ${cleanSub}`).replace(/'/g, "''");
+  const codeEscaped = (store.storeCode || `ZAEEM-${cleanSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`).replace(/'/g, "''");
+  const templateId = (store.templateId || 'shoppingcart.1.2.7').replace(/'/g, "''");
+  const sloganEscaped = (store.slogan || 'أفضل المنتجات مع التوصيل السريع لجميع محافظات العراق').replace(/'/g, "''");
+  const logoUrlEscaped = store.logoUrl ? `'${store.logoUrl.replace(/'/g, "''")}'` : 'NULL';
+  const bannerUrlEscaped = store.bannerUrl ? `'${store.bannerUrl.replace(/'/g, "''")}'` : 'NULL';
+
+  const productObj = store.product || {
+    id: 1,
+    title: 'عطر تاج الفخامة الفرنسي الملكي',
+    price: 45000,
+    compareAtPrice: 58000,
+    imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+  };
+  const productJson = JSON.stringify(productObj).replace(/'/g, "''");
+  const categoriesJson = JSON.stringify(store.categories || ['عام']).replace(/'/g, "''");
+
+  const query = `
+    INSERT INTO za3em_stores (name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product)
+    VALUES ('${nameEscaped}', '${cleanSub}', '${templateId}', '${codeEscaped}', '${sloganEscaped}', ${logoUrlEscaped}, ${bannerUrlEscaped}, '${categoriesJson}'::jsonb, '${productJson}'::jsonb)
+    ON CONFLICT (subdomain) DO UPDATE
+    SET name = EXCLUDED.name,
+        template_id = EXCLUDED.template_id,
+        store_code = EXCLUDED.store_code,
+        slogan = EXCLUDED.slogan,
+        logo_url = EXCLUDED.logo_url,
+        banner_url = EXCLUDED.banner_url,
+        categories = EXCLUDED.categories,
+        product = EXCLUDED.product
+    RETURNING id, name, subdomain, store_code;
+  `;
+
+  const result = await executeSql(query);
+  const success = Boolean(result && Array.isArray(result.rows) && result.rows.length > 0);
+  if (success) {
+    console.log(`[CloudDb] Store successfully saved: ${cleanSub}.za3em.shop (${codeEscaped})`);
+  }
+  return success;
+}
+
+/**
+ * Fetch a store by subdomain from the central Neon database
+ */
+export async function fetchCloudStore(subdomain: string): Promise<CloudStoreRecord | null> {
+  const clean = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+  if (!clean) return null;
+
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
+  const result = await executeSql(query);
+
+  if (result && Array.isArray(result.rows) && result.rows.length > 0) {
+    return result.rows[0] as CloudStoreRecord;
+  }
+
+  return null;
+}

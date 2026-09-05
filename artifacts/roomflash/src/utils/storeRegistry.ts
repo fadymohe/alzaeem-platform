@@ -6,6 +6,7 @@
  * - In-app store views: /#/store/[subdomain]
  * - Cross-subdomain sharing via .za3em.shop root domain cookies and URL seeds.
  */
+import { checkCloudSubdomain, saveCloudStore, fetchCloudStore } from './cloudDb';
 
 export interface RegisteredStoreData {
   subdomain: string;
@@ -130,10 +131,23 @@ function getCookie(name: string): string | null {
  */
 function setCrossSubdomainCookie(name: string, value: string, days = 365): void {
   if (typeof document === "undefined") return;
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  const isZa3em = window.location.hostname.endsWith("za3em.shop");
-  const domainPart = isZa3em ? "; domain=.za3em.shop" : "";
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/${domainPart}; SameSite=Lax`;
+  try {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    const isZa3em = typeof window !== "undefined" && window.location.hostname.endsWith("za3em.shop");
+    const isHttps = typeof window !== "undefined" && (window.location.protocol === "https:" || isZa3em);
+    const domainPart = isZa3em ? "; domain=.za3em.shop" : "";
+    const securePart = isHttps ? "; Secure" : "";
+    
+    // Ensure cookie does not exceed 3KB limit
+    if (encodeURIComponent(value).length > 3000) {
+      console.warn("[Cookie] Value too large, skipping cross-subdomain cookie");
+      return;
+    }
+    
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/${domainPart}; SameSite=Lax${securePart}`;
+  } catch (e) {
+    console.warn("[Cookie] Failed to set cookie:", e);
+  }
 }
 
 /**
@@ -159,7 +173,7 @@ export function decodeStoreSeed(seedStr: string): RegisteredStoreData | null {
 }
 
 /**
- * Save a store to both localStorage and the shared root-domain cookie
+ * Save a store to localStorage, shared cookie, and Central Neon Cloud Database
  */
 export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
   const cleanSub = data.subdomain.replace(".za3em.shop", "").toLowerCase().trim();
@@ -213,16 +227,36 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
     }
 
     try {
-      // 4. Save in shared cookie on .za3em.shop so all subdomains immediately receive it!
+      // 4. Save compact version in shared cookie on .za3em.shop so all subdomains immediately receive it!
+      const compactStore = {
+        subdomain: cleanSub,
+        storeName: normalizedData.storeName,
+        templateId: normalizedData.templateId,
+        storeCode: generatedCode,
+        logoUrl: normalizedData.logoUrl,
+      };
       const cookieMapRaw = getCookie("zaeem_stores_registry");
-      const cookieMap: Record<string, RegisteredStoreData> = cookieMapRaw ? JSON.parse(cookieMapRaw) : {};
-      cookieMap[cleanSub] = normalizedData;
+      const cookieMap: Record<string, any> = cookieMapRaw ? JSON.parse(cookieMapRaw) : {};
+      cookieMap[cleanSub] = compactStore;
       setCrossSubdomainCookie("zaeem_stores_registry", JSON.stringify(cookieMap));
     } catch (err) {
       console.warn("Error saving store to cookie:", err);
     }
 
-    // 5. Asynchronously persist to server API for persistent reservation in server_data/stores.json
+    // 5. Asynchronously persist to central Neon PostgreSQL Cloud Database
+    saveCloudStore({
+      storeName: normalizedData.storeName,
+      subdomain: cleanSub,
+      templateId: normalizedData.templateId,
+      storeCode: generatedCode,
+      slogan: normalizedData.slogan,
+      logoUrl: normalizedData.logoUrl,
+      bannerUrl: normalizedData.bannerUrl,
+      categories: normalizedData.categories,
+      product: normalizedData.product
+    }).catch(err => console.warn("[storeRegistry] Cloud DB save fallback:", err));
+
+    // 6. Asynchronously persist to server API for persistent reservation in server_data/stores.json
     try {
       fetch("/api/tenant/stores", {
         method: "POST",
@@ -467,6 +501,21 @@ export async function checkSubdomainAvailability(rawSubdomain: string): Promise<
     }
   } catch (sbErr) {
     console.warn('Direct Supabase check error:', sbErr);
+  }
+
+  // Directly check Central Neon Cloud PostgreSQL Database (works 100% on live web & subdomains)
+  try {
+    const cloudCheck = await checkCloudSubdomain(clean);
+    if (cloudCheck && !cloudCheck.available) {
+      return {
+        available: false,
+        reason: 'taken',
+        message: cloudCheck.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً في قاعدة بيانات منصة الزعيم`,
+        suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
+      };
+    }
+  } catch (cloudErr) {
+    console.warn('Direct Neon cloud check error:', cloudErr);
   }
 
   return {

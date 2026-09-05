@@ -268,7 +268,7 @@ function RoutedApp() {
                     id: 1,
                     name: product.title || product.name || 'منتج المتجر الحصري',
                     sku: `PRD-${cleanSlug.toUpperCase()}`,
-                    description: fullStoreData.slogan || 'منتج أصلي فاخر مع شحن سريع وضمان الدفع عند الاستلام',
+                    description: (fullStoreData as any).slogan || 'منتج أصلي فاخر مع شحن سريع وضمان الدفع عند الاستلام',
                     price: Number(product.price) || 45000,
                     compareAtPrice: Number(product.compareAtPrice) || 58000,
                     stock: 50,

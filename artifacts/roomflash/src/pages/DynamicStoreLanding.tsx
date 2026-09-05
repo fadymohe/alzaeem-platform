@@ -9,6 +9,7 @@ import {
   getRegisteredStore,
   RegisteredStoreData,
 } from "../utils/storeRegistry";
+import { fetchCloudStore } from "../utils/cloudDb";
 import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink } from "lucide-react";
 
 export function DynamicStoreLanding() {
@@ -124,8 +125,38 @@ export function DynamicStoreLanding() {
       return;
     }
 
-    // 2. فحص السيرفر المحلي عبر API
-    async function checkApiStore() {
+    // 2. فحص قاعدة بيانات Neon السحابية المركزية (المصدر الحقيقي لكافة الدومينات الفرعية على الإنترنت)
+    async function resolveStore() {
+      try {
+        const cloudStore = await fetchCloudStore(cleanSubdomain);
+        if (cloudStore && isMounted) {
+          setIsStoreRegistered(true);
+          setStore({
+            id: cloudStore.id || 1,
+            name: cloudStore.name || `متجر ${cleanSubdomain}`,
+            subdomain: cleanSubdomain,
+            templateId: cloudStore.template_id || "shoppingcart.1.2.7",
+            storeCode: cloudStore.store_code || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
+            logoUrl: cloudStore.logo_url,
+            bannerUrl: cloudStore.banner_url,
+          });
+          if (cloudStore.product) {
+            setProduct({
+              id: cloudStore.product.id || 1,
+              title: cloudStore.product.title || cloudStore.product.name || "عطر تاج الفخامة الفرنسي الملكي",
+              description: cloudStore.product.description || cloudStore.slogan || "منتج فاخر مع شحن سريع لجميع محافظات العراق.",
+              price: Number(cloudStore.product.price) || 45000,
+              compareAtPrice: Number(cloudStore.product.compareAtPrice) || Math.round((Number(cloudStore.product.price) || 45000) * 1.3),
+              imageUrl: cloudStore.product.imageUrl || cloudStore.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
+            });
+          }
+          return;
+        }
+      } catch (cloudErr) {
+        console.warn("Neon Cloud DB fetch error:", cloudErr);
+      }
+
+      // 3. فحص السيرفر المحلي عبر API (في بيئة التطوير)
       try {
         const res = await fetch(`/api/tenant/stores/${cleanSubdomain}`);
         if (res.ok) {
@@ -160,7 +191,7 @@ export function DynamicStoreLanding() {
         console.warn("API store check fallback:", err);
       }
 
-      // 3. فحص قاعدة بيانات Supabase السحابية مباشرة
+      // 4. فحص قاعدة بيانات Supabase السحابية كضمان بديل
       try {
         const sbRes = await fetch(`https://cfpmbasxvjlcfcteyyaa.supabase.co/rest/v1/za3em_stores?subdomain=eq.${cleanSubdomain}`, {
           headers: {
@@ -207,7 +238,7 @@ export function DynamicStoreLanding() {
       }
     }
 
-    checkApiStore();
+    resolveStore();
 
     return () => {
       isMounted = false;

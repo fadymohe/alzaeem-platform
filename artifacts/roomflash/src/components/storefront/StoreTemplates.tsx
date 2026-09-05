@@ -179,15 +179,14 @@ export function StoreTemplates({
     {
       id: 999,
       name: customProduct.title || customProduct.name || 'المنتج المختار',
+      sku: 'PRD-999',
       price: Number(customProduct.price) || 45000,
-      oldPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
-      image: customProduct.imageUrl || customProduct.image || baseProducts[0].image,
+      compareAtPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
+      imageUrl: customProduct.imageUrl || (customProduct as any).image || baseProducts[0]?.imageUrl || '',
       category: customProduct.category || 'المنتجات المميزة',
       stock: 35,
-      rating: 5,
-      reviewsCount: 32,
-      salesCount: 84,
-      isFeatured: true,
+      lowStockThreshold: 5,
+      status: 'active',
       description: customProduct.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'
     },
     ...baseProducts.filter(p => p.name !== (customProduct.title || customProduct.name))
