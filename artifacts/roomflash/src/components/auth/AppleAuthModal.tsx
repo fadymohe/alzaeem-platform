@@ -85,7 +85,6 @@ export function AppleAuthModal({ isOpen, onClose, mode, onSuccess }: AppleAuthMo
       onSuccess(userObj);
     } else {
       window.location.hash = '#/onboarding';
-      window.location.reload();
     }
   };
 

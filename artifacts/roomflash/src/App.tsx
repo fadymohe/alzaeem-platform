@@ -172,7 +172,7 @@ function ProtectedRoutes() {
 const RESERVED_SUBDOMAINS = ['api', 'admin', 'www', 'app', 'static', 'assets', 'za3em', 'home', 'login', 'register', 'dashboard', 'stores', 'store', 'track'];
 
 function RoutedApp() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [oauthProcessing, setOauthProcessing] = useState<boolean>(() => {
     const hash = window.location.hash || '';
     const search = window.location.search || '';
@@ -196,6 +196,7 @@ function RoutedApp() {
       try {
         sessionStorage.setItem('zaeem_oauth_error', oauthError);
         window.location.hash = '#/sign-in';
+        setLocation('/sign-in');
       } catch {}
       return;
     }
@@ -309,7 +310,8 @@ function RoutedApp() {
           window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
         } catch {}
         window.location.hash = '#/dashboard';
-        window.location.reload();
+        setLocation('/dashboard');
+        setOauthProcessing(false);
       } else {
         // SIGN UP: New merchant -> Direct to onboarding to prepare their store!
         localStorage.setItem('zaeem_auth_action', 'signup');
@@ -325,28 +327,29 @@ function RoutedApp() {
           window.history.replaceState(null, '', window.location.pathname + '#/onboarding');
         } catch {}
         window.location.hash = '#/onboarding';
-        window.location.reload();
+        setLocation('/onboarding');
+        setOauthProcessing(false);
       }
     };
 
-    // 2. Supabase SDK onAuthStateChange (handles PKCE code exchange automatically)
+    // 2. Supabase SDK onAuthStateChange (only on explicit SIGNED_IN event, not INITIAL_SESSION)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session && session.user) {
+      if (event === 'SIGNED_IN' && session && session.user) {
         handleUserSession(session.user, session.access_token);
       }
     });
 
-    // 3. Check existing session / code in URL
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && session.user) {
-        handleUserSession(session.user, session.access_token);
-      } else {
-        // Fallback for legacy access_token in hash
-        const hash = window.location.hash || '';
-        const search = window.location.search || '';
-        const full = hash + search;
-        if (full.includes('access_token=')) {
-          const match = full.match(/access_token=([^&]+)/);
+    // 3. Check existing session / code ONLY when URL actually contains OAuth params
+    const fullUrl = (window.location.hash || '') + (window.location.search || '');
+    const hasOAuthParams = fullUrl.includes('access_token=') || fullUrl.includes('code=');
+
+    if (hasOAuthParams) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session && session.user) {
+          handleUserSession(session.user, session.access_token);
+        } else {
+          // Fallback for legacy access_token in hash
+          const match = fullUrl.match(/access_token=([^&]+)/);
           const token = match ? match[1] : null;
           if (token) {
             fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
@@ -363,13 +366,12 @@ function RoutedApp() {
             .catch(() => setOauthProcessing(false));
             return;
           }
-        }
-
-        if (!full.includes('code=') && !full.includes('access_token=')) {
           setOauthProcessing(false);
         }
-      }
-    });
+      });
+    } else {
+      setOauthProcessing(false);
+    }
 
     return () => {
       subscription.unsubscribe();

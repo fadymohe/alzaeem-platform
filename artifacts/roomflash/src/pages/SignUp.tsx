@@ -201,8 +201,9 @@ export function SignUpPage() {
                 orderLimit: 5
               }));
 
+              setOauthLoading(false);
               window.location.hash = '#/onboarding';
-              window.location.reload();
+              setLocation('/onboarding');
             } catch (err) {
               console.error('GIS ID token error:', err);
               setOauthLoading(false);
@@ -754,8 +755,9 @@ export function SignUpPage() {
                   orderLimit: 5
                 }));
 
+                setOauthLoading(false);
                 window.location.hash = '#/onboarding';
-                window.location.reload();
+                setLocation('/onboarding');
               } else {
                 await fallbackToSupabaseOAuth('google');
               }

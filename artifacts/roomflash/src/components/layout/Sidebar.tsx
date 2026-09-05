@@ -6,6 +6,7 @@ import {
   LogOut, X, ChevronLeft, Building, Sparkles
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
+import { supabase } from '../../utils/supabase';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -33,6 +34,11 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const [location, setLocation] = useLocation();
 
   const handleSignOut = () => {
+    try {
+      localStorage.removeItem('zaeem_user');
+      localStorage.removeItem('zaeem_auth_action');
+      supabase.auth.signOut().catch(() => null);
+    } catch {}
     try {
       const { signOut } = useClerk();
       signOut();

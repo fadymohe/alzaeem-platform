@@ -164,8 +164,9 @@ export function SignInPage() {
       localStorage.setItem('zaeem_user', JSON.stringify(userObj));
     }
 
+    setOauthLoading(false);
     window.location.hash = '#/dashboard';
-    window.location.reload();
+    setLocation('/dashboard');
   };
 
   useEffect(() => {
@@ -695,7 +696,7 @@ export function SignInPage() {
         setTimeout(() => {
           setShowRecoveryModal(false);
           window.location.hash = '#/dashboard';
-          window.location.reload();
+          setLocation('/dashboard');
         }, 1000);
         return;
       }
