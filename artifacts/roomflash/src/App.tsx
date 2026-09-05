@@ -153,7 +153,8 @@ function ProtectedRoutes() {
         <Route path="/shipments" component={ShipmentsPage} />
         <Route path="/shipments/new" component={ShipmentsPage} />
         <Route path="/shipments/track" component={ShipmentsPage} />
-        <Route path="/zaeem-logistics"><Redirect to="/shipments" /></Route>
+        <Route path="/shipments/rates" component={ShipmentsPage} />
+        <Route path="/zaeem-logistics"><Redirect to="/shipments/rates" /></Route>
         <Route path="/landing-pages" component={LandingPageBuilderPage} />
         <Route path="/landing-pages/new" component={LandingPageBuilderPage} />
         <Route path="/applications" component={ApplicationsPage} />

@@ -278,7 +278,7 @@ export function DashboardPage() {
       </div>
 
       {/* Quick Action Buttons Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Link
           href="/orders"
           className="p-4 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
@@ -302,6 +302,12 @@ export function DashboardPage() {
           className="p-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
         >
           <Truck className="size-4" /> إضافة شحنة جديدة
+        </Link>
+        <Link
+          href="/shipments/rates"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-teal-800 dark:text-teal-300 font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all col-span-2 sm:col-span-1"
+        >
+          <MapPin className="size-4" /> التغطية والأسعار
         </Link>
       </div>
 

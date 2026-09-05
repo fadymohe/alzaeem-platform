@@ -371,3 +371,143 @@ export async function fetchCloudCustomers(subdomain?: string): Promise<any[]> {
     return [];
   }
 }
+
+export interface CloudShipment {
+  id?: string | number;
+  trackingNumber: string;
+  subdomain?: string;
+  recipientName: string;
+  recipientPhone: string;
+  governorate: string;
+  district: string;
+  nearestLandmark: string;
+  address: string;
+  codAmount: number;
+  shippingCost: number;
+  paymentType: 'cod' | 'prepaid';
+  status: 'جديدة' | 'قيد التجهيز' | 'في المستودع' | 'خرجت للتوصيل' | 'تم التسليم' | 'فشل التسليم' | 'مرتجعة';
+  shippingCompany?: string;
+  notes?: string;
+  createdAt?: string;
+  date?: string;
+}
+
+/**
+ * Save a single shipment to the central Neon cloud database and shipping system
+ */
+export async function saveCloudShipment(shipment: CloudShipment): Promise<boolean> {
+  try {
+    const cleanSub = (shipment.subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    const trackEsc = (shipment.trackingNumber || '').replace(/'/g, "''");
+    const nameEsc = (shipment.recipientName || '').replace(/'/g, "''");
+    const phoneEsc = (shipment.recipientPhone || '').replace(/'/g, "''");
+    const govEsc = (shipment.governorate || 'بغداد').replace(/'/g, "''");
+    const distEsc = (shipment.district || '').replace(/'/g, "''");
+    const markEsc = (shipment.nearestLandmark || '').replace(/'/g, "''");
+    const addrEsc = (shipment.address || '').replace(/'/g, "''");
+    const codAmt = Number(shipment.codAmount) || 0;
+    const shipCost = Number(shipment.shippingCost) || 5000;
+    const payType = (shipment.paymentType || 'cod').replace(/'/g, "''");
+    const statusEsc = (shipment.status || 'جديدة').replace(/'/g, "''");
+    const companyEsc = (shipment.shippingCompany || 'شركة الزعيم للشحن السريع').replace(/'/g, "''");
+    const notesEsc = (shipment.notes || '').replace(/'/g, "''");
+
+    const query = `
+      INSERT INTO za3em_shipments (tracking_number, subdomain, recipient_name, recipient_phone, governorate, district, nearest_landmark, address, cod_amount, shipping_cost, payment_type, status, shipping_company, notes)
+      VALUES ('${trackEsc}', '${cleanSub}', '${nameEsc}', '${phoneEsc}', '${govEsc}', '${distEsc}', '${markEsc}', '${addrEsc}', ${codAmt}, ${shipCost}, '${payType}', '${statusEsc}', '${companyEsc}', '${notesEsc}')
+      ON CONFLICT (tracking_number) DO UPDATE
+      SET status = EXCLUDED.status,
+          cod_amount = EXCLUDED.cod_amount,
+          address = EXCLUDED.address
+      RETURNING id, tracking_number;
+    `;
+    const res = await executeSql(query);
+    return Boolean(res && Array.isArray(res.rows) && res.rows.length > 0);
+  } catch (err) {
+    console.warn('[CloudDb] Error saving cloud shipment:', err);
+    return false;
+  }
+}
+
+/**
+ * Fetch all shipments from the central Neon cloud database
+ */
+export async function fetchCloudShipments(subdomain?: string): Promise<CloudShipment[]> {
+  try {
+    const cleanSub = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    let query = `SELECT id, tracking_number, subdomain, recipient_name, recipient_phone, governorate, district, nearest_landmark, address, cod_amount, shipping_cost, payment_type, status, shipping_company, notes, created_at FROM za3em_shipments ORDER BY created_at DESC;`;
+    if (cleanSub) {
+      query = `SELECT id, tracking_number, subdomain, recipient_name, recipient_phone, governorate, district, nearest_landmark, address, cod_amount, shipping_cost, payment_type, status, shipping_company, notes, created_at FROM za3em_shipments WHERE subdomain = '${cleanSub}' OR subdomain = '' OR subdomain IS NULL ORDER BY created_at DESC;`;
+    }
+    const res = await executeSql(query);
+    if (res && Array.isArray(res.rows)) {
+      return res.rows.map((r: any) => ({
+        id: String(r.id),
+        trackingNumber: r.tracking_number,
+        subdomain: r.subdomain,
+        recipientName: r.recipient_name,
+        recipientPhone: r.recipient_phone,
+        governorate: r.governorate,
+        district: r.district,
+        nearestLandmark: r.nearest_landmark,
+        address: r.address,
+        codAmount: Number(r.cod_amount) || 0,
+        shippingCost: Number(r.shipping_cost) || 5000,
+        paymentType: r.payment_type || 'cod',
+        status: r.status || 'جديدة',
+        shippingCompany: r.shipping_company || 'شركة الزعيم للشحن السريع',
+        notes: r.notes || '',
+        createdAt: r.created_at,
+        date: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      }));
+    }
+    return [];
+  } catch (err) {
+    console.warn('[CloudDb] Error fetching cloud shipments:', err);
+    return [];
+  }
+}
+
+/**
+ * Track a shipment by tracking code in the central Neon database
+ */
+export async function trackCloudShipment(trackCode: string): Promise<CloudShipment | null> {
+  try {
+    const cleanCode = trackCode.trim().replace(/'/g, "''");
+    if (!cleanCode) return null;
+
+    const query = `
+      SELECT id, tracking_number, subdomain, recipient_name, recipient_phone, governorate, district, nearest_landmark, address, cod_amount, shipping_cost, payment_type, status, shipping_company, notes, created_at
+      FROM za3em_shipments
+      WHERE LOWER(tracking_number) = LOWER('${cleanCode}') OR recipient_phone = '${cleanCode}'
+      ORDER BY id DESC LIMIT 1;
+    `;
+    const res = await executeSql(query);
+    if (res && Array.isArray(res.rows) && res.rows.length > 0) {
+      const r = res.rows[0];
+      return {
+        id: String(r.id),
+        trackingNumber: r.tracking_number,
+        subdomain: r.subdomain,
+        recipientName: r.recipient_name,
+        recipientPhone: r.recipient_phone,
+        governorate: r.governorate,
+        district: r.district,
+        nearestLandmark: r.nearest_landmark,
+        address: r.address,
+        codAmount: Number(r.cod_amount) || 0,
+        shippingCost: Number(r.shipping_cost) || 5000,
+        paymentType: r.payment_type || 'cod',
+        status: r.status || 'جديدة',
+        shippingCompany: r.shipping_company || 'شركة الزعيم للشحن السريع',
+        notes: r.notes || '',
+        createdAt: r.created_at,
+        date: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      };
+    }
+    return null;
+  } catch (err) {
+    console.warn('[CloudDb] Error tracking cloud shipment:', err);
+    return null;
+  }
+}
