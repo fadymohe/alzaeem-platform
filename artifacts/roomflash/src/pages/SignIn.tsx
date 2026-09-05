@@ -5,6 +5,7 @@ import {
   Eye, EyeOff, ArrowLeft, Globe, Mail, Lock, AlertCircle,
   CheckCircle2, ShieldCheck, KeyRound, RefreshCw, X, User, Sparkles
 } from 'lucide-react';
+import { fetchCloudStoreByUser } from '../utils/cloudDb';
 
 export function SignInPage() {
   const [, setLocation] = useLocation();
@@ -47,19 +48,67 @@ export function SignInPage() {
 
   const isAr = lang === 'ar';
 
-  const completeLoginRedirect = (userObj: any, meta: any = {}) => {
+  const completeLoginRedirect = async (userObj: any, meta: any = {}) => {
     try {
+      const userEmail = (userObj.email || '').toLowerCase().trim();
+      const userId = userObj.id || meta?.sub || '';
+
+      // 1. استعلام قاعدة البيانات السحابية المركزية لمعرفة ما إذا كان للتاجر متجر مسبقاً
+      let dbStore: any = null;
+      try {
+        const res = await fetch(`/api/tenant/user-store?email=${encodeURIComponent(userEmail)}&ownerId=${encodeURIComponent(userId)}`);
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData.hasStore && resData.store) {
+            dbStore = resData.store;
+          }
+        }
+      } catch (e) {}
+
+      if (!dbStore) {
+        try {
+          dbStore = await fetchCloudStoreByUser(userEmail, userId);
+        } catch (e) {}
+      }
+
+      // 2. فحص مخزن المتصفح
       const onboardedRaw = localStorage.getItem('zaeem_onboarded_store');
       const onboarded = onboardedRaw ? JSON.parse(onboardedRaw) : null;
-      const storeCode = onboarded?.storeCode || meta?.store_code || `ZAEEM-${Math.floor(100000 + Math.random() * 900000)}`;
-      const storeName = onboarded?.storeName || meta?.store_name || userObj.storeName || `متجر ${userObj.name}`;
-      const rawSub = onboarded?.subdomain || meta?.subdomain || userObj.subdomain;
-      const cleanSub = rawSub ? rawSub.replace('.za3em.shop', '') : (userObj.email ? userObj.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') : 'store');
-      const subdomain = `${cleanSub}.za3em.shop`;
-      const selectedTheme = onboarded?.templateId || meta?.template_id || meta?.selected_theme || 'shoppingcart.1.2.7';
 
-      // Restore custom product if present
-      const product = onboarded?.product || meta?.product || {
+      const hasSavedStore = Boolean(
+        dbStore ||
+        (meta?.onboarding_completed === true && meta?.subdomain) ||
+        (onboarded?.storeCode && localStorage.getItem('zaeem_onboarding_completed') === 'true')
+      );
+
+      if (!hasSavedStore) {
+        // حساب جديد لم يكمل إعداد المتجر بعد -> تحويل طبيعي لصفحة Onboarding
+        localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+        localStorage.setItem('zaeem_auth_action', 'signup');
+        localStorage.removeItem('zaeem_onboarding_completed');
+        localStorage.removeItem('zaeem_onboarded_store');
+        window.location.hash = '#/onboarding';
+        setLocation('/onboarding');
+        return;
+      }
+
+      // حساب لديه متجر محفوظ في قاعدة البيانات -> استرجاع النسخة المحفوظة وتخطي Onboarding
+      const cleanSub = dbStore?.subdomain ||
+        (meta?.subdomain ? meta.subdomain.replace('.za3em.shop', '') : null) ||
+        (onboarded?.subdomain ? onboarded.subdomain.replace('.za3em.shop', '') : null) ||
+        userEmail.split('@')[0].replace(/[^a-z0-9]/g, '');
+
+      const storeCode = dbStore?.storeCode || dbStore?.store_code || meta?.store_code || onboarded?.storeCode || `ZAEEM-${cleanSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const storeName = dbStore?.name || dbStore?.storeName || meta?.store_name || onboarded?.storeName || `متجر ${userObj.name || cleanSub}`;
+      const subdomain = `${cleanSub}.za3em.shop`;
+      const selectedTheme = dbStore?.templateId || dbStore?.template_id || meta?.template_id || meta?.selected_theme || onboarded?.templateId || 'shoppingcart.1.2.7';
+      const slogan = dbStore?.slogan || meta?.slogan || onboarded?.slogan || 'أفضل المنتجات مع التوصيل السريع والدفع عند الاستلام';
+      const categories = dbStore?.categories || meta?.categories || onboarded?.categories || ['عام'];
+      const logoUrl = dbStore?.logoUrl || dbStore?.logo_url || meta?.logo_url || onboarded?.logoUrl || null;
+      const bannerUrl = dbStore?.bannerUrl || dbStore?.banner_url || meta?.banner_url || onboarded?.bannerUrl || null;
+
+      // استرجاع المنتج المحفوظ الخاص بالتاجر بدقة
+      const product = dbStore?.product || meta?.product || onboarded?.product || {
         id: 1,
         title: 'عطر تاج الفخامة الفرنسي الملكي',
         price: 45000,
@@ -74,41 +123,40 @@ export function SignInPage() {
         selectedTheme,
         templateId: selectedTheme,
         storeCode,
-        logoUrl: onboarded?.logoUrl || meta?.logo_url,
-        bannerUrl: onboarded?.bannerUrl || meta?.banner_url,
+        slogan,
+        logoUrl,
+        bannerUrl,
         plan: meta?.plan || 'free',
         orderLimit: meta?.order_limit || 5,
-        categories: onboarded?.categories || meta?.categories || ['عام'],
+        categories,
         product
       };
 
-      localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+      localStorage.setItem('zaeem_user', JSON.stringify({ ...userObj, storeName, subdomain }));
       localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
       localStorage.setItem('zaeem_onboarded_store', JSON.stringify(fullStoreData));
       localStorage.setItem('zaeem_onboarding_completed', 'true');
       localStorage.setItem('zaeem_auth_action', 'signin');
 
-      // Also ensure custom product is saved to zaeem_store_products for dashboard
+      // حفظ المنتج في قائمة منتجات المتجر للوحة التحكم
       try {
-        const curProducts = JSON.parse(localStorage.getItem('zaeem_store_products') || '[]');
-        if (product && (!curProducts || curProducts.length === 0)) {
-          localStorage.setItem('zaeem_store_products', JSON.stringify([{
-            id: 1,
-            name: product.title || product.name || 'منتج المتجر الحصري',
-            sku: `PRD-${cleanSub.toUpperCase()}`,
-            description: fullStoreData.slogan || 'منتج أصلي فاخر مع شحن سريع وضمان الدفع عند الاستلام',
-            price: Number(product.price) || 45000,
-            compareAtPrice: Number(product.compareAtPrice) || 58000,
-            stock: 50,
-            lowStockThreshold: 5,
-            category: product.category || 'عام',
-            status: 'active',
-            imageUrl: product.imageUrl || product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
-            weightGrams: 500
-          }]));
-        }
+        localStorage.setItem('zaeem_store_products', JSON.stringify([{
+          id: 1,
+          name: product.title || product.name || 'منتج المتجر الحصري',
+          sku: `PRD-${cleanSub.toUpperCase()}`,
+          description: slogan,
+          price: Number(product.price) || 45000,
+          compareAtPrice: Number(product.compareAtPrice) || Math.round((Number(product.price) || 45000) * 1.3),
+          stock: 50,
+          lowStockThreshold: 5,
+          category: product.category || 'عام',
+          status: 'active',
+          imageUrl: product.imageUrl || product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+          weightGrams: 500
+        }]));
       } catch {}
     } catch (e) {
+      console.warn("completeLoginRedirect error:", e);
       localStorage.setItem('zaeem_user', JSON.stringify(userObj));
     }
 

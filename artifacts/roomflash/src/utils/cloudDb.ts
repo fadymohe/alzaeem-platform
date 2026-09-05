@@ -103,6 +103,8 @@ export async function saveCloudStore(store: {
   bannerUrl?: string;
   categories?: string[];
   product?: any;
+  userEmail?: string;
+  ownerId?: string;
 }): Promise<boolean> {
   const cleanSub = (store.subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
   if (!cleanSub) return false;
@@ -111,22 +113,41 @@ export async function saveCloudStore(store: {
   const codeEscaped = (store.storeCode || `ZAEEM-${cleanSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`).replace(/'/g, "''");
   const templateId = (store.templateId || 'shoppingcart.1.2.7').replace(/'/g, "''");
   const sloganEscaped = (store.slogan || 'أفضل المنتجات مع التوصيل السريع لجميع محافظات العراق').replace(/'/g, "''");
-  const logoUrlEscaped = store.logoUrl ? `'${store.logoUrl.replace(/'/g, "''")}'` : 'NULL';
-  const bannerUrlEscaped = store.bannerUrl ? `'${store.bannerUrl.replace(/'/g, "''")}'` : 'NULL';
+  // Protect against huge base64 strings breaking Neon SQL payload limits
+  let safeLogo = store.logoUrl;
+  if (safeLogo && safeLogo.length > 250000) safeLogo = undefined;
+  let safeBanner = store.bannerUrl;
+  if (safeBanner && safeBanner.length > 250000) safeBanner = undefined;
 
-  const productObj = store.product || {
-    id: 1,
-    title: 'عطر تاج الفخامة الفرنسي الملكي',
-    price: 45000,
-    compareAtPrice: 58000,
-    imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+  const logoUrlEscaped = safeLogo ? `'${safeLogo.replace(/'/g, "''")}'` : 'NULL';
+  const bannerUrlEscaped = safeBanner ? `'${safeBanner.replace(/'/g, "''")}'` : 'NULL';
+  const userEmailEscaped = store.userEmail ? `'${store.userEmail.toLowerCase().trim().replace(/'/g, "''")}'` : 'NULL';
+  const ownerIdEscaped = store.ownerId ? `'${store.ownerId.trim().replace(/'/g, "''")}'` : 'NULL';
+
+  const rawProd = store.product || {};
+  let safeProdImg = rawProd.imageUrl || rawProd.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80';
+  if (safeProdImg.length > 250000) {
+    safeProdImg = 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80';
+  }
+
+  const productObj = {
+    id: rawProd.id || 1,
+    title: rawProd.title || rawProd.name || 'عطر تاج الفخامة الفرنسي الملكي',
+    name: rawProd.title || rawProd.name || 'عطر تاج الفخامة الفرنسي الملكي',
+    price: Number(rawProd.price) || 45000,
+    compareAtPrice: Number(rawProd.compareAtPrice) || Math.round((Number(rawProd.price) || 45000) * 1.3),
+    imageUrl: safeProdImg,
+    image: safeProdImg,
+    description: rawProd.description || store.slogan || 'منتج أصلي معتمد مع شحن سريع وضمان الدفع عند الاستلام',
+    category: rawProd.category || 'عام',
   };
   const productJson = JSON.stringify(productObj).replace(/'/g, "''");
   const categoriesJson = JSON.stringify(store.categories || ['عام']).replace(/'/g, "''");
 
+
   const query = `
-    INSERT INTO za3em_stores (name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product)
-    VALUES ('${nameEscaped}', '${cleanSub}', '${templateId}', '${codeEscaped}', '${sloganEscaped}', ${logoUrlEscaped}, ${bannerUrlEscaped}, '${categoriesJson}'::jsonb, '${productJson}'::jsonb)
+    INSERT INTO za3em_stores (name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id)
+    VALUES ('${nameEscaped}', '${cleanSub}', '${templateId}', '${codeEscaped}', '${sloganEscaped}', ${logoUrlEscaped}, ${bannerUrlEscaped}, '${categoriesJson}'::jsonb, '${productJson}'::jsonb, ${userEmailEscaped}, ${ownerIdEscaped})
     ON CONFLICT (subdomain) DO UPDATE
     SET name = EXCLUDED.name,
         template_id = EXCLUDED.template_id,
@@ -135,7 +156,9 @@ export async function saveCloudStore(store: {
         logo_url = EXCLUDED.logo_url,
         banner_url = EXCLUDED.banner_url,
         categories = EXCLUDED.categories,
-        product = EXCLUDED.product
+        product = EXCLUDED.product,
+        user_email = COALESCE(EXCLUDED.user_email, za3em_stores.user_email),
+        owner_id = COALESCE(EXCLUDED.owner_id, za3em_stores.owner_id)
     RETURNING id, name, subdomain, store_code;
   `;
 
@@ -154,7 +177,34 @@ export async function fetchCloudStore(subdomain: string): Promise<CloudStoreReco
   const clean = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
   if (!clean) return null;
 
-  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
+  const result = await executeSql(query);
+
+  if (result && Array.isArray(result.rows) && result.rows.length > 0) {
+    return result.rows[0] as CloudStoreRecord;
+  }
+
+  return null;
+}
+
+/**
+ * Fetch a store by owner email or ID from the central Neon database
+ */
+export async function fetchCloudStoreByUser(email: string, ownerId?: string): Promise<CloudStoreRecord | null> {
+  const cleanEmail = (email || '').toLowerCase().trim().replace(/'/g, "''");
+  const cleanOwner = (ownerId || '').trim().replace(/'/g, "''");
+  if (!cleanEmail && !cleanOwner) return null;
+
+  let whereClause = '';
+  if (cleanEmail && cleanOwner) {
+    whereClause = `user_email = '${cleanEmail}' OR owner_id = '${cleanOwner}'`;
+  } else if (cleanEmail) {
+    whereClause = `user_email = '${cleanEmail}'`;
+  } else {
+    whereClause = `owner_id = '${cleanOwner}'`;
+  }
+
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id FROM za3em_stores WHERE ${whereClause} ORDER BY id DESC LIMIT 1;`;
   const result = await executeSql(query);
 
   if (result && Array.isArray(result.rows) && result.rows.length > 0) {

@@ -192,11 +192,23 @@ function RoutedApp() {
           }
         })
         .then(res => res.json())
-        .then(user => {
+        .then(async (user) => {
           if (user && user.email) {
             const meta = user.user_metadata || {};
             const cleanSlug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
             const authAction = localStorage.getItem('zaeem_auth_action') || 'signin';
+
+            // 1. استعلام قاعدة البيانات لمعرفة ما إذا كان للتاجر متجر مسبقاً
+            let dbStore: any = null;
+            try {
+              const uRes = await fetch(`/api/tenant/user-store?email=${encodeURIComponent(user.email)}&ownerId=${encodeURIComponent(user.id)}`);
+              if (uRes.ok) {
+                const uData = await uRes.json();
+                if (uData.hasStore && uData.store) {
+                  dbStore = uData.store;
+                }
+              }
+            } catch (e) {}
 
             // Check if user already has an established store in database metadata or local storage
             let onboarded: any = null;
@@ -205,9 +217,9 @@ function RoutedApp() {
               if (rawOnb) onboarded = JSON.parse(rawOnb);
             } catch {}
 
-            const hasDbStore = Boolean(meta.onboarding_completed === true || (meta.store_code && meta.subdomain));
+            const hasDbStore = Boolean(dbStore || meta.onboarding_completed === true || (meta.store_code && meta.subdomain));
             const hasLocalStore = Boolean(onboarded?.storeCode && localStorage.getItem('zaeem_onboarding_completed') === 'true');
-            const isReturningMerchant = (authAction === 'signin') || hasDbStore || hasLocalStore;
+            const isReturningMerchant = (authAction === 'signin' && (hasDbStore || hasLocalStore)) || hasDbStore;
 
             const userObj = {
               id: user.id,
@@ -215,8 +227,8 @@ function RoutedApp() {
               name: meta.full_name || meta.name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : user.email.split('@')[0]),
               phone: meta.phone || user.phone || '+9647700000000',
               governorate: meta.governorate || 'بغداد',
-              storeName: meta.store_name || onboarded?.storeName || `متجر ${meta.full_name || cleanSlug}`,
-              subdomain: meta.subdomain || onboarded?.subdomain || `${cleanSlug}.za3em.shop`,
+              storeName: dbStore?.name || meta.store_name || onboarded?.storeName || `متجر ${meta.full_name || cleanSlug}`,
+              subdomain: dbStore?.subdomain ? `${dbStore.subdomain}.za3em.shop` : (meta.subdomain || onboarded?.subdomain || `${cleanSlug}.za3em.shop`),
               token: token,
               provider: user.app_metadata?.provider || 'google',
               loggedIn: true,
@@ -227,12 +239,12 @@ function RoutedApp() {
 
             if (isReturningMerchant) {
               // SIGN IN: Restore saved store settings and skip onboarding directly to Dashboard!
-              const storeCode = meta.store_code || onboarded?.storeCode || `ZAEEM-${cleanSlug.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
-              const storeName = meta.store_name || onboarded?.storeName || userObj.storeName;
-              const rawSub = meta.subdomain || onboarded?.subdomain || `${cleanSlug}.za3em.shop`;
-              const subdomain = rawSub.includes('.za3em.shop') ? rawSub : `${rawSub}.za3em.shop`;
-              const selectedTheme = meta.template_id || meta.selected_theme || onboarded?.templateId || onboarded?.selectedTheme || 'shoppingcart.1.2.7';
-              const product = meta.product || onboarded?.product || {
+              const cleanStoredSub = dbStore?.subdomain || (meta.subdomain ? meta.subdomain.replace('.za3em.shop', '') : null) || (onboarded?.subdomain ? onboarded.subdomain.replace('.za3em.shop', '') : null) || cleanSlug;
+              const storeCode = dbStore?.storeCode || dbStore?.store_code || meta.store_code || onboarded?.storeCode || `ZAEEM-${cleanStoredSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
+              const storeName = dbStore?.name || meta.store_name || onboarded?.storeName || userObj.storeName;
+              const subdomain = `${cleanStoredSub}.za3em.shop`;
+              const selectedTheme = dbStore?.templateId || dbStore?.template_id || meta.template_id || meta.selected_theme || onboarded?.templateId || 'shoppingcart.1.2.7';
+              const product = dbStore?.product || meta.product || onboarded?.product || {
                 id: 1,
                 title: 'عطر تاج الفخامة الفرنسي الملكي',
                 price: 45000,

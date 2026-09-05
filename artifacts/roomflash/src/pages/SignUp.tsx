@@ -541,6 +541,11 @@ export function SignUpPage() {
       }).catch(() => null);
     } catch (err) {}
 
+    // ضمان وجود رمز تعريفي فريد للحساب
+    if (!userObj.id) {
+      userObj.id = `ZAEEM-ACC-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    }
+
     // Save locally
     localStorage.setItem('zaeem_user', JSON.stringify(userObj));
     localStorage.setItem('zaeem_auth_action', 'signup');

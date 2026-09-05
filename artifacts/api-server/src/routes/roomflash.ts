@@ -306,12 +306,25 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       return;
     }
 
-    const stores = await db.select().from(storesTable).where(eq(storesTable.ownerClerkId, `usr_${user.id}`));
+    let userStore: any = null;
+    try {
+      const za3emStores = await db.select().from(za3emStoresTable).where(or(eq(za3emStoresTable.userEmail, email.toLowerCase()), eq(za3emStoresTable.ownerId, `usr_${user.id}`)));
+      if (za3emStores.length > 0) {
+        userStore = za3emStores[0];
+      }
+    } catch (e) {}
+
+    if (!userStore) {
+      try {
+        const stores = await db.select().from(storesTable).where(eq(storesTable.ownerClerkId, `usr_${user.id}`));
+        userStore = stores[0] || null;
+      } catch (e) {}
+    }
 
     res.json({
       success: true,
       user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email },
-      store: stores[0] || null,
+      store: userStore,
       token: `token_${user.id}_${Date.now()}`
     });
   } catch (err) {
@@ -334,14 +347,20 @@ router.get("/stores/check-subdomain", async (req, res): Promise<void> => {
       res.json({ available: false, reason: "reserved", message: "هذا النطاق محجوز للاستخدام الخاص بإدارة المنصة وغير متاح" });
       return;
     }
-    const existingStores = await db.select().from(storesTable).where(eq(storesTable.subdomain, slugParam));
-    if (existingStores.length > 0) {
-      res.json({ available: false, reason: "taken", message: "هذا النطاق مستخدم مسبقاً من متجر آخر" });
-      return;
-    }
+    // فحص الدومين من جدول za3em_stores الفعلي في PostgreSQL
     try {
       const existingZa3em = await db.select().from(za3emStoresTable).where(eq(za3emStoresTable.subdomain, slugParam));
       if (existingZa3em.length > 0) {
+        res.json({ available: false, reason: "taken", message: `هذا النطاق (${slugParam}.za3em.shop) مستخدم مسبقاً من متجر آخر في قاعدة البيانات` });
+        return;
+      }
+    } catch (e) {
+      console.warn("DB check za3emStoresTable error:", e);
+    }
+
+    try {
+      const existingStores = await db.select().from(storesTable).where(eq(storesTable.subdomain, slugParam));
+      if (existingStores.length > 0) {
         res.json({ available: false, reason: "taken", message: "هذا النطاق مستخدم مسبقاً من متجر آخر" });
         return;
       }
@@ -349,6 +368,7 @@ router.get("/stores/check-subdomain", async (req, res): Promise<void> => {
 
     res.json({ available: true, subdomain: slugParam, message: "النطاق متاح ويمكن حجزه فوراً ✅" });
   } catch (err) {
+    console.error("Subdomain check general error:", err);
     res.status(500).json({ available: false, error: "خطأ بالخادم" });
   }
 });

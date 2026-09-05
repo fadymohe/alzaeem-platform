@@ -423,7 +423,7 @@ export function OnboardingPage() {
     setProductAdded(true);
   };
 
-  // Permanent Base64 Image Reader (Prevents broken blob URLs)
+  // Permanent Base64 Image Reader with Automatic Canvas Compression (Prevents broken blob URLs & huge payloads)
   const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     target: 'product' | 'logo' | 'banner'
@@ -432,19 +432,54 @@ export function OnboardingPage() {
       const file = e.target.files[0];
       const reader = new FileReader();
       reader.onloadend = () => {
-        const result = reader.result as string;
-        if (target === 'product') {
-          setProductImage(result);
-          setProductAdded(true);
-        } else if (target === 'logo') {
-          setLogoUrl(result);
-        } else if (target === 'banner') {
-          setBannerUrl(result);
-        }
+        const rawResult = reader.result as string;
+        // Compress image via HTML5 Canvas to keep SQL payload ultralight (< 80KB)
+        const img = new Image();
+        img.src = rawResult;
+        img.onload = () => {
+          const maxDim = target === 'banner' ? 1200 : 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.75);
+
+          if (target === 'product') {
+            setProductImage(compressed);
+            setProductAdded(true);
+          } else if (target === 'logo') {
+            setLogoUrl(compressed);
+          } else if (target === 'banner') {
+            setBannerUrl(compressed);
+          }
+        };
+        img.onerror = () => {
+          if (target === 'product') {
+            setProductImage(rawResult);
+            setProductAdded(true);
+          } else if (target === 'logo') {
+            setLogoUrl(rawResult);
+          } else if (target === 'banner') {
+            setBannerUrl(rawResult);
+          }
+        };
       };
       reader.readAsDataURL(file);
     }
   };
+
 
   // Final Complete & Online Launch Store
   const handleCompleteAndLaunch = async () => {
@@ -457,12 +492,25 @@ export function OnboardingPage() {
 
     setIsLaunching(true);
 
+    const userRaw = localStorage.getItem('zaeem_user');
+    let userEmail: string | undefined = undefined;
+    let ownerId: string | undefined = undefined;
+    if (userRaw) {
+      try {
+        const u = JSON.parse(userRaw);
+        userEmail = u.email;
+        ownerId = u.id;
+      } catch {}
+    }
+
     const payload = {
       storeCode,
       subdomain: cleanSub,
       storeName,
       slogan,
       templateId: selectedTheme,
+      userEmail,
+      ownerId,
       categories,
       logoUrl: logoUrl || undefined,
       bannerUrl: bannerUrl || undefined,
@@ -515,15 +563,26 @@ export function OnboardingPage() {
       }));
       localStorage.setItem('zaeem_onboarding_completed', 'true');
       localStorage.setItem('zaeem_auth_action', 'signin');
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        localStorage.setItem('zaeem_user', JSON.stringify({
+          ...u,
+          storeName,
+          subdomain: `${cleanSub}.za3em.shop`,
+          onboarding_completed: true
+        }));
+      }
     } catch {}
 
     // 3. Register directly in Central Neon Cloud PostgreSQL Database (universal cross-subdomain truth)
     try {
-      await saveCloudStore({
+      const saved = await saveCloudStore({
         storeName,
         subdomain: cleanSub,
         templateId: selectedTheme,
         storeCode,
+        userEmail,
+        ownerId,
         slogan,
         logoUrl: logoUrl || undefined,
         bannerUrl: bannerUrl || undefined,
@@ -539,11 +598,34 @@ export function OnboardingPage() {
           category: productCategory || 'عام',
         }
       });
+      if (!saved) {
+        console.warn('First save attempt returned false, retrying with lightweight safe payload...');
+        await saveCloudStore({
+          storeName,
+          subdomain: cleanSub,
+          templateId: selectedTheme,
+          storeCode,
+          userEmail,
+          ownerId,
+          slogan,
+          categories,
+          product: {
+            id: 1,
+            title: productName || 'عطر تاج الفخامة الفرنسي الملكي',
+            price: Number(productPrice) || 45000,
+            compareAtPrice: Math.round((Number(productPrice) || 45000) * 1.3),
+            imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+            description: slogan || 'منتج أصلي معتمد مع شحن سريع لجميع محافظات العراق ودفع عند الاستلام',
+            category: productCategory || 'عام',
+          }
+        });
+      }
     } catch (cloudErr) {
       console.warn('Neon Cloud store register fallback:', cloudErr);
     }
 
-    // 3b. Register with server API to permanently bind subdomain and template in stores.json
+
+    // 3b. Register with server API to permanently bind subdomain and template in database
     try {
       await fetch('/api/tenant/stores', {
         method: 'POST',
@@ -553,11 +635,19 @@ export function OnboardingPage() {
           name: storeName,
           subdomain: cleanSub,
           templateId: selectedTheme,
+          userEmail,
+          ownerId,
+          slogan,
           productTitle: productName,
           productPrice: Number(productPrice) || 45000,
           productImage: productImage,
+          productCompareAtPrice: Math.round((Number(productPrice) || 45000) * 1.3),
+          productDescription: slogan,
+          productCategory,
           logoUrl: logoUrl || undefined,
-          bannerUrl: bannerUrl || undefined
+          bannerUrl: bannerUrl || undefined,
+          categories,
+          product: payload.product
         })
       });
     } catch (apiErr) {

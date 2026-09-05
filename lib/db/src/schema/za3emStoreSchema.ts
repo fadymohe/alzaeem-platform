@@ -2,6 +2,7 @@ import { createInsertSchema } from "drizzle-zod";
 import {
   index,
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
@@ -12,7 +13,7 @@ import { z } from "zod/v4";
 
 /**
  * جدول المتاجر (stores)
- * يشمل: id, name, subdomain (فريد وغير مكرر), template_id, created_at
+ * يشمل: id, name, subdomain (فريد وغير مكرر), template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id, created_at
  */
 export const za3emStoresTable = pgTable(
   "za3em_stores",
@@ -21,10 +22,20 @@ export const za3emStoresTable = pgTable(
     name: text("name").notNull(),
     subdomain: text("subdomain").notNull(),
     templateId: text("template_id").notNull().default("easyorders-flash"),
+    storeCode: text("store_code"),
+    slogan: text("slogan"),
+    logoUrl: text("logo_url"),
+    bannerUrl: text("banner_url"),
+    categories: jsonb("categories").$type<string[]>(),
+    product: jsonb("product").$type<any>(),
+    userEmail: text("user_email"),
+    ownerId: text("owner_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     subdomainUnique: uniqueIndex("za3em_stores_subdomain_unique").on(table.subdomain),
+    userEmailIdx: index("za3em_stores_user_email_idx").on(table.userEmail),
+    ownerIdx: index("za3em_stores_owner_idx").on(table.ownerId),
   }),
 );
 

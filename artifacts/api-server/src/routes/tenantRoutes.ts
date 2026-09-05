@@ -12,7 +12,7 @@ import {
   dispatchShipmentToCourier,
   queryLiveCourierTracking,
 } from "../services/shippingService";
-import { extractSubdomain } from "../middlewares/tenantRouting";
+import { extractSubdomain, RESERVED_SUBDOMAINS } from "../middlewares/tenantRouting";
 
 const router: IRouter = Router();
 
@@ -22,6 +22,20 @@ const FALLBACK_ZERO_STORE: Za3emStore = {
   name: "متجر زيرو إكسبريس",
   subdomain: "zero",
   templateId: "easyorders-flash",
+  storeCode: "ZAEEM-ZERO-1001",
+  slogan: "متجر تجريبي لاختبار طلبات الشحن السريع",
+  logoUrl: null,
+  bannerUrl: null,
+  categories: ["عام"],
+  product: {
+    id: 1,
+    title: "سماعة بلوتوث لاسلكية Ultra Bass عازلة للضوضاء - إصدار 2026",
+    price: 45000,
+    imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80",
+    compareAtPrice: 58000,
+  },
+  userEmail: null,
+  ownerId: null,
   createdAt: new Date(),
 };
 
@@ -38,8 +52,118 @@ const FALLBACK_ZERO_PRODUCT: Za3emProduct = {
 };
 
 /**
+ * 0. فحص توفر الدومين الفرعي من قاعدة البيانات مباشرة (Check Subdomain Availability)
+ */
+router.get("/check-subdomain", async (req: Request, res: Response): Promise<void> => {
+  const rawSub = (req.query.subdomain || req.query.slug || "").toString().toLowerCase().trim();
+  const cleanSub = rawSub.replace(".za3em.shop", "").replace(/[^a-z0-9-]/g, "");
+
+  if (!cleanSub) {
+    res.status(400).json({ available: false, reason: "short", message: "يرجى إدخال اسم الدومين الفرعي" });
+    return;
+  }
+  if (cleanSub.length < 3) {
+    res.json({ available: false, reason: "short", message: "يجب أن يتكون الدومين من 3 أحرف على الأقل" });
+    return;
+  }
+  if (RESERVED_SUBDOMAINS.has(cleanSub)) {
+    res.json({ available: false, reason: "reserved", message: "هذا النطاق محجوز للاستخدام الخاص بإدارة المنصة وغير متاح" });
+    return;
+  }
+
+  try {
+    const existing = await db
+      .select()
+      .from(za3emStoresTable)
+      .where(eq(za3emStoresTable.subdomain, cleanSub))
+      .limit(1);
+
+    if (existing.length > 0) {
+      res.json({
+        available: false,
+        reason: "taken",
+        message: `هذا النطاق (${cleanSub}.za3em.shop) محجوز مسبقاً لمتجر آخر في قاعدة البيانات`,
+        suggestions: [`${cleanSub}-store`, `${cleanSub}-shop`, `${cleanSub}-iq`, `${cleanSub}2026`]
+      });
+      return;
+    }
+
+    res.json({
+      available: true,
+      subdomain: cleanSub,
+      message: `النطاق (${cleanSub}.za3em.shop) متاح ويمكنك حجزه فوراً ✅`
+    });
+  } catch (err) {
+    console.error("Check subdomain DB error:", err);
+    res.status(500).json({ available: false, error: "فشل التحقق من قاعدة البيانات" });
+  }
+});
+
+/**
+ * 0.1 جلب متجر التاجر بناءً على بريده أو رمز الحساب لتخطي Onboarding عند تسجيل الدخول
+ */
+router.get("/user-store", async (req: Request, res: Response): Promise<void> => {
+  const email = (req.query.email as string || "").trim().toLowerCase();
+  const ownerId = (req.query.ownerId as string || "").trim();
+
+  if (!email && !ownerId) {
+    res.status(400).json({ hasStore: false, error: "البريد الإلكتروني أو رمز الحساب مطلوب" });
+    return;
+  }
+
+  try {
+    let stores: Za3emStore[] = [];
+    if (email && ownerId) {
+      stores = await db
+        .select()
+        .from(za3emStoresTable)
+        .where(or(eq(za3emStoresTable.userEmail, email), eq(za3emStoresTable.ownerId, ownerId)))
+        .limit(1);
+    } else if (email) {
+      stores = await db
+        .select()
+        .from(za3emStoresTable)
+        .where(eq(za3emStoresTable.userEmail, email))
+        .limit(1);
+    } else {
+      stores = await db
+        .select()
+        .from(za3emStoresTable)
+        .where(eq(za3emStoresTable.ownerId, ownerId))
+        .limit(1);
+    }
+
+    if (stores.length === 0) {
+      res.json({ hasStore: false });
+      return;
+    }
+
+    const store = stores[0];
+    res.json({
+      hasStore: true,
+      store: {
+        id: store.id,
+        name: store.name,
+        storeName: store.name,
+        subdomain: store.subdomain,
+        templateId: store.templateId,
+        storeCode: store.storeCode,
+        slogan: store.slogan,
+        logoUrl: store.logoUrl,
+        bannerUrl: store.bannerUrl,
+        categories: store.categories || ["عام"],
+        product: store.product,
+      }
+    });
+  } catch (err) {
+    console.error("Fetch user store error:", err);
+    res.status(500).json({ hasStore: false, error: "فشل استرجاع بيانات المتجر من قاعدة البيانات" });
+  }
+});
+
+/**
  * 1. نقطة التوجيه الفوري للنطاق الفرعي (Resolve Subdomain)
- * تفحص الـ Host Header وتعيد بيانات التاجر والقالب المخصص
+ * تفحص الـ Host Header وتعيد بيانات التاجر والقالب المخصص والمنتج
  */
 router.get("/resolve", async (req: Request, res: Response): Promise<void> => {
   const hostHeader = (req.headers["x-forwarded-host"] as string) || req.headers.host;
@@ -76,10 +200,12 @@ router.get("/resolve", async (req: Request, res: Response): Promise<void> => {
 
       if (stores.length > 0) {
         store = stores[0];
-        products = await db
-          .select()
-          .from(za3emProductsTable)
-          .where(eq(za3emProductsTable.storeId, store.id));
+        try {
+          products = await db
+            .select()
+            .from(za3emProductsTable)
+            .where(eq(za3emProductsTable.storeId, store.id));
+        } catch {}
       }
     } catch (dbErr) {
       console.warn("DB query fallback:", dbErr);
@@ -99,9 +225,13 @@ router.get("/resolve", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // إذا لم يكن لديه منتج بعد، وفر المنتج الافتراضي للبدء فوراً
-    if (products.length === 0) {
-      products = [{ ...FALLBACK_ZERO_PRODUCT, storeId: store.id }];
+    // استخراج المنتج المخصص المخزن مع المتجر أو من جدول المنتجات
+    let mainProduct: any = store.product;
+    if (!mainProduct && products.length > 0) {
+      mainProduct = products[0];
+    }
+    if (!mainProduct) {
+      mainProduct = { ...FALLBACK_ZERO_PRODUCT, storeId: store.id };
     }
 
     res.json({
@@ -112,9 +242,14 @@ router.get("/resolve", async (req: Request, res: Response): Promise<void> => {
         name: store.name,
         subdomain: store.subdomain,
         templateId: store.templateId,
+        storeCode: store.storeCode,
+        logoUrl: store.logoUrl,
+        bannerUrl: store.bannerUrl,
+        slogan: store.slogan,
+        categories: store.categories || ["عام"],
       },
-      product: products[0], // Single-Product Landing Page
-      allProducts: products,
+      product: mainProduct,
+      allProducts: products.length > 0 ? products : [mainProduct],
     });
   } catch (error) {
     console.error("Failed to resolve tenant store:", error);
@@ -142,22 +277,37 @@ router.get("/stores/:subdomain", async (req: Request, res: Response): Promise<vo
 
       if (stores.length > 0) {
         store = stores[0];
-        products = await db
-          .select()
-          .from(za3emProductsTable)
-          .where(eq(za3emProductsTable.storeId, store.id));
+        try {
+          products = await db
+            .select()
+            .from(za3emProductsTable)
+            .where(eq(za3emProductsTable.storeId, store.id));
+        } catch {}
       }
     } catch (e) {}
 
     if (!store) {
-      store = { ...FALLBACK_ZERO_STORE, subdomain, name: `متجر ${subdomain}` };
-      products = [FALLBACK_ZERO_PRODUCT];
+      if (subdomain === "zero" || subdomain === "demo") {
+        store = { ...FALLBACK_ZERO_STORE, subdomain };
+        products = [FALLBACK_ZERO_PRODUCT];
+      } else {
+        res.status(404).json({ error: "المتجر غير موجود" });
+        return;
+      }
+    }
+
+    let mainProduct: any = store.product;
+    if (!mainProduct && products.length > 0) {
+      mainProduct = products[0];
+    }
+    if (!mainProduct) {
+      mainProduct = { ...FALLBACK_ZERO_PRODUCT, storeId: store.id };
     }
 
     res.json({
       store,
-      product: products[0] || FALLBACK_ZERO_PRODUCT,
-      products,
+      product: mainProduct,
+      products: products.length > 0 ? products : [mainProduct],
     });
   } catch (error) {
     res.status(500).json({ error: "خطأ أثناء جلب المتجر" });
@@ -165,77 +315,145 @@ router.get("/stores/:subdomain", async (req: Request, res: Response): Promise<vo
 });
 
 /**
- * 3. إنشاء متجر جديد وحجز النطاق الفرعي (Merchant Onboarding)
+ * 3. إنشاء متجر جديد وحجز النطاق الفرعي نهائياً في قاعدة البيانات (Merchant Onboarding)
  */
 router.post("/stores", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, subdomain, templateId, productTitle, productPrice, productImage } = req.body;
+    const {
+      name,
+      subdomain,
+      templateId,
+      storeCode,
+      userEmail,
+      ownerId,
+      slogan,
+      logoUrl,
+      bannerUrl,
+      categories,
+      productTitle,
+      productPrice,
+      productImage,
+      productCompareAtPrice,
+      productDescription,
+      productCategory,
+      product: inputProduct,
+    } = req.body;
 
     if (!name || !subdomain) {
       res.status(400).json({ error: "اسم المتجر والنطاق الفرعي مطلوبان" });
       return;
     }
 
-    const cleanSub = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    const cleanSub = subdomain.toLowerCase().replace(".za3em.shop", "").replace(/[^a-z0-9-]/g, "");
 
-    // إنشاء المتجر
+    if (RESERVED_SUBDOMAINS.has(cleanSub)) {
+      res.status(400).json({ error: "هذا النطاق الفرعي محجوز للإدارة ويمنع استخدامه" });
+      return;
+    }
+
+    // التحقق مما إذا كان الدومين محجوزاً مسبقاً
+    const existing = await db
+      .select()
+      .from(za3emStoresTable)
+      .where(eq(za3emStoresTable.subdomain, cleanSub))
+      .limit(1);
+
+    const generatedCode = storeCode || `ZAEEM-${cleanSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const integerPrice = Math.round(Number(inputProduct?.price || productPrice) || 45000);
+    const resolvedProduct = {
+      id: 1,
+      title: inputProduct?.title || inputProduct?.name || productTitle || "منتج العرض الخاص",
+      name: inputProduct?.name || inputProduct?.title || productTitle || "منتج العرض الخاص",
+      price: integerPrice,
+      compareAtPrice: Math.round(Number(inputProduct?.compareAtPrice || productCompareAtPrice) || integerPrice * 1.3),
+      imageUrl: inputProduct?.imageUrl || inputProduct?.image || productImage || FALLBACK_ZERO_PRODUCT.imageUrl,
+      image: inputProduct?.image || inputProduct?.imageUrl || productImage || FALLBACK_ZERO_PRODUCT.imageUrl,
+      description: inputProduct?.description || productDescription || slogan || "أعلى جودة مع ضمان التوصيل والدفع عند الاستلام.",
+      category: inputProduct?.category || productCategory || "عام",
+    };
+
     let newStore: Za3emStore;
-    try {
+
+    if (existing.length > 0) {
+      // تحديث المتجر المحجوز مسبقاً لنفس النطاق
+      const [updated] = await db
+        .update(za3emStoresTable)
+        .set({
+          name,
+          templateId: templateId || "shoppingcart.1.2.7",
+          storeCode: generatedCode,
+          userEmail: userEmail ? userEmail.toLowerCase().trim() : existing[0].userEmail,
+          ownerId: ownerId || existing[0].ownerId,
+          slogan: slogan || existing[0].slogan,
+          logoUrl: logoUrl || existing[0].logoUrl,
+          bannerUrl: bannerUrl || existing[0].bannerUrl,
+          categories: categories || existing[0].categories || ["عام"],
+          product: resolvedProduct,
+        })
+        .where(eq(za3emStoresTable.id, existing[0].id))
+        .returning();
+      newStore = updated;
+    } else {
+      // إدراج متجر جديد وحجز الدومين الفرعي فعلياً في قاعدة البيانات
       const [inserted] = await db
         .insert(za3emStoresTable)
         .values({
           name,
           subdomain: cleanSub,
-          templateId: templateId || "easyorders-flash",
+          templateId: templateId || "shoppingcart.1.2.7",
+          storeCode: generatedCode,
+          userEmail: userEmail ? userEmail.toLowerCase().trim() : null,
+          ownerId: ownerId || null,
+          slogan: slogan || "أفضل المنتجات مع التوصيل السريع لجميع المحافظات والدفع عند الاستلام",
+          logoUrl: logoUrl || null,
+          bannerUrl: bannerUrl || null,
+          categories: categories || ["عام"],
+          product: resolvedProduct,
         })
         .returning();
       newStore = inserted;
-    } catch (dbErr) {
-      newStore = {
-        id: Math.floor(Math.random() * 10000),
-        name,
-        subdomain: cleanSub,
-        templateId: templateId || "easyorders-flash",
-        createdAt: new Date(),
-      };
     }
 
-    // إنشاء المنتج التابع للمتجر بالسعر الصحيح بالجنيه المصري
-    const integerPrice = Math.round(Number(productPrice) || 450);
-    let newProduct: Za3emProduct;
-
+    // إدراج المنتج في جدول za3em_products لمطابقة معايير المتجر
     try {
-      const [insertedProduct] = await db
-        .insert(za3emProductsTable)
-        .values({
+      const existingProds = await db
+        .select()
+        .from(za3emProductsTable)
+        .where(eq(za3emProductsTable.storeId, newStore.id))
+        .limit(1);
+
+      if (existingProds.length > 0) {
+        await db
+          .update(za3emProductsTable)
+          .set({
+            title: resolvedProduct.title,
+            description: resolvedProduct.description,
+            price: resolvedProduct.price,
+            imageUrl: resolvedProduct.imageUrl,
+          })
+          .where(eq(za3emProductsTable.id, existingProds[0].id));
+      } else {
+        await db.insert(za3emProductsTable).values({
           storeId: newStore.id,
-          title: productTitle || "منتج العرض الخاص",
-          description: "أعلى جودة مع ضمان التوصيل والدفع عند الاستلام.",
-          price: integerPrice,
-          imageUrl: productImage || FALLBACK_ZERO_PRODUCT.imageUrl,
-        })
-        .returning();
-      newProduct = insertedProduct;
-    } catch (pErr) {
-      newProduct = {
-        id: Math.floor(Math.random() * 10000),
-        storeId: newStore.id,
-        title: productTitle || "منتج العرض الخاص",
-        description: "أعلى جودة مع ضمان التوصيل والدفع عند الاستلام.",
-        price: integerPrice,
-        imageUrl: productImage || FALLBACK_ZERO_PRODUCT.imageUrl,
-        createdAt: new Date(),
-      };
+          title: resolvedProduct.title,
+          description: resolvedProduct.description,
+          price: resolvedProduct.price,
+          imageUrl: resolvedProduct.imageUrl,
+        });
+      }
+    } catch (prodErr) {
+      console.warn("Product sync table notice:", prodErr);
     }
 
     res.json({
       success: true,
       store: newStore,
-      product: newProduct,
+      product: resolvedProduct,
       domainUrl: `https://${cleanSub}.za3em.shop`,
     });
   } catch (error) {
-    res.status(500).json({ error: "حدث خطأ أثناء حجز المتجر" });
+    console.error("Failed to register store in DB:", error);
+    res.status(500).json({ error: "حدث خطأ أثناء حجز المتجر في قاعدة البيانات" });
   }
 });
 

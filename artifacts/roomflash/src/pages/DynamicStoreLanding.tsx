@@ -84,7 +84,7 @@ export function DynamicStoreLanding() {
       "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
   });
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(!isInitiallyKnown);
 
   // جلب ومزامنة بيانات المتجر لحظياً
   useEffect(() => {
@@ -96,6 +96,7 @@ export function DynamicStoreLanding() {
     if (registered) {
       if (isMounted) {
         setIsStoreRegistered(true);
+        setLoading(false);
         setStore({
           id: 1,
           name: registered.storeName || `متجر ${cleanSubdomain}`,
@@ -121,16 +122,21 @@ export function DynamicStoreLanding() {
 
     // للمتاجر التجريبية المضمنة
     if (cleanSubdomain === "zero" || cleanSubdomain === "demo") {
-      if (isMounted) setIsStoreRegistered(true);
+      if (isMounted) {
+        setIsStoreRegistered(true);
+        setLoading(false);
+      }
       return;
     }
 
     // 2. فحص قاعدة بيانات Neon السحابية المركزية (المصدر الحقيقي لكافة الدومينات الفرعية على الإنترنت)
     async function resolveStore() {
+      if (isMounted) setLoading(true);
       try {
         const cloudStore = await fetchCloudStore(cleanSubdomain);
         if (cloudStore && isMounted) {
           setIsStoreRegistered(true);
+          setLoading(false);
           setStore({
             id: cloudStore.id || 1,
             name: cloudStore.name || `متجر ${cleanSubdomain}`,
@@ -163,6 +169,7 @@ export function DynamicStoreLanding() {
           const data = await res.json();
           if (isMounted && data.store) {
             setIsStoreRegistered(true);
+            setLoading(false);
             setStore((prev) => ({
               ...prev,
               id: data.store.id || prev.id,
@@ -191,52 +198,13 @@ export function DynamicStoreLanding() {
         console.warn("API store check fallback:", err);
       }
 
-      // 4. فحص قاعدة بيانات Supabase السحابية كضمان بديل
-      try {
-        const sbRes = await fetch(`https://cfpmbasxvjlcfcteyyaa.supabase.co/rest/v1/za3em_stores?subdomain=eq.${cleanSubdomain}`, {
-          headers: {
-            'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
-          }
-        });
-        if (sbRes.ok) {
-          const dbStores = await sbRes.json();
-          if (Array.isArray(dbStores) && dbStores.length > 0) {
-            const row = dbStores[0];
-            const st = row.settings || {};
-            if (isMounted) {
-              setIsStoreRegistered(true);
-              setStore({
-                id: row.id || 1,
-                name: row.store_name || st.name || `متجر ${cleanSubdomain}`,
-                subdomain: cleanSubdomain,
-                templateId: row.template_id || st.templateId || "shoppingcart.1.2.7",
-                storeCode: row.store_code || st.storeCode || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-1001`,
-                logoUrl: st.logoUrl,
-                bannerUrl: st.bannerUrl,
-              });
-              if (st.product) {
-                setProduct({
-                  id: 1,
-                  title: st.product.title || st.product.name || "منتج العرض الحصري",
-                  description: st.product.description || "منتج أصلي عالي الجودة مع شحن سريع وضمان الدفع عند الاستلام.",
-                  price: Number(st.product.price) || 45000,
-                  compareAtPrice: Number(st.product.compareAtPrice) || 58000,
-                  imageUrl: st.product.imageUrl || st.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
-                });
-              }
-              return;
-            }
-          }
-        }
-      } catch (sbErr) {
-        console.warn("Direct Supabase query fallback:", sbErr);
-      }
-
       // إذا وصلنا هنا ولم يتم العثور على المتجر في أي سجل
       if (isMounted) {
         setIsStoreRegistered(false);
+        setLoading(false);
       }
     }
+
 
     resolveStore();
 
@@ -275,11 +243,32 @@ export function DynamicStoreLanding() {
   };
 
   // =========================================================================
+  // حالة جاري التحقق واسترداد المتجر من السيرفر السحابي
+  // =========================================================================
+  if (loading && cleanSubdomain !== "zero" && cleanSubdomain !== "demo") {
+    return (
+      <div className="w-full min-h-screen bg-[#070b14] text-white flex flex-col items-center justify-center p-6 text-center font-sans selection:bg-teal-500 selection:text-slate-950" dir="rtl">
+        <div className="size-16 rounded-3xl bg-teal-500/10 border border-teal-500/30 text-teal-400 grid place-items-center mb-6 shadow-2xl shadow-teal-500/10">
+          <Globe className="size-8 animate-spin text-teal-400" />
+        </div>
+        <h2 className="text-xl sm:text-2xl font-black text-white mb-2">جاري استرداد وإطلاق متجرك أونلاين...</h2>
+        <p className="text-xs sm:text-sm text-slate-400 max-w-sm mb-4">
+          يتم تحميل قالب المتجر ومنتجاتك من قاعدة البيانات السحابية المركزية
+        </p>
+        <span className="font-mono text-xs px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-teal-300">
+          https://{cleanSubdomain}.za3em.shop
+        </span>
+      </div>
+    );
+  }
+
+  // =========================================================================
   // حالة عدم وجود المتجر (404 - النطاق الفرعي غير مسجل بعد)
   // =========================================================================
   if (!isStoreRegistered && cleanSubdomain !== "zero" && cleanSubdomain !== "demo") {
     return (
       <div className="w-full min-h-screen bg-[#070b14] text-white flex flex-col justify-between selection:bg-teal-500 selection:text-slate-950 font-sans" dir="rtl">
+
         {/* Top Header */}
         <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
           <a href="https://www.za3em.shop" className="flex items-center gap-3">

@@ -14,6 +14,8 @@ export interface RegisteredStoreData {
   slogan?: string;
   templateId: string;
   storeCode?: string;
+  userEmail?: string;
+  ownerId?: string;
   logoUrl?: string;
   bannerUrl?: string;
   categories?: string[];
@@ -249,6 +251,8 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
       subdomain: cleanSub,
       templateId: normalizedData.templateId,
       storeCode: generatedCode,
+      userEmail: normalizedData.userEmail,
+      ownerId: normalizedData.ownerId,
       slogan: normalizedData.slogan,
       logoUrl: normalizedData.logoUrl,
       bannerUrl: normalizedData.bannerUrl,
@@ -256,7 +260,7 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
       product: normalizedData.product
     }).catch(err => console.warn("[storeRegistry] Cloud DB save fallback:", err));
 
-    // 6. Asynchronously persist to server API for persistent reservation in server_data/stores.json
+    // 6. Asynchronously persist to server API for persistent reservation in za3em_stores
     try {
       fetch("/api/tenant/stores", {
         method: "POST",
@@ -266,11 +270,19 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
           name: normalizedData.storeName,
           subdomain: cleanSub,
           templateId: normalizedData.templateId,
+          userEmail: normalizedData.userEmail,
+          ownerId: normalizedData.ownerId,
+          slogan: normalizedData.slogan,
           productTitle: normalizedData.product?.name || normalizedData.product?.title,
           productPrice: normalizedData.product?.price,
           productImage: normalizedData.product?.image || normalizedData.product?.imageUrl,
+          productCompareAtPrice: normalizedData.product?.compareAtPrice,
+          productCategory: normalizedData.product?.category,
+          productDescription: normalizedData.product?.description,
           logoUrl: normalizedData.logoUrl,
           bannerUrl: normalizedData.bannerUrl,
+          categories: normalizedData.categories,
+          product: normalizedData.product,
         })
       }).catch((e) => console.warn("Background server store register fallback:", e));
     } catch {}
@@ -458,52 +470,31 @@ export async function checkSubdomainAvailability(rawSubdomain: string): Promise<
     }
   } catch {}
 
-  // Check backend API (which checks local stores.json + Supabase)
+  // 1. Check backend API live DB check (/api/tenant/check-subdomain)
   try {
-    const res = await fetch(`/api/stores/check-subdomain?subdomain=${clean}`);
+    const res = await fetch(`/api/tenant/check-subdomain?subdomain=${clean}`);
     if (res.ok) {
-      const text = await res.text();
-      try {
-        const data = JSON.parse(text);
-        if (data && data.available === false) {
-          return {
-            available: false,
-            reason: data.reason || 'taken',
-            message: data.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً من متجر آخر`,
-            suggestions: data.suggestions || [`${clean}-store`, `${clean}-shop`, `${clean}-iq`],
-          };
-        }
-      } catch {
-        // Non-JSON response
-      }
-    }
-  } catch (err) {
-    console.warn('API subdomain check fallback:', err);
-  }
-
-  // Directly check Supabase cloud database as an independent guarantee
-  try {
-    const sbRes = await fetch(`https://cfpmbasxvjlcfcteyyaa.supabase.co/rest/v1/za3em_stores?subdomain=eq.${clean}`, {
-      headers: {
-        'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
-      }
-    });
-    if (sbRes.ok) {
-      const dbStores = await sbRes.json();
-      if (Array.isArray(dbStores) && dbStores.length > 0) {
+      const data = await res.json();
+      if (data && data.available === false) {
         return {
           available: false,
-          reason: 'taken',
-          message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً في قاعدة بيانات منصة الزعيم`,
-          suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
+          reason: data.reason || 'taken',
+          message: data.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً لمتجر آخر`,
+          suggestions: data.suggestions || [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
+        };
+      }
+      if (data && data.available === true) {
+        return {
+          available: true,
+          message: data.message || `هذا النطاق (${clean}.za3em.shop) متاح ويمكنك حجزه لمتجرك فوراً ✅`,
         };
       }
     }
-  } catch (sbErr) {
-    console.warn('Direct Supabase check error:', sbErr);
+  } catch (err) {
+    console.warn('API /api/tenant/check-subdomain fallback:', err);
   }
 
-  // Directly check Central Neon Cloud PostgreSQL Database (works 100% on live web & subdomains)
+  // 2. Directly check Central Neon Cloud PostgreSQL Database (universal truth over HTTPS)
   try {
     const cloudCheck = await checkCloudSubdomain(clean);
     if (cloudCheck && !cloudCheck.available) {
@@ -518,8 +509,24 @@ export async function checkSubdomainAvailability(rawSubdomain: string): Promise<
     console.warn('Direct Neon cloud check error:', cloudErr);
   }
 
+  // 3. Check legacy /api/stores/check-subdomain
+  try {
+    const res = await fetch(`/api/stores/check-subdomain?subdomain=${clean}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.available === false) {
+        return {
+          available: false,
+          reason: data.reason || 'taken',
+          message: data.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً من متجر آخر`,
+          suggestions: data.suggestions || [`${clean}-store`, `${clean}-shop`, `${clean}-iq`],
+        };
+      }
+    }
+  } catch (err) {}
+
   return {
     available: true,
-    message: `هذا النطاق (${clean}.za3em.shop) متاح ويمكنك حجزه لمتجرك فوراً`,
+    message: `هذا النطاق (${clean}.za3em.shop) متاح ويمكنك حجزه لمتجرك فوراً ✅`,
   };
 }
