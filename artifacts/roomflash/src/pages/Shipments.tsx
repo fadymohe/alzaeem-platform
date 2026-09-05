@@ -1,12 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import {
   Truck, Plus, Search, MapPin, Package, Phone, User, DollarSign, FileText,
-  CheckCircle2, Clock, AlertTriangle, ArrowLeft, ExternalLink, RefreshCw
+  CheckCircle2, Clock, AlertTriangle, ArrowLeft, ExternalLink, RefreshCw,
+  Building, ShieldCheck, PhoneCall, Sparkles
 } from 'lucide-react';
-import { IRAQ_GOVERNORATES, formatIQD, DEMO_SHIPMENTS, type DemoShipment, type Governorate } from '../data/iraqData';
+import {
+  IRAQ_GOVERNORATES, SHIPPING_RATES, formatIQD, DEMO_SHIPMENTS,
+  type DemoShipment, type Governorate
+} from '../data/iraqData';
 
 export function ShipmentsPage() {
-  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'track'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'create' | 'track' | 'logistics'>('list');
   const [shipments, setShipments] = useState<DemoShipment[]>(DEMO_SHIPMENTS);
   const [search, setSearch] = useState('');
   const [selectedGovernorate, setSelectedGovernorate] = useState<string>('الكل');
@@ -92,30 +96,30 @@ export function ShipmentsPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-teal-700 dark:text-teal-400 mb-1">
-            <Truck className="size-4" /> شركة الزعيم للشحن والتوصيل
+            <Truck className="size-4" /> شركة الزعيم للشحن السريع
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            إدارة الشحنات والتوصيل
+            الشحن والتتبع
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            إنشاء، متابعة وتتبع الشحنات مع أسطول الزعيم عبر جميع المحافظات.
+            إدارة الشحنات، التتبع المباشر، وأسعار التوصيل لكافة محافظات العراق مع أسطول الزعيم.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setActiveTab('list')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'list'
                 ? 'bg-teal-700 text-white shadow-sm'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
             }`}
           >
-            جميع الشحنات
+            جميع الشحنات ({shipments.length})
           </button>
           <button
             onClick={() => setActiveTab('track')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'track'
                 ? 'bg-teal-700 text-white shadow-sm'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
@@ -124,8 +128,19 @@ export function ShipmentsPage() {
             تتبع شحنة
           </button>
           <button
+            onClick={() => setActiveTab('logistics')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'logistics'
+                ? 'bg-teal-700 text-white shadow-sm'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <Building className="size-3.5" />
+            <span>شركة الزعيم والأسعار</span>
+          </button>
+          <button
             onClick={() => setActiveTab('create')}
-            className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
+            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
           >
             <Plus className="size-4" /> إضافة شحنة جديدة
           </button>
@@ -480,6 +495,140 @@ export function ShipmentsPage() {
                       <td className="p-4 text-xs text-slate-500 font-mono">{s.date}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: 🌟 شركة الزعيم للشحن والأسعار (المدمجة) */}
+      {activeTab === 'logistics' && (
+        <div className="space-y-6">
+          {/* Hero Section */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white p-7 md:p-10 shadow-xl border border-teal-900/50">
+            <div className="absolute -right-20 -top-20 size-72 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
+            <div className="relative z-10 max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-bold mb-3 border border-teal-500/30">
+                <Building className="size-3.5" /> الناقل الرسمي واللوجستي الحصري لمنصة الزعيم
+              </div>
+              <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight leading-tight">
+                شركة الزعيم للشحن السريع
+              </h2>
+              <p className="mt-2 text-sm md:text-base text-slate-300 leading-relaxed font-medium">
+                حلول شحن وتوصيل متكاملة للتجار والمتاجر الإلكترونية في كافة المحافظات العراقية، مع تصفية أسبوعية ويومية لمستحقات الدفع عند الاستلام (COD) ونسبة تسليم تتجاوز 98%.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3 items-center">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('create')}
+                  className="px-5 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+                >
+                  <Plus className="size-4" />
+                  <span>إنشاء بوليصة شحن فورية</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('track')}
+                  className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-md transition-all flex items-center gap-1.5"
+                >
+                  <Search className="size-4" />
+                  <span>تتبع شحنة الزعيم</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick KPI stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+              <p className="text-xs font-bold text-slate-500">التغطية الجغرافية</p>
+              <p className="text-2xl font-extrabold text-teal-700 dark:text-teal-400 mt-1">18 محافظة</p>
+              <p className="text-[11px] text-slate-400 mt-1">تغطية شاملة من زاخو إلى البصرة</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+              <p className="text-xs font-bold text-slate-500">سرعة التوصيل بـ بغداد</p>
+              <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">24 ساعة</p>
+              <p className="text-[11px] text-slate-400 mt-1">توصيل في نفس اليوم أو التالي</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+              <p className="text-xs font-bold text-slate-500">تصفية المستحقات (COD)</p>
+              <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">يومياً / أسبوعياً</p>
+              <p className="text-[11px] text-slate-400 mt-1">تحويل كاش أو عبر زين كاش</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+              <p className="text-xs font-bold text-slate-500">نسبة التسليم الناجح</p>
+              <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">98.4%</p>
+              <p className="text-[11px] text-slate-400 mt-1">مع تتبع حي وتأكيد قبل التسليم</p>
+            </div>
+          </div>
+
+          {/* Coverage & Shipping Rates Table */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <MapPin className="size-5 text-teal-700 dark:text-teal-400" />
+                  قائمة أسعار الشحن والتوصيل لكافة محافظات العراق
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  الأسعار الرسمية المعتمدة لشركة الزعيم شاملة التحصيل والتوصيل لباب العميل.
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-xs font-bold border border-teal-200 dark:border-teal-900/60 self-start sm:self-auto">
+                رصيد الشحن: 5 شحنات مجانية
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-right text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-bold text-slate-500">
+                  <tr>
+                    <th className="p-3.5">المحافظة</th>
+                    <th className="p-3.5">المنطقة الجغرافية</th>
+                    <th className="p-3.5">مدة التوصيل المتوقعة</th>
+                    <th className="p-3.5">سعر التوصيل العادي</th>
+                    <th className="p-3.5">سعر التوصيل السريع</th>
+                    <th className="p-3.5 text-center">الإجراء</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {IRAQ_GOVERNORATES.map((gov) => {
+                    const rate = SHIPPING_RATES[gov];
+                    return (
+                      <tr key={gov} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        <td className="p-3.5 font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <MapPin className="size-3.5 text-teal-600 dark:text-teal-400" />
+                          <span>{gov}</span>
+                        </td>
+                        <td className="p-3.5 text-xs text-slate-600 dark:text-slate-300">
+                          {gov === 'بغداد' ? 'العاصمة والمركز' : gov.includes('أربيل') || gov.includes('دهوك') || gov.includes('السليمانية') ? 'إقليم كردستان' : 'المحافظات'}
+                        </td>
+                        <td className="p-3.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+                          {gov === 'بغداد' ? '24 ساعة' : '2-3 أيام'}
+                        </td>
+                        <td className="p-3.5 font-mono font-bold text-slate-900 dark:text-white">
+                          {formatIQD(rate || 5000)}
+                        </td>
+                        <td className="p-3.5 font-mono font-bold text-teal-700 dark:text-teal-400">
+                          {formatIQD((rate || 5000) + 2000)}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForm(prev => ({ ...prev, governorate: gov }));
+                              setActiveTab('create');
+                            }}
+                            className="px-3 py-1 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 hover:bg-teal-700 hover:text-white text-xs font-bold transition-colors"
+                          >
+                            شحن إلى {gov}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -28,19 +28,26 @@ const TEMPLATE_NAMES: Record<string, string> = {
 };
 
 export function DashboardPage() {
-  let merchantName = 'أحمد';
+  let zaeemUser: any = null;
+  try {
+    const raw = localStorage.getItem('zaeem_user');
+    if (raw) zaeemUser = JSON.parse(raw);
+  } catch {}
+
+  let clerkUser: any = null;
   try {
     const { user } = useUser();
-    merchantName = user?.firstName || user?.fullName || 'أحمد';
-  } catch {
-    merchantName = 'أحمد';
-  }
+    clerkUser = user;
+  } catch {}
+
+  const merchantName = zaeemUser?.name || clerkUser?.firstName || clerkUser?.fullName || 'التاجر';
 
   const [orders, setOrders] = useState<StoreOrder[]>([]);
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [customers, setCustomers] = useState<StoreCustomer[]>([]);
+  const [isStoreActive, setIsStoreActive] = useState(true);
 
-  // Real Store Information Loaded from Onboarding
+  // Real Store Information Loaded from Onboarding / Settings
   const [storeInfo, setStoreInfo] = useState<{
     storeName: string;
     subdomain: string;
@@ -51,8 +58,8 @@ export function DashboardPage() {
     product?: any;
     freeShipmentsRemaining: number;
   }>({
-    storeName: 'متجر الزعيم الذهبي',
-    subdomain: 'alzaeem',
+    storeName: 'متجر الزعيم',
+    subdomain: 'shop',
     storeCode: 'ZAEEM-882194',
     templateId: 'shoppingcart.1.2.7',
     freeShipmentsRemaining: 5
@@ -62,26 +69,37 @@ export function DashboardPage() {
 
   const loadStoreInfo = () => {
     try {
+      const activeVal = localStorage.getItem('zaeem_store_active');
+      setIsStoreActive(activeVal !== 'false');
+
       const rawOnb = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+      const rawUser = localStorage.getItem('zaeem_user');
+      let parsedOnb: any = null;
+      let parsedUser: any = null;
       if (rawOnb) {
-        const parsed = JSON.parse(rawOnb);
-        const cleanSub = (parsed.subdomain || 'alzaeem')
-          .replace('.za3em.shop', '')
-          .toLowerCase()
-          .trim();
-        const code = parsed.storeCode || `ZAEEM-${cleanSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
-        setStoreInfo({
-          storeName: parsed.storeName || `متجر ${cleanSub}`,
-          subdomain: cleanSub,
-          storeCode: code,
-          templateId: parsed.templateId || parsed.selectedTheme || 'shoppingcart.1.2.7',
-          logoUrl: parsed.logoUrl,
-          bannerUrl: parsed.bannerUrl,
-          product: parsed.product,
-          freeShipmentsRemaining: parsed.freeShipmentsRemaining ?? 5
-        });
-        return;
+        try { parsedOnb = JSON.parse(rawOnb); } catch {}
       }
+      if (rawUser) {
+        try { parsedUser = JSON.parse(rawUser); } catch {}
+      }
+
+      const cleanSub = (parsedOnb?.subdomain || parsedUser?.subdomain || 'shop')
+        .replace('.za3em.shop', '')
+        .replace(/^https?:\/\//, '')
+        .toLowerCase()
+        .trim();
+      const code = parsedOnb?.storeCode || `ZAEEM-${cleanSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      setStoreInfo({
+        storeName: parsedOnb?.storeName || parsedUser?.storeName || `متجر ${cleanSub}`,
+        subdomain: cleanSub,
+        storeCode: code,
+        templateId: parsedOnb?.templateId || parsedOnb?.selectedTheme || 'shoppingcart.1.2.7',
+        logoUrl: parsedOnb?.logoUrl,
+        bannerUrl: parsedOnb?.bannerUrl,
+        product: parsedOnb?.product,
+        freeShipmentsRemaining: parsedOnb?.freeShipmentsRemaining ?? 5
+      });
     } catch {}
   };
 
@@ -94,6 +112,18 @@ export function DashboardPage() {
   useEffect(() => {
     loadData();
     loadStoreInfo();
+
+    const handleUpdate = () => {
+      loadStoreInfo();
+      loadData();
+    };
+    window.addEventListener('zaeem_store_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('zaeem_store_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   const handleCopyCode = (code: string) => {
@@ -182,9 +212,13 @@ export function DashboardPage() {
                   <h2 className="text-xl md:text-2xl font-black text-white">
                     {storeInfo.storeName}
                   </h2>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[11px] font-black">
-                    <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-                    متجرك نشط ومطلق أونلاين
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black transition-colors ${
+                    isStoreActive
+                      ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300'
+                      : 'bg-rose-950/80 border border-rose-500/40 text-rose-300'
+                  }`}>
+                    <span className={`size-2 rounded-full ${isStoreActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                    {isStoreActive ? 'متجرك نشط ومطلق أونلاين' : 'المتجر موقوف مؤقتاً (معطل)'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 font-mono dir-ltr">

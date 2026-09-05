@@ -1,9 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useClerk } from '@clerk/react';
 import {
   LayoutDashboard, ShoppingCart, Box, Users, Truck, Store,
   Megaphone, Grid, BarChart3, CreditCard, Settings2, HelpCircle,
-  LogOut, X, ChevronLeft, Building, Sparkles
+  LogOut, X, ChevronLeft, Sparkles
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { supabase } from '../../utils/supabase';
@@ -13,13 +14,19 @@ interface SidebarProps {
   onCloseMobile: () => void;
 }
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: any;
+  badge?: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard },
   { href: '/orders', label: 'الطلبات', icon: ShoppingCart },
   { href: '/products', label: 'المنتجات', icon: Box },
   { href: '/customers', label: 'الزبائن', icon: Users },
-  { href: '/shipments', label: 'الشحن والتوصيل', icon: Truck, badge: 'جديد' },
-  { href: '/zaeem-logistics', label: 'شركة الزعيم للشحن', icon: Building },
+  { href: '/shipments', label: 'الشحن والتتبع', icon: Truck },
   { href: '/store', label: 'المتجر الإلكتروني', icon: Store },
   { href: '/landing-pages', label: 'صفحات الهبوط', icon: Sparkles },
   { href: '/marketing', label: 'التسويق والكوبونات', icon: Megaphone },
@@ -32,6 +39,55 @@ const NAV_ITEMS = [
 
 export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   const [location, setLocation] = useLocation();
+
+  // Dynamic Store Info and Subdomain
+  const [storeName, setStoreName] = useState('متجر الزعيم');
+  const [subdomain, setSubdomain] = useState('shop.za3em.shop');
+  const [isStoreActive, setIsStoreActive] = useState(true);
+
+  const syncStoreData = () => {
+    try {
+      // 1. Check Store Active status
+      const activeVal = localStorage.getItem('zaeem_store_active');
+      setIsStoreActive(activeVal !== 'false');
+
+      // 2. Check Onboarded or Stored Store
+      const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+      const rawUser = localStorage.getItem('zaeem_user');
+      let userObj: any = null;
+      let storeObj: any = null;
+
+      if (rawStore) {
+        try { storeObj = JSON.parse(rawStore); } catch {}
+      }
+      if (rawUser) {
+        try { userObj = JSON.parse(rawUser); } catch {}
+      }
+
+      const cleanSub = (storeObj?.subdomain || userObj?.subdomain || 'alzaeem')
+        .replace('.za3em.shop', '')
+        .replace(/^https?:\/\//, '')
+        .trim();
+
+      const name = storeObj?.storeName || userObj?.storeName || (cleanSub ? `متجر ${cleanSub}` : 'متجر الزعيم');
+      setStoreName(name);
+      setSubdomain(`${cleanSub}.za3em.shop`);
+    } catch {}
+  };
+
+  useEffect(() => {
+    syncStoreData();
+
+    // Listen for custom updates dispatched when settings or store details change
+    const handleUpdate = () => syncStoreData();
+    window.addEventListener('zaeem_store_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('zaeem_store_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   const handleSignOut = () => {
     try {
@@ -79,12 +135,16 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
           <div className="mt-5 p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
             <span className="text-[10px] font-bold text-slate-400 block">المتجر الفعّال</span>
             <div className="flex items-center justify-between mt-1">
-              <div className="min-w-0">
-                <p className="font-bold text-xs text-white truncate">متجر الزعيم - بغداد</p>
-                <p className="font-mono text-[10px] text-teal-400 truncate">fady.za3em.shop</p>
+              <div className="min-w-0 flex-1 pl-2">
+                <p className="font-bold text-xs text-white truncate" title={storeName}>{storeName}</p>
+                <p className="font-mono text-[10px] text-teal-400 truncate dir-ltr text-right" title={subdomain}>{subdomain}</p>
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                نشط
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 transition-colors ${
+                isStoreActive
+                  ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+              }`}>
+                {isStoreActive ? 'نشط' : 'معطل'}
               </span>
             </div>
           </div>

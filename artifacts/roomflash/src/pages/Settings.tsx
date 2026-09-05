@@ -1,9 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useGetCurrentStore, useCreateStore, getGetCurrentStoreQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Settings2, Store, CreditCard, Shield, Truck, Bell, Code, Webhook,
-  Check, Lock, Palette, LifeBuoy, Save
+  Check, Lock, Palette, LifeBuoy, Save, Globe, Power
 } from 'lucide-react';
 
 export function SettingsPage() {
@@ -13,6 +13,14 @@ export function SettingsPage() {
 
   const [activeTab, setActiveTab] = useState<'store' | 'shipping' | 'payment' | 'security' | 'api'>('store');
 
+  const [isSubdomainActive, setIsSubdomainActive] = useState(() => {
+    try {
+      return localStorage.getItem('zaeem_store_active') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
   const [form, setForm] = useState({
     name: '',
     subdomain: '',
@@ -21,28 +29,83 @@ export function SettingsPage() {
     theme: 'teal',
   });
 
+  // Pre-populate with saved store info
+  useEffect(() => {
+    try {
+      const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+      const rawUser = localStorage.getItem('zaeem_user');
+      let storeObj: any = null;
+      let userObj: any = null;
+      if (rawStore) storeObj = JSON.parse(rawStore);
+      if (rawUser) userObj = JSON.parse(rawUser);
+
+      const initialName = storeObj?.storeName || userObj?.storeName || 'متجر الزعيم الذهبي';
+      const initialSub = (storeObj?.subdomain || userObj?.subdomain || 'alzaeem')
+        .replace('.za3em.shop', '')
+        .replace(/^https?:\/\//, '')
+        .trim();
+      const initialCat = storeObj?.category || userObj?.category || 'أزياء وموضة';
+
+      setForm({
+        name: initialName,
+        subdomain: initialSub,
+        category: initialCat,
+        country: 'Iraq',
+        theme: 'teal'
+      });
+    } catch {}
+  }, []);
+
   const [saved, setSaved] = useState(false);
   const saving = create.isPending;
   const store = storeQuery.data;
 
+  const handleToggleSubdomainActive = () => {
+    const nextState = !isSubdomainActive;
+    setIsSubdomainActive(nextState);
+    try {
+      localStorage.setItem('zaeem_store_active', String(nextState));
+      const updateObj = (key: string) => {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          parsed.isActive = nextState;
+          localStorage.setItem(key, JSON.stringify(parsed));
+        }
+      };
+      updateObj('zaeem_store_data');
+      updateObj('zaeem_onboarded_store');
+
+      window.dispatchEvent(new CustomEvent('zaeem_store_updated', { detail: { isActive: nextState } }));
+    } catch {}
+  };
+
   const handleSave = (e: FormEvent) => {
     e.preventDefault();
-    if (store) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-      return;
-    }
+    try {
+      const rawStore = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store') || '{}';
+      const parsed = JSON.parse(rawStore);
+      parsed.storeName = form.name;
+      parsed.subdomain = `${form.subdomain}.za3em.shop`;
+      parsed.category = form.category;
+      parsed.isActive = isSubdomainActive;
 
-    create.mutate(
-      { data: form as never },
-      {
-        onSuccess: () => {
-          setSaved(true);
-          queryClient.invalidateQueries({ queryKey: getGetCurrentStoreQueryKey() });
-          setTimeout(() => setSaved(false), 3000);
-        },
+      localStorage.setItem('zaeem_store_data', JSON.stringify(parsed));
+      localStorage.setItem('zaeem_onboarded_store', JSON.stringify(parsed));
+
+      const rawUser = localStorage.getItem('zaeem_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        u.storeName = form.name;
+        u.subdomain = `${form.subdomain}.za3em.shop`;
+        localStorage.setItem('zaeem_user', JSON.stringify(u));
       }
-    );
+
+      window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+    } catch {}
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   return (
@@ -92,10 +155,76 @@ export function SettingsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <form
             onSubmit={handleSave}
-            className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm space-y-5"
+            className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm space-y-6"
           >
+            {/* 🌟 كارت تنشيط وإلغاء تنشيط الموقع الفرعي */}
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-teal-950 border border-teal-500/30 text-white shadow-md space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`size-11 rounded-xl grid place-items-center transition-colors shrink-0 ${
+                    isSubdomainActive
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  }`}>
+                    <Globe className="size-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-extrabold text-white">حالة الموقع الفرعي أونلاين</h3>
+                      {/* شارة كلمة نشط / معطل تتغير تلقائياً بتغيير حالة الخيار */}
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-black flex items-center gap-1.5 transition-all ${
+                        isSubdomainActive
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                      }`}>
+                        <span className={`size-2 rounded-full ${isSubdomainActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                        {isSubdomainActive ? 'نشط' : 'معطل'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-teal-400/90 font-mono mt-0.5 dir-ltr text-right">
+                      https://{form.subdomain || 'mystore'}.za3em.shop
+                    </p>
+                  </div>
+                </div>
+
+                {/* مفتاح التبديل التفاعلي لتنشيط أو إلغاء تنشيط الموقع */}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-300">
+                    {isSubdomainActive ? 'إلغاء التنشيط' : 'تنشيط الموقع'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleToggleSubdomainActive}
+                    className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      isSubdomainActive ? 'bg-emerald-500' : 'bg-slate-700'
+                    }`}
+                    role="switch"
+                    aria-checked={isSubdomainActive}
+                    title={isSubdomainActive ? 'اضغط لإلغاء تنشيط الموقع الفرعي' : 'اضغط لتنشيط الموقع الفرعي'}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block size-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        isSubdomainActive ? 'translate-x-7' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/80 pt-2.5 flex items-center justify-between">
+                <span>
+                  {isSubdomainActive
+                    ? '✅ الموقع الفرعي نشط ومفتوح للزبائن لاستقبال الطلبات والدفع عند الاستلام.'
+                    : '⏸️ تم إيقاف الموقع الفرعي مؤقتاً؛ الزوار سيشاهدون رسالة الصيانة لحين إعادة التنشيط.'}
+                </span>
+                <span className="font-bold text-teal-400">
+                  الحالة الحالية: {isSubdomainActive ? 'نشط' : 'معطل'}
+                </span>
+              </div>
+            </div>
+
             <h2 className="text-lg font-extrabold text-slate-900 dark:text-white pb-3 border-b">
-              معلومات المتجر الهوية
+              معلومات المتجر والهوية
             </h2>
 
             <div>

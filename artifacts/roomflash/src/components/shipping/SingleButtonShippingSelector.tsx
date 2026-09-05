@@ -161,7 +161,7 @@ export const SingleButtonShippingSelector: React.FC<SingleButtonShippingSelector
                   اختر المحافظة لحساب تكلفة وسرعة التوصيل
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  الدفع عند الاستلام بعد المعاينة لجميع المحافظات المصرية
+                  الدفع عند الاستلام بعد المعاينة لجميع المحافظات العراقية
                 </p>
               </div>
 

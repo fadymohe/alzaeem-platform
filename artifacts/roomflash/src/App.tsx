@@ -153,7 +153,7 @@ function ProtectedRoutes() {
         <Route path="/shipments" component={ShipmentsPage} />
         <Route path="/shipments/new" component={ShipmentsPage} />
         <Route path="/shipments/track" component={ShipmentsPage} />
-        <Route path="/zaeem-logistics" component={ZaeemLogisticsPage} />
+        <Route path="/zaeem-logistics"><Redirect to="/shipments" /></Route>
         <Route path="/landing-pages" component={LandingPageBuilderPage} />
         <Route path="/landing-pages/new" component={LandingPageBuilderPage} />
         <Route path="/applications" component={ApplicationsPage} />
@@ -234,10 +234,13 @@ function RoutedApp() {
       const hasLocalStore = Boolean(onboarded?.storeCode && localStorage.getItem('zaeem_onboarding_completed') === 'true');
       const isReturningMerchant = (authAction === 'signin' && (hasDbStore || hasLocalStore)) || hasDbStore;
 
+      const avatarUrl = meta.avatar_url || meta.picture || user.user_metadata?.avatar_url || user.user_metadata?.picture || user.avatar_url || '';
+
       const userObj = {
         id: user.id,
         email: user.email,
         name: meta.full_name || meta.name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : user.email.split('@')[0]),
+        avatarUrl: avatarUrl,
         phone: meta.phone || user.phone || '+9647700000000',
         governorate: meta.governorate || 'بغداد',
         storeName: dbStore?.name || meta.store_name || onboarded?.storeName || `متجر ${meta.full_name || cleanSlug}`,

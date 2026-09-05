@@ -77,7 +77,7 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
           <span className="font-extrabold text-sm text-amber-100">{store.name}</span>
         </div>
         <span className="text-xs font-mono text-amber-400 bg-amber-950/40 border border-amber-800/40 px-3 py-1 rounded-full">
-          الدفع عند الاستلام في مصر
+          الدفع عند الاستلام في العراق
         </span>
       </div>
 
@@ -98,7 +98,7 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
                   <Star key={i} className="size-4 fill-amber-400" />
                 ))}
               </div>
-              <span className="text-xs text-slate-400 font-bold">تقييم 4.9 من عملائنا في مصر</span>
+              <span className="text-xs text-slate-400 font-bold">تقييم 4.9 من عملائنا في العراق</span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-white">{product.title}</h1>
