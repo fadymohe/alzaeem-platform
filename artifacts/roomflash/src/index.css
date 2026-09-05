@@ -322,38 +322,38 @@
 }
 
 /* ========================================================================= */
-/* AL-ZAEEM THERMAL SHIPPING LABEL PRINT ISOLATION (100mm x 150mm / 4x6in)   */
-/* Optimized for Thermal Label Printers (e.g. Xprinter XP-233B, Zebra, Dymo) */
+/* AL-ZAEEM THERMAL SHIPPING LABEL PRINT ISOLATION & PERFECT CENTERING        */
+/* Works on all paper types: 100x150mm Thermal, A4, A5, Letter (Xprinter)     */
 /* ========================================================================= */
 @media print {
-  /* 1. Set Exact Thermal Label Dimensions & Strip Margins */
+  /* 1. Page settings with zero default browser headers/footers */
   @page {
-    size: 100mm 150mm;
-    margin: 0;
+    size: auto;
+    margin: 0mm;
   }
 
-  /* 2. Reset html and body to clean white background, zero margin, single page limit */
+  /* 2. Reset html and body to clean white background, full dimensions */
   html,
   body {
-    width: 100mm !important;
-    height: 150mm !important;
-    max-width: 100mm !important;
-    max-height: 150mm !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* 3. Hide all external page content, overlays, navbars, sidebars, backdrops, modals */
+  /* 3. Hide all external page elements, backdrops, navbars, sidebars */
   body * {
     visibility: hidden !important;
   }
 
-  /* 4. Strictly Isolate the Thermal Shipping Label */
+  /* 4. Strictly Isolate & Perfectly Center the Shipping Label (#shipping-label) */
   #shipping-label,
   #shipping-label * {
     visibility: visible !important;
@@ -362,18 +362,19 @@
   #shipping-label {
     position: fixed !important;
     left: 0 !important;
+    right: 0 !important;
     top: 0 !important;
+    bottom: 0 !important;
+    margin: auto !important;
     width: 100mm !important;
-    max-width: 100mm !important;
-    height: 148mm !important;
-    max-height: 150mm !important;
-    margin: 0 !important;
-    padding: 4mm 4mm !important;
+    max-width: 96% !important;
+    height: fit-content !important;
+    max-height: 146mm !important;
     box-sizing: border-box !important;
     background: #ffffff !important;
     color: #000000 !important;
     border: 2px solid #000000 !important;
-    border-radius: 0 !important;
+    border-radius: 8px !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
@@ -381,10 +382,11 @@
     break-after: avoid !important;
     overflow: hidden !important;
     z-index: 9999999 !important;
+    padding: 3.5mm 4mm !important;
     font-size: 11px !important;
   }
 
-  /* 5. Force Sharp High-Contrast Black & White for Crisp Thermal Output */
+  /* 5. Force Crisp Black & White Vector Contrast */
   #shipping-label svg,
   #shipping-label img,
   #shipping-label text {
@@ -392,7 +394,7 @@
     print-color-adjust: exact !important;
   }
 
-  /* 6. Hide all UI action buttons & backdrop overlays */
+  /* 6. Hide all UI buttons, modals backdrop controls in print */
   button,
   .print\:hidden,
   .no-print {
