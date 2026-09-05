@@ -25,9 +25,10 @@ export interface TemplateProduct {
   id: number | string;
   title: string;
   description: string;
-  price: number; // بالجنيه المصري الصحيح (INTEGER)
+  price: number; // بالدينار العراقي
   compareAtPrice?: number;
   imageUrl: string;
+  images?: string[];
 }
 
 export interface TemplateStore {
@@ -73,6 +74,11 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
   const [quantity, setQuantity] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<any>(null);
+  const [selectedImage, setSelectedImage] = useState<string>(product.imageUrl);
+
+  useEffect(() => {
+    setSelectedImage(product.imageUrl);
+  }, [product.imageUrl]);
 
   // عداد تنازلي للخصم (Urgency)
   const [timeLeft, setTimeLeft] = useState({ hours: 3, minutes: 42, seconds: 18 });
@@ -218,19 +224,41 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             {/* صورة المنتج مع الشارات */}
-            <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 aspect-square group shadow-inner">
-              <img
-                src={product.imageUrl}
-                alt={product.title}
-                className="size-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
-              />
-              <span className="absolute top-3 right-3 text-xs font-black bg-red-600 text-white px-3 py-1 rounded-full shadow-md">
-                خصم 40% لفترة محدودة
-              </span>
-              <span className="absolute bottom-3 left-3 text-[11px] font-bold bg-slate-950/90 text-emerald-400 border border-emerald-500/40 px-3 py-1 rounded-full backdrop-blur-md flex items-center gap-1">
-                <CheckCircle2 className="size-3.5" />
-                منتج أصلي 100%
-              </span>
+            <div className="space-y-3">
+              <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 aspect-square group shadow-inner">
+                <img
+                  src={selectedImage || product.imageUrl}
+                  alt={product.title}
+                  className="size-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+                <span className="absolute top-3 right-3 text-xs font-black bg-red-600 text-white px-3 py-1 rounded-full shadow-md">
+                  خصم خاص لفترة محدودة
+                </span>
+                <span className="absolute bottom-3 left-3 text-[11px] font-bold bg-slate-950/90 text-emerald-400 border border-emerald-500/40 px-3 py-1 rounded-full backdrop-blur-md flex items-center gap-1">
+                  <CheckCircle2 className="size-3.5" />
+                  منتج أصلي 100%
+                </span>
+              </div>
+
+              {/* صور إضافية مصغرة للتنقل بين زوايا المنتج */}
+              {product.images && product.images.length > 1 && (
+                <div className="flex items-center gap-2 justify-center">
+                  {product.images.map((img, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setSelectedImage(img)}
+                      className={`relative size-14 rounded-xl overflow-hidden border-2 transition-all ${
+                        (selectedImage || product.imageUrl) === img
+                          ? 'border-teal-500 shadow-md scale-105'
+                          : 'border-slate-800 opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={img} alt={`صورة ${i + 1}`} className="size-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* تفاصيل المنتج والأسعار بالجنيه المصري الصحيح */}

@@ -155,13 +155,15 @@ export function DynamicStoreLanding() {
         bannerUrl: registered.bannerUrl,
       });
       if (registered.product) {
+        const pImg = registered.product.imageUrl || registered.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80";
         setProduct({
           id: 1,
           title: registered.product.title || registered.product.name || "منتج العرض الحصري",
           description: registered.product.description || registered.slogan || "منتج فاخر مع شحن سريع لجميع محافظات العراق.",
           price: Number(registered.product.price) || 45000,
           compareAtPrice: Number(registered.product.compareAtPrice) || Math.round((Number(registered.product.price) || 45000) * 1.3),
-          imageUrl: registered.product.imageUrl || registered.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
+          imageUrl: pImg,
+          images: (registered.product as any)?.images || [pImg],
         });
       }
     } else if (cleanSubdomain === "zero" || cleanSubdomain === "demo") {
@@ -193,15 +195,19 @@ export function DynamicStoreLanding() {
             bannerUrl: cloudStore.banner_url || prev.bannerUrl,
           }));
           if (cloudStore.product) {
-            setProduct((prev) => ({
-              ...prev,
-              id: cloudStore.product?.id || prev.id,
-              title: cloudStore.product?.title || cloudStore.product?.name || prev.title,
-              description: cloudStore.product?.description || cloudStore.slogan || prev.description,
-              price: Number(cloudStore.product?.price) || prev.price,
-              compareAtPrice: Number(cloudStore.product?.compareAtPrice) || Math.round((Number(cloudStore.product?.price) || prev.price) * 1.3),
-              imageUrl: cloudStore.product?.imageUrl || cloudStore.product?.image || prev.imageUrl,
-            }));
+            setProduct((prev) => {
+              const cImg = cloudStore.product?.imageUrl || cloudStore.product?.image || prev.imageUrl;
+              return {
+                ...prev,
+                id: cloudStore.product?.id || prev.id,
+                title: cloudStore.product?.title || cloudStore.product?.name || prev.title,
+                description: cloudStore.product?.description || cloudStore.slogan || prev.description,
+                price: Number(cloudStore.product?.price) || prev.price,
+                compareAtPrice: Number(cloudStore.product?.compareAtPrice) || Math.round((Number(cloudStore.product?.price) || prev.price) * 1.3),
+                imageUrl: cImg,
+                images: (cloudStore.product as any)?.images || [cImg],
+              };
+            });
           }
           return;
         }

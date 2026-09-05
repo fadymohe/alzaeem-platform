@@ -1,4 +1,5 @@
 import { formatIQD } from './iraqData';
+import { saveCloudStore } from '../utils/cloudDb';
 
 export interface StoreProduct {
   id: number;
@@ -12,6 +13,7 @@ export interface StoreProduct {
   category: string;
   status: 'active' | 'draft' | 'archived';
   imageUrl?: string;
+  images?: string[]; // 3 images: [main, optional1, optional2]
   weightGrams?: number;
 }
 
@@ -256,6 +258,97 @@ export function saveStoredProducts(products: StoreProduct[]): void {
   localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
 }
 
+export async function syncProductToLiveStoreAndServer(product: StoreProduct): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  try {
+    // 1. Update zaeem_store_data & zaeem_onboarded_store
+    const updateLocalStoreObject = (key: string) => {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          parsed.product = {
+            id: product.id,
+            title: product.name,
+            name: product.name,
+            price: product.price,
+            compareAtPrice: product.compareAtPrice,
+            image: product.imageUrl,
+            imageUrl: product.imageUrl,
+            images: product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []),
+            description: product.description,
+            category: product.category,
+          };
+          localStorage.setItem(key, JSON.stringify(parsed));
+          return parsed;
+        } catch {}
+      }
+      return null;
+    };
+
+    const storeObj = updateLocalStoreObject('zaeem_store_data') || updateLocalStoreObject('zaeem_onboarded_store');
+
+    // 2. Update zaeem_stores_registry
+    const rawReg = localStorage.getItem('zaeem_stores_registry');
+    let subdomain = storeObj?.subdomain ? storeObj.subdomain.replace('.za3em.shop', '') : '';
+    if (rawReg) {
+      try {
+        const reg = JSON.parse(rawReg);
+        if (!subdomain && Object.keys(reg).length > 0) {
+          subdomain = Object.keys(reg)[0];
+        }
+        if (subdomain && reg[subdomain]) {
+          reg[subdomain].product = {
+            id: product.id,
+            title: product.name,
+            name: product.name,
+            price: product.price,
+            compareAtPrice: product.compareAtPrice,
+            image: product.imageUrl,
+            imageUrl: product.imageUrl,
+            images: product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []),
+            description: product.description,
+            category: product.category,
+          };
+          localStorage.setItem('zaeem_stores_registry', JSON.stringify(reg));
+        }
+      } catch {}
+    }
+
+    // 3. Publish to central Neon Cloud Database so it's live on the server
+    if (subdomain || storeObj) {
+      const cleanSub = (subdomain || storeObj?.subdomain || 'shop').replace('.za3em.shop', '');
+      await saveCloudStore({
+        storeName: storeObj?.storeName || `متجر ${cleanSub}`,
+        subdomain: cleanSub,
+        templateId: storeObj?.templateId || storeObj?.selectedTheme || 'shoppingcart.1.2.7',
+        storeCode: storeObj?.storeCode,
+        slogan: storeObj?.slogan || product.description,
+        logoUrl: storeObj?.logoUrl,
+        bannerUrl: storeObj?.bannerUrl,
+        userEmail: storeObj?.userEmail || storeObj?.email,
+        ownerId: storeObj?.ownerId || storeObj?.id,
+        isActive: storeObj?.isActive ?? true,
+        product: {
+          id: product.id,
+          title: product.name,
+          name: product.name,
+          price: product.price,
+          compareAtPrice: product.compareAtPrice,
+          image: product.imageUrl,
+          imageUrl: product.imageUrl,
+          images: product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []),
+          description: product.description,
+          category: product.category,
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('[storeState] Error syncing product to store:', err);
+  }
+}
+
 export function addStoredProduct(product: Omit<StoreProduct, 'id'>): StoreProduct {
   const products = getStoredProducts();
   const newProduct: StoreProduct = {
@@ -264,6 +357,7 @@ export function addStoredProduct(product: Omit<StoreProduct, 'id'>): StoreProduc
   };
   const updated = [newProduct, ...products];
   saveStoredProducts(updated);
+  syncProductToLiveStoreAndServer(newProduct);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
   }
@@ -276,6 +370,7 @@ export function updateStoredProduct(id: number, updates: Partial<StoreProduct>):
   if (idx === -1) return null;
   products[idx] = { ...products[idx], ...updates };
   saveStoredProducts(products);
+  syncProductToLiveStoreAndServer(products[idx]);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
   }

@@ -168,6 +168,7 @@ export async function saveCloudStore(store: {
     compareAtPrice: Number(rawProd.compareAtPrice) || Math.round((Number(rawProd.price) || 45000) * 1.3),
     imageUrl: safeProdImg,
     image: safeProdImg,
+    images: Array.isArray(rawProd.images) && rawProd.images.length > 0 ? rawProd.images : [safeProdImg],
     description: rawProd.description || store.slogan || 'منتج أصلي معتمد مع شحن سريع وضمان الدفع عند الاستلام',
     category: rawProd.category || 'عام',
   };
