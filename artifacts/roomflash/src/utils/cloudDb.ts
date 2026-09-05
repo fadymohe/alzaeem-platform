@@ -30,6 +30,7 @@ export interface CloudStoreRecord {
     description?: string;
     category?: string;
   };
+  is_active?: boolean;
   created_at?: string;
 }
 
@@ -78,7 +79,7 @@ export async function checkCloudSubdomain(
     return { available: false, message: 'اسم النطاق يجب أن يكون 3 أحرف على الأقل' };
   }
 
-  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, product, user_email, owner_id FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, product, user_email, owner_id, is_active FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
   const result = await executeSql(query);
 
   if (result && Array.isArray(result.rows) && result.rows.length > 0) {
@@ -132,6 +133,7 @@ export async function saveCloudStore(store: {
   product?: any;
   userEmail?: string;
   ownerId?: string;
+  isActive?: boolean;
 }): Promise<boolean> {
   const cleanSub = (store.subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
   if (!cleanSub) return false;
@@ -150,6 +152,7 @@ export async function saveCloudStore(store: {
   const bannerUrlEscaped = safeBanner ? `'${safeBanner.replace(/'/g, "''")}'` : 'NULL';
   const userEmailEscaped = store.userEmail ? `'${store.userEmail.toLowerCase().trim().replace(/'/g, "''")}'` : 'NULL';
   const ownerIdEscaped = store.ownerId ? `'${store.ownerId.trim().replace(/'/g, "''")}'` : 'NULL';
+  const isActiveVal = typeof store.isActive === 'boolean' ? (store.isActive ? 'TRUE' : 'FALSE') : 'TRUE';
 
   const rawProd = store.product || {};
   let safeProdImg = rawProd.imageUrl || rawProd.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80';
@@ -173,8 +176,8 @@ export async function saveCloudStore(store: {
 
 
   const query = `
-    INSERT INTO za3em_stores (name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id)
-    VALUES ('${nameEscaped}', '${cleanSub}', '${templateId}', '${codeEscaped}', '${sloganEscaped}', ${logoUrlEscaped}, ${bannerUrlEscaped}, '${categoriesJson}'::jsonb, '${productJson}'::jsonb, ${userEmailEscaped}, ${ownerIdEscaped})
+    INSERT INTO za3em_stores (name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id, is_active)
+    VALUES ('${nameEscaped}', '${cleanSub}', '${templateId}', '${codeEscaped}', '${sloganEscaped}', ${logoUrlEscaped}, ${bannerUrlEscaped}, '${categoriesJson}'::jsonb, '${productJson}'::jsonb, ${userEmailEscaped}, ${ownerIdEscaped}, ${isActiveVal})
     ON CONFLICT (subdomain) DO UPDATE
     SET name = EXCLUDED.name,
         template_id = EXCLUDED.template_id,
@@ -185,8 +188,9 @@ export async function saveCloudStore(store: {
         categories = EXCLUDED.categories,
         product = EXCLUDED.product,
         user_email = COALESCE(EXCLUDED.user_email, za3em_stores.user_email),
-        owner_id = COALESCE(EXCLUDED.owner_id, za3em_stores.owner_id)
-    RETURNING id, name, subdomain, store_code;
+        owner_id = COALESCE(EXCLUDED.owner_id, za3em_stores.owner_id),
+        is_active = COALESCE(EXCLUDED.is_active, za3em_stores.is_active)
+    RETURNING id, name, subdomain, store_code, is_active;
   `;
 
   const result = await executeSql(query);
@@ -198,13 +202,29 @@ export async function saveCloudStore(store: {
 }
 
 /**
+ * Update the active status of a store in Neon PostgreSQL
+ */
+export async function updateCloudStoreActive(subdomain: string, isActive: boolean): Promise<boolean> {
+  const clean = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+  if (!clean) return false;
+
+  const query = `UPDATE za3em_stores SET is_active = ${isActive ? 'TRUE' : 'FALSE'} WHERE subdomain = '${clean}';`;
+  const result = await executeSql(query);
+  const success = Boolean(result && !result.error);
+  if (success) {
+    console.log(`[CloudDb] Store active status updated: ${clean}.za3em.shop -> ${isActive ? 'ACTIVE' : 'DEACTIVATED'}`);
+  }
+  return success;
+}
+
+/**
  * Fetch a store by subdomain from the central Neon database
  */
 export async function fetchCloudStore(subdomain: string): Promise<CloudStoreRecord | null> {
   const clean = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
   if (!clean) return null;
 
-  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id, is_active FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
   const result = await executeSql(query);
 
   if (result && Array.isArray(result.rows) && result.rows.length > 0) {
@@ -231,7 +251,7 @@ export async function fetchCloudStoreByUser(email: string, ownerId?: string): Pr
     whereClause = `owner_id = '${cleanOwner}'`;
   }
 
-  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id FROM za3em_stores WHERE ${whereClause} ORDER BY id DESC LIMIT 1;`;
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id, is_active FROM za3em_stores WHERE ${whereClause} ORDER BY id DESC LIMIT 1;`;
   const result = await executeSql(query);
 
   if (result && Array.isArray(result.rows) && result.rows.length > 0) {

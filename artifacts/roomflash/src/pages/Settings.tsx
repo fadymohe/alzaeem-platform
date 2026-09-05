@@ -5,6 +5,7 @@ import {
   Settings2, Store, CreditCard, Shield, Truck, Bell, Code, Webhook,
   Check, Lock, Palette, LifeBuoy, Save, Globe, Power
 } from 'lucide-react';
+import { updateStoreActiveStatus } from '@/utils/storeRegistry';
 
 export function SettingsPage() {
   const storeQuery = useGetCurrentStore();
@@ -60,27 +61,13 @@ export function SettingsPage() {
   const saving = create.isPending;
   const store = storeQuery.data;
 
-  const handleToggleSubdomainActive = () => {
+  const handleToggleSubdomainActive = async () => {
     const nextState = !isSubdomainActive;
     setIsSubdomainActive(nextState);
-    try {
-      localStorage.setItem('zaeem_store_active', String(nextState));
-      const updateObj = (key: string) => {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          parsed.isActive = nextState;
-          localStorage.setItem(key, JSON.stringify(parsed));
-        }
-      };
-      updateObj('zaeem_store_data');
-      updateObj('zaeem_onboarded_store');
-
-      window.dispatchEvent(new CustomEvent('zaeem_store_updated', { detail: { isActive: nextState } }));
-    } catch {}
+    await updateStoreActiveStatus(form.subdomain, nextState);
   };
 
-  const handleSave = (e: FormEvent) => {
+  const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     try {
       const rawStore = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store') || '{}';
@@ -101,6 +88,7 @@ export function SettingsPage() {
         localStorage.setItem('zaeem_user', JSON.stringify(u));
       }
 
+      await updateStoreActiveStatus(form.subdomain, isSubdomainActive);
       window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
     } catch {}
 
@@ -109,45 +97,38 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 rf-appear">
-      {/* Header */}
-      <div className="border-b border-slate-200 dark:border-slate-800 pb-5">
-        <div className="flex items-center gap-2 text-xs font-bold text-teal-700 dark:text-teal-400 mb-1">
-          <Settings2 className="size-4" /> إعدادات النظام
-        </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+    <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto pb-12">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
           إعدادات المتجر والحساب
         </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          إدارة هوية المتجر، خيارات الشحن والتوصيل، الدفع، ومفاتيح API.
+        <p className="text-sm text-slate-500 mt-1 font-medium">
+          إدارة هوية المتجر، الدومين الفرعي، أسعار الشحن والتوصيل، وطرق الدفع
         </p>
       </div>
 
-      {/* Tabs Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 dark:border-slate-800 rf-scrollbar">
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-px overflow-x-auto">
         {[
-          { key: 'store', label: 'بيانات المتجر', icon: Store },
-          { key: 'shipping', label: 'إعدادات الشحن', icon: Truck },
-          { key: 'payment', label: 'طرق الدفع', icon: CreditCard },
-          { key: 'security', label: 'الأمان والحساب', icon: Lock },
-          { key: 'api', label: 'المطورين و API', icon: Code },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as typeof activeTab)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
-                isActive
-                  ? 'bg-teal-700 text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              <Icon className="size-4" /> {tab.label}
-            </button>
-          );
-        })}
+          { id: 'store', label: 'المتجر والهوية', icon: Store },
+          { id: 'shipping', label: 'الشحن والتوصيل', icon: Truck },
+          { id: 'payment', label: 'طرق الدفع', icon: CreditCard },
+          { id: 'security', label: 'الأمان والحساب', icon: Shield },
+          { id: 'api', label: 'الربط والـ API', icon: Code },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id as never)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 -mb-px whitespace-nowrap ${
+              activeTab === t.id
+                ? 'border-teal-500 text-teal-600 dark:text-teal-400 bg-teal-50/50 dark:bg-teal-950/20'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <t.icon className="size-4" />
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Settings Form */}
@@ -187,27 +168,35 @@ export function SettingsPage() {
                   </div>
                 </div>
 
-                {/* مفتاح التبديل التفاعلي لتنشيط أو إلغاء تنشيط الموقع */}
+                {/* مفتاح التبديل التفاعلي لتنشيط أو إلغاء تنشيط الموقع مع اتجاه حركة مضبوط وصحيح 100% */}
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-300">
+                  <span className="text-xs font-bold text-slate-300 select-none">
                     {isSubdomainActive ? 'إلغاء التنشيط' : 'تنشيط الموقع'}
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleToggleSubdomainActive}
-                    className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      isSubdomainActive ? 'bg-emerald-500' : 'bg-slate-700'
-                    }`}
-                    role="switch"
-                    aria-checked={isSubdomainActive}
-                    title={isSubdomainActive ? 'اضغط لإلغاء تنشيط الموقع الفرعي' : 'اضغط لتنشيط الموقع الفرعي'}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block size-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                        isSubdomainActive ? 'translate-x-7' : 'translate-x-0'
+                  <div dir="ltr" className="inline-flex items-center">
+                    <button
+                      type="button"
+                      onClick={handleToggleSubdomainActive}
+                      className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 shadow-inner ${
+                        isSubdomainActive ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-slate-700 hover:bg-slate-600'
                       }`}
-                    />
-                  </button>
+                      role="switch"
+                      aria-checked={isSubdomainActive}
+                      title={isSubdomainActive ? 'اضغط لإلغاء تنشيط الموقع الفرعي' : 'اضغط لتنشيط الموقع الفرعي'}
+                    >
+                      <span
+                        className={`pointer-events-none flex items-center justify-center size-7 transform rounded-full bg-white shadow-lg ring-0 transition-transform duration-300 ease-in-out ${
+                          isSubdomainActive ? 'translate-x-8' : 'translate-x-0'
+                        }`}
+                      >
+                        <span
+                          className={`size-2 rounded-full transition-colors duration-300 ${
+                            isSubdomainActive ? 'bg-emerald-600' : 'bg-slate-400'
+                          }`}
+                        />
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

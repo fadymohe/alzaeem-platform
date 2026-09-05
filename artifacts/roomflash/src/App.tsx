@@ -418,7 +418,7 @@ function RoutedApp() {
   if (location.startsWith('/track')) return <OrderTrackingPage />;
 
   // صفحات المتاجر والهبوط بالنطاقات المباشرة
-  if (location.startsWith('/landing') || location.startsWith('/view-store') || location.startsWith('/store')) {
+  if (location.startsWith('/landing') || location.startsWith('/view-store') || location.startsWith('/store/')) {
     return <DynamicStoreLanding />;
   }
 

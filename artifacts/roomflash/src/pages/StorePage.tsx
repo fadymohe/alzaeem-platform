@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { StoreTemplates, type TemplateId, TEMPLATES_MAP } from '../components/storefront/StoreTemplates';
 import { getStoredOrders, getStoredProducts } from '../data/storeState';
-import { getRegisteredStore, type RegisteredStoreData } from '../utils/storeRegistry';
+import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus } from '../utils/storeRegistry';
 
 export function StorePage() {
   const [copied, setCopied] = useState(false);
@@ -15,6 +15,13 @@ export function StorePage() {
   const [activeTemplate, setActiveTemplate] = useState<TemplateId>('shoppingcart.1.2.7');
   const [saveSuccessAlert, setSaveSuccessAlert] = useState(false);
   const [storeData, setStoreData] = useState<RegisteredStoreData | null>(null);
+  const [isStoreActive, setIsStoreActive] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('zaeem_store_active') !== 'false';
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
     try {
@@ -76,15 +83,35 @@ export function StorePage() {
           setSubdomainInput(cleanSub);
         }
       }
+
+      const activeVal = localStorage.getItem('zaeem_store_active');
+      if (activeVal !== null) setIsStoreActive(activeVal !== 'false');
     } catch (e) {}
+
+    const handleUpdate = () => {
+      const active = localStorage.getItem('zaeem_store_active');
+      if (active !== null) setIsStoreActive(active !== 'false');
+    };
+    window.addEventListener('zaeem_store_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('zaeem_store_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   const fullDomain = `${subdomain}.za3em.shop`;
   const fullUrl = `https://${fullDomain}`;
   const directHashUrl = `/#/store/${subdomain}`;
 
+  const handleToggleStoreActive = async () => {
+    const nextState = !isStoreActive;
+    setIsStoreActive(nextState);
+    await updateStoreActiveStatus(subdomain, nextState);
+  };
+
   // Apply and save changes to Name, Subdomain, and Theme
-  const handleSaveAllChanges = (e?: React.FormEvent) => {
+  const handleSaveAllChanges = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanSub = (subdomainInput || subdomain || 'shop').toLowerCase().replace(/[^a-z0-9-]/g, '');
     const cleanName = storeName.trim() || `متجر ${cleanSub}`;
@@ -99,6 +126,7 @@ export function StorePage() {
       parsed.templateId = activeTemplate;
       parsed.subdomain = `${cleanSub}.za3em.shop`;
       parsed.storeName = cleanName;
+      parsed.isActive = isStoreActive;
 
       localStorage.setItem('zaeem_store_data', JSON.stringify(parsed));
       localStorage.setItem('zaeem_onboarded_store', JSON.stringify(parsed));
@@ -110,6 +138,8 @@ export function StorePage() {
         u.subdomain = `${cleanSub}.za3em.shop`;
         localStorage.setItem('zaeem_user', JSON.stringify(u));
       }
+
+      await updateStoreActiveStatus(cleanSub, isStoreActive);
 
       // Sync with DB API if available
       fetch('/api/stores', {
@@ -172,6 +202,39 @@ export function StorePage() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          {/* شارة ومفتاح تنشيط الموقع الفرعي */}
+          <div className="flex items-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3.5 py-1.5 rounded-xl shadow-sm">
+            <span className={`px-2 py-0.5 rounded-full text-[11px] font-black flex items-center gap-1.5 ${
+              isStoreActive
+                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
+                : 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/30'
+            }`}>
+              <span className={`size-1.5 rounded-full ${isStoreActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+              {isStoreActive ? 'الموقع نشط' : 'الموقع معطل'}
+            </span>
+
+            <div dir="ltr" className="inline-flex items-center">
+              <button
+                type="button"
+                onClick={handleToggleStoreActive}
+                className={`relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none shadow-inner ${
+                  isStoreActive ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-slate-400 dark:bg-slate-700'
+                }`}
+                role="switch"
+                aria-checked={isStoreActive}
+                title={isStoreActive ? 'اضغط لإلغاء تنشيط المتجر' : 'اضغط لتنشيط المتجر'}
+              >
+                <span
+                  className={`pointer-events-none flex items-center justify-center size-5 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
+                    isStoreActive ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                >
+                  <span className={`size-1 rounded-full ${isStoreActive ? 'bg-emerald-600' : 'bg-slate-400'}`} />
+                </span>
+              </button>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={copyStoreLink}

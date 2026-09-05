@@ -6,7 +6,7 @@
  * - In-app store views: /#/store/[subdomain]
  * - Cross-subdomain sharing via .za3em.shop root domain cookies and URL seeds.
  */
-import { checkCloudSubdomain, saveCloudStore, fetchCloudStore } from './cloudDb';
+import { checkCloudSubdomain, saveCloudStore, fetchCloudStore, updateCloudStoreActive } from './cloudDb';
 
 export interface RegisteredStoreData {
   subdomain: string;
@@ -30,6 +30,7 @@ export interface RegisteredStoreData {
     description?: string;
     category?: string;
   };
+  isActive?: boolean;
   freeShipmentsRemaining?: number;
   createdAt?: string;
 }
@@ -114,6 +115,7 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
     storeCode: generatedCode,
     logoUrl: data.logoUrl,
     bannerUrl: data.bannerUrl,
+    isActive: data.isActive ?? true,
     createdAt: data.createdAt || new Date().toISOString(),
   };
 
@@ -143,7 +145,8 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
         plan: "free",
         orderLimit: 5,
         categories: normalizedData.categories || ["عام"],
-        product: normalizedData.product
+        product: normalizedData.product,
+        isActive: normalizedData.isActive,
       }));
     } catch (err) {
       console.warn("Error saving store to localStorage:", err);
@@ -157,6 +160,7 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
         templateId: normalizedData.templateId,
         storeCode: generatedCode,
         logoUrl: normalizedData.logoUrl,
+        isActive: normalizedData.isActive,
       };
       const cookieMapRaw = getCookie("zaeem_stores_registry");
       const cookieMap: Record<string, any> = cookieMapRaw ? JSON.parse(cookieMapRaw) : {};
@@ -178,7 +182,8 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
       logoUrl: normalizedData.logoUrl,
       bannerUrl: normalizedData.bannerUrl,
       categories: normalizedData.categories,
-      product: normalizedData.product
+      product: normalizedData.product,
+      isActive: normalizedData.isActive,
     }).catch(err => console.warn("[storeRegistry] Cloud DB save fallback:", err));
 
     // 6. Asynchronously persist to server API for persistent reservation in za3em_stores
@@ -187,10 +192,10 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          storeCode: generatedCode,
-          name: normalizedData.storeName,
+          storeName: normalizedData.storeName,
           subdomain: cleanSub,
           templateId: normalizedData.templateId,
+          storeCode: generatedCode,
           userEmail: normalizedData.userEmail,
           ownerId: normalizedData.ownerId,
           slogan: normalizedData.slogan,
@@ -210,6 +215,50 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
   }
 
   return normalizedData;
+}
+
+/**
+ * Synchronize store active status across all storage layers (localStorage, cookie, Neon DB)
+ */
+export async function updateStoreActiveStatus(subdomain: string, isActive: boolean): Promise<boolean> {
+  const cleanSub = (subdomain || '').replace(".za3em.shop", "").toLowerCase().trim();
+  if (!cleanSub) return false;
+
+  // 1. Update localStorage
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem('zaeem_store_active', String(isActive));
+
+      const localMapRaw = localStorage.getItem("zaeem_stores_registry");
+      if (localMapRaw) {
+        const localMap = JSON.parse(localMapRaw);
+        if (localMap[cleanSub]) {
+          localMap[cleanSub].isActive = isActive;
+          localStorage.setItem("zaeem_stores_registry", JSON.stringify(localMap));
+        }
+      }
+
+      const updateStored = (key: string) => {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          parsed.isActive = isActive;
+          localStorage.setItem(key, JSON.stringify(parsed));
+        }
+      };
+      updateStored('zaeem_store_data');
+      updateStored('zaeem_onboarded_store');
+
+      window.dispatchEvent(new CustomEvent('zaeem_store_updated', { detail: { isActive } }));
+    } catch (e) {}
+  }
+
+  // 2. Update Neon Cloud DB
+  try {
+    await updateCloudStoreActive(cleanSub, isActive);
+  } catch (e) {}
+
+  return true;
 }
 
 /**

@@ -8,9 +8,10 @@ import {
 import {
   getRegisteredStore,
   RegisteredStoreData,
+  updateStoreActiveStatus,
 } from "../utils/storeRegistry";
 import { fetchCloudStore } from "../utils/cloudDb";
-import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink } from "lucide-react";
+import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, PauseCircle, Power } from "lucide-react";
 
 export function DynamicStoreLanding() {
   const [matchView, paramsView] = useRoute("/view-store/:subdomain");
@@ -59,6 +60,24 @@ export function DynamicStoreLanding() {
 
   const [isStoreRegistered, setIsStoreRegistered] = useState<boolean>(isInitiallyKnown);
 
+  const [isStoreActive, setIsStoreActive] = useState<boolean>(() => {
+    try {
+      const localActive = localStorage.getItem('zaeem_store_active');
+      const rawStore = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
+      if (rawStore) {
+        const parsed = JSON.parse(rawStore);
+        const storedSub = (parsed.subdomain || '').replace('.za3em.shop', '').toLowerCase().trim();
+        if (storedSub === cleanSubdomain && typeof parsed.isActive === 'boolean') {
+          return parsed.isActive;
+        }
+      }
+      if (localActive !== null) {
+        return localActive !== 'false';
+      }
+    } catch {}
+    return true;
+  });
+
   // بيانات المتجر والمنتج المعتمدة
   const [store, setStore] = useState<TemplateStore>({
     id: 1,
@@ -97,6 +116,9 @@ export function DynamicStoreLanding() {
       if (isMounted) {
         setIsStoreRegistered(true);
         setLoading(false);
+        if (typeof registered.isActive === 'boolean') {
+          setIsStoreActive(registered.isActive);
+        }
         setStore({
           id: 1,
           name: registered.storeName || `متجر ${cleanSubdomain}`,
@@ -137,6 +159,9 @@ export function DynamicStoreLanding() {
         if (cloudStore && isMounted) {
           setIsStoreRegistered(true);
           setLoading(false);
+          if (typeof (cloudStore as any).is_active === 'boolean') {
+            setIsStoreActive((cloudStore as any).is_active);
+          }
           setStore({
             id: cloudStore.id || 1,
             name: cloudStore.name || `متجر ${cleanSubdomain}`,
@@ -208,10 +233,30 @@ export function DynamicStoreLanding() {
 
     resolveStore();
 
+    const handleUpdate = (e: any) => {
+      if (e?.detail && typeof e.detail.isActive === 'boolean') {
+        setIsStoreActive(e.detail.isActive);
+      } else {
+        const active = localStorage.getItem('zaeem_store_active');
+        if (active !== null) setIsStoreActive(active !== 'false');
+      }
+    };
+    window.addEventListener('zaeem_store_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('zaeem_store_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
     };
   }, [cleanSubdomain]);
+
+  const handleDirectActivateStore = async () => {
+    try {
+      await updateStoreActiveStatus(cleanSubdomain, true);
+      setIsStoreActive(true);
+    } catch {}
+  };
 
   // إرسال الطلب وحجز الشحنة تلقائياً مع شركة الشحن عبر الـ API
   const handlePlaceOrder = async (orderPayload: any) => {
@@ -372,6 +417,87 @@ export function DynamicStoreLanding() {
         {/* Footer */}
         <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
           منصة الزعيم للتجارة والشحن السريع في العراق © {new Date().getFullYear()}
+        </footer>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // حالة المتجر معطل مؤقتاً (المتجر متوقف عن العمل بأمر المالك أو تحت الصيانة)
+  // =========================================================================
+  if (!isStoreActive) {
+    return (
+      <div className="w-full min-h-screen bg-[#070b14] text-white flex flex-col justify-between selection:bg-teal-500 selection:text-slate-950 font-sans" dir="rtl">
+        {/* Header */}
+        <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 grid place-items-center text-slate-950 font-black text-lg shadow-lg shadow-teal-500/20">
+              ز
+            </div>
+            <div>
+              <h1 className="text-base font-black text-white">{store.name || `متجر ${cleanSubdomain}`}</h1>
+              <p className="text-[10px] text-teal-400 font-mono dir-ltr text-right">https://{cleanSubdomain}.za3em.shop</p>
+            </div>
+          </div>
+
+          <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-rose-400" />
+            المتجر معطل مؤقتاً
+          </span>
+        </header>
+
+        {/* Maintenance Message */}
+        <main className="max-w-xl mx-auto w-full px-4 py-16 text-center space-y-6 animate-fadeIn">
+          <div className="size-24 rounded-3xl bg-rose-500/10 border border-rose-500/30 text-rose-400 mx-auto grid place-items-center shadow-2xl shadow-rose-500/10">
+            <PauseCircle className="size-12 text-rose-400" />
+          </div>
+
+          <div className="space-y-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950/80 border border-rose-800/80 text-rose-300 text-xs font-bold">
+              <AlertTriangle className="size-3.5" />
+              <span>المتجر متوقف عن استقبال الطلبات حالياً</span>
+            </span>
+
+            <h2 className="text-2xl sm:text-3xl font-black text-white">
+              {store.name || `متجر ${cleanSubdomain}`}
+            </h2>
+
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+              عذراً، هذا المتجر الإلكتروني متوقف مؤقتاً بأمر المالك أو يخضع لعمليات صيانة وتحديث منتجات.
+              لا يمكن إتمام عمليات الشراء أو حجز الشحنات في الوقت الحالي. يرجى مراجعتنا لاحقاً.
+            </p>
+          </div>
+
+          {/* إذا كان المشاهد هو صاحب المتجر نفسه (أو لديه صلاحيات التحكم) */}
+          <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4 text-right">
+            <div className="flex items-center gap-2 text-teal-400 text-xs font-black">
+              <Sparkles className="size-4" />
+              <span>هل أنت مالك هذا المتجر؟</span>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              متجرك في وضع <strong className="text-rose-400 font-bold">"معطل"</strong>. لإعادة تفعيله فوراً واستقبال طلبات الزبائن والشحن، يمكنك التبديل إلى "نشط" من لوحة التحكم أو بالضغط على الزر أدناه.
+            </p>
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-3">
+              <a
+                href="https://za3em.shop/#/settings"
+                className="flex-1 py-3 px-5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs text-center shadow-lg shadow-teal-500/20 transition-all cursor-pointer"
+              >
+                ⚙️ الذهاب للإعدادات لتفعيل المتجر
+              </a>
+              <button
+                type="button"
+                onClick={handleDirectActivateStore}
+                className="py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs text-center border border-emerald-500 transition-colors cursor-pointer"
+              >
+                ⚡ تفعيل المتجر الآن أونلاين
+              </button>
+            </div>
+          </div>
+        </main>
+
+        <footer className="border-t border-slate-900 py-6 text-center text-slate-600 text-xs">
+          منصة الزعيم للتجارة الإلكترونية والشحن في العراق © {new Date().getFullYear()}
         </footer>
       </div>
     );
