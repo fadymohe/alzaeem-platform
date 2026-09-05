@@ -224,11 +224,15 @@ export function getStoredProducts(): StoreProduct[] {
     }
   } catch (e) {}
 
-  // Check if merchant has an onboarded product
+  // Check if merchant has an onboarded product or products list
   try {
     const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
     if (rawStore) {
       const parsedStore = JSON.parse(rawStore);
+      if (Array.isArray(parsedStore.products) && parsedStore.products.length > 0) {
+        saveStoredProducts(parsedStore.products);
+        return parsedStore.products;
+      }
       if (parsedStore.product && (parsedStore.product.name || parsedStore.product.title)) {
         const realProd: StoreProduct = {
           id: 1,
@@ -258,28 +262,37 @@ export function saveStoredProducts(products: StoreProduct[]): void {
   localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
 }
 
-export async function syncProductToLiveStoreAndServer(product: StoreProduct): Promise<void> {
+export async function syncProductToLiveStoreAndServer(product?: StoreProduct, allProductsList?: StoreProduct[]): Promise<void> {
   if (typeof window === 'undefined') return;
 
   try {
+    const currentProducts = (allProductsList && allProductsList.length > 0)
+      ? allProductsList
+      : getStoredProducts();
+    const leadProduct = product || currentProducts[0];
+
     // 1. Update zaeem_store_data & zaeem_onboarded_store
     const updateLocalStoreObject = (key: string) => {
       const raw = localStorage.getItem(key);
       if (raw) {
         try {
           const parsed = JSON.parse(raw);
-          parsed.product = {
-            id: product.id,
-            title: product.name,
-            name: product.name,
-            price: product.price,
-            compareAtPrice: product.compareAtPrice,
-            image: product.imageUrl,
-            imageUrl: product.imageUrl,
-            images: product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []),
-            description: product.description,
-            category: product.category,
-          };
+          if (leadProduct) {
+            parsed.product = {
+              id: leadProduct.id,
+              title: leadProduct.name,
+              name: leadProduct.name,
+              sku: leadProduct.sku,
+              price: leadProduct.price,
+              compareAtPrice: leadProduct.compareAtPrice,
+              image: leadProduct.imageUrl,
+              imageUrl: leadProduct.imageUrl,
+              images: leadProduct.images && leadProduct.images.length > 0 ? leadProduct.images : (leadProduct.imageUrl ? [leadProduct.imageUrl] : []),
+              description: leadProduct.description,
+              category: leadProduct.category,
+            };
+          }
+          parsed.products = currentProducts;
           localStorage.setItem(key, JSON.stringify(parsed));
           return parsed;
         } catch {}
@@ -299,24 +312,28 @@ export async function syncProductToLiveStoreAndServer(product: StoreProduct): Pr
           subdomain = Object.keys(reg)[0];
         }
         if (subdomain && reg[subdomain]) {
-          reg[subdomain].product = {
-            id: product.id,
-            title: product.name,
-            name: product.name,
-            price: product.price,
-            compareAtPrice: product.compareAtPrice,
-            image: product.imageUrl,
-            imageUrl: product.imageUrl,
-            images: product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []),
-            description: product.description,
-            category: product.category,
-          };
+          if (leadProduct) {
+            reg[subdomain].product = {
+              id: leadProduct.id,
+              title: leadProduct.name,
+              name: leadProduct.name,
+              sku: leadProduct.sku,
+              price: leadProduct.price,
+              compareAtPrice: leadProduct.compareAtPrice,
+              image: leadProduct.imageUrl,
+              imageUrl: leadProduct.imageUrl,
+              images: leadProduct.images && leadProduct.images.length > 0 ? leadProduct.images : (leadProduct.imageUrl ? [leadProduct.imageUrl] : []),
+              description: leadProduct.description,
+              category: leadProduct.category,
+            };
+          }
+          reg[subdomain].products = currentProducts;
           localStorage.setItem('zaeem_stores_registry', JSON.stringify(reg));
         }
       } catch {}
     }
 
-    // 3. Publish to central Neon Cloud Database so it's live on the server
+    // 3. Publish full catalog to central Neon Cloud Database so it is live on the server and all subdomains
     if (subdomain || storeObj) {
       const cleanSub = (subdomain || storeObj?.subdomain || 'shop').replace('.za3em.shop', '');
       await saveCloudStore({
@@ -324,28 +341,31 @@ export async function syncProductToLiveStoreAndServer(product: StoreProduct): Pr
         subdomain: cleanSub,
         templateId: storeObj?.templateId || storeObj?.selectedTheme || 'shoppingcart.1.2.7',
         storeCode: storeObj?.storeCode,
-        slogan: storeObj?.slogan || product.description,
+        slogan: storeObj?.slogan || leadProduct?.description,
         logoUrl: storeObj?.logoUrl,
         bannerUrl: storeObj?.bannerUrl,
         userEmail: storeObj?.userEmail || storeObj?.email,
         ownerId: storeObj?.ownerId || storeObj?.id,
         isActive: storeObj?.isActive ?? true,
-        product: {
-          id: product.id,
-          title: product.name,
-          name: product.name,
-          price: product.price,
-          compareAtPrice: product.compareAtPrice,
-          image: product.imageUrl,
-          imageUrl: product.imageUrl,
-          images: product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []),
-          description: product.description,
-          category: product.category,
-        }
+        product: leadProduct ? {
+          id: leadProduct.id,
+          title: leadProduct.name,
+          name: leadProduct.name,
+          sku: leadProduct.sku,
+          price: leadProduct.price,
+          compareAtPrice: leadProduct.compareAtPrice,
+          image: leadProduct.imageUrl,
+          imageUrl: leadProduct.imageUrl,
+          images: leadProduct.images && leadProduct.images.length > 0 ? leadProduct.images : (leadProduct.imageUrl ? [leadProduct.imageUrl] : []),
+          description: leadProduct.description,
+          category: leadProduct.category,
+          products: currentProducts,
+        } : undefined,
+        products: currentProducts,
       });
     }
   } catch (err) {
-    console.warn('[storeState] Error syncing product to store:', err);
+    console.warn('[storeState] Error syncing products to store:', err);
   }
 }
 
@@ -357,7 +377,7 @@ export function addStoredProduct(product: Omit<StoreProduct, 'id'>): StoreProduc
   };
   const updated = [newProduct, ...products];
   saveStoredProducts(updated);
-  syncProductToLiveStoreAndServer(newProduct);
+  syncProductToLiveStoreAndServer(newProduct, updated);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
   }
@@ -370,7 +390,7 @@ export function updateStoredProduct(id: number, updates: Partial<StoreProduct>):
   if (idx === -1) return null;
   products[idx] = { ...products[idx], ...updates };
   saveStoredProducts(products);
-  syncProductToLiveStoreAndServer(products[idx]);
+  syncProductToLiveStoreAndServer(products[idx], products);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
   }
@@ -381,6 +401,7 @@ export function deleteStoredProduct(id: number): boolean {
   const products = getStoredProducts();
   const updated = products.filter(p => p.id !== id);
   saveStoredProducts(updated);
+  syncProductToLiveStoreAndServer(updated[0], updated);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
   }

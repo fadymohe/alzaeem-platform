@@ -125,6 +125,13 @@ export function DynamicStoreLanding() {
       "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
   });
 
+  const [productsList, setProductsList] = useState<any[]>(() => {
+    if (Array.isArray((initialRegisteredData as any)?.products) && (initialRegisteredData as any).products.length > 0) {
+      return (initialRegisteredData as any).products;
+    }
+    return initialRegisteredData?.product ? [initialRegisteredData.product] : [];
+  });
+
   const [loading, setLoading] = useState<boolean>(!isInitiallyKnown);
 
   // جلب ومزامنة بيانات المتجر لحظياً
@@ -154,6 +161,9 @@ export function DynamicStoreLanding() {
         logoUrl: registered.logoUrl,
         bannerUrl: registered.bannerUrl,
       });
+      if ((registered as any)?.products && Array.isArray((registered as any).products) && (registered as any).products.length > 0) {
+        setProductsList((registered as any).products);
+      }
       if (registered.product) {
         const pImg = registered.product.imageUrl || registered.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80";
         setProduct({
@@ -165,6 +175,9 @@ export function DynamicStoreLanding() {
           imageUrl: pImg,
           images: (registered.product as any)?.images || [pImg],
         });
+        if (!((registered as any)?.products && Array.isArray((registered as any).products) && (registered as any).products.length > 0)) {
+          setProductsList([registered.product]);
+        }
       }
     } else if (cleanSubdomain === "zero" || cleanSubdomain === "demo") {
       if (isMounted) {
@@ -194,6 +207,20 @@ export function DynamicStoreLanding() {
             logoUrl: cloudStore.logo_url || prev.logoUrl,
             bannerUrl: cloudStore.banner_url || prev.bannerUrl,
           }));
+
+          // استخراج كتالوج كافة المنتجات (القديمة والجديدة) المعروضة في المتجر
+          const cloudCatalog = Array.isArray(cloudStore.products) && cloudStore.products.length > 0
+            ? cloudStore.products
+            : (Array.isArray((cloudStore.product as any)?.products) && (cloudStore.product as any).products.length > 0
+              ? (cloudStore.product as any).products
+              : (Array.isArray((cloudStore.product as any)?.catalog) && (cloudStore.product as any).catalog.length > 0
+                ? (cloudStore.product as any).catalog
+                : (cloudStore.product ? [cloudStore.product] : [])));
+
+          if (cloudCatalog.length > 0) {
+            setProductsList(cloudCatalog);
+          }
+
           if (cloudStore.product) {
             setProduct((prev) => {
               const cImg = cloudStore.product?.imageUrl || cloudStore.product?.image || prev.imageUrl;
@@ -594,6 +621,7 @@ export function DynamicStoreLanding() {
         templateId={store.templateId}
         store={store}
         product={product}
+        products={productsList}
         onPlaceOrder={handlePlaceOrder}
       />
     </div>

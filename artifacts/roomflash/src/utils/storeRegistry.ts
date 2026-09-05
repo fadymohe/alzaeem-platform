@@ -183,6 +183,7 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
       bannerUrl: normalizedData.bannerUrl,
       categories: normalizedData.categories,
       product: normalizedData.product,
+      products: (normalizedData as any).products,
       isActive: normalizedData.isActive,
     }).catch(err => console.warn("[storeRegistry] Cloud DB save fallback:", err));
 

@@ -29,7 +29,9 @@ export interface CloudStoreRecord {
     image?: string;
     description?: string;
     category?: string;
+    products?: any[];
   };
+  products?: any[];
   is_active?: boolean;
   created_at?: string;
 }
@@ -131,6 +133,7 @@ export async function saveCloudStore(store: {
   bannerUrl?: string;
   categories?: string[];
   product?: any;
+  products?: any[];
   userEmail?: string;
   ownerId?: string;
   isActive?: boolean;
@@ -160,25 +163,57 @@ export async function saveCloudStore(store: {
     safeProdImg = 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80';
   }
 
+  // Sanitize full products list
+  const inputProducts = Array.isArray(store.products) && store.products.length > 0
+    ? store.products
+    : (Array.isArray(rawProd.products) && rawProd.products.length > 0
+      ? rawProd.products
+      : [rawProd]);
+
+  const sanitizedProducts = inputProducts.map((p: any, idx: number) => {
+    let pImg = p.imageUrl || p.image || safeProdImg;
+    if (pImg && pImg.length > 250000) {
+      pImg = 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80';
+    }
+    return {
+      id: p.id || (idx + 1),
+      name: p.name || p.title || `منتج ${idx + 1}`,
+      title: p.title || p.name || `منتج ${idx + 1}`,
+      sku: p.sku || `PRD-${idx + 1}`,
+      price: Number(p.price) || 45000,
+      compareAtPrice: p.compareAtPrice ? Number(p.compareAtPrice) : null,
+      stock: p.stock !== undefined ? Number(p.stock) : 20,
+      lowStockThreshold: p.lowStockThreshold || 3,
+      category: p.category || 'عام',
+      status: p.status || 'active',
+      imageUrl: pImg,
+      image: pImg,
+      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [pImg],
+      description: p.description || '',
+    };
+  });
+
   const productObj = {
-    id: rawProd.id || 1,
-    title: rawProd.title || rawProd.name || 'عطر تاج الفخامة الفرنسي الملكي',
-    name: rawProd.title || rawProd.name || 'عطر تاج الفخامة الفرنسي الملكي',
-    price: Number(rawProd.price) || 45000,
-    compareAtPrice: Number(rawProd.compareAtPrice) || Math.round((Number(rawProd.price) || 45000) * 1.3),
+    id: rawProd.id || sanitizedProducts[0]?.id || 1,
+    title: rawProd.title || rawProd.name || sanitizedProducts[0]?.name || 'عطر تاج الفخامة الفرنسي الملكي',
+    name: rawProd.title || rawProd.name || sanitizedProducts[0]?.name || 'عطر تاج الفخامة الفرنسي الملكي',
+    price: Number(rawProd.price) || sanitizedProducts[0]?.price || 45000,
+    compareAtPrice: Number(rawProd.compareAtPrice) || sanitizedProducts[0]?.compareAtPrice || Math.round((Number(rawProd.price) || 45000) * 1.3),
     imageUrl: safeProdImg,
     image: safeProdImg,
     images: Array.isArray(rawProd.images) && rawProd.images.length > 0 ? rawProd.images : [safeProdImg],
     description: rawProd.description || store.slogan || 'منتج أصلي معتمد مع شحن سريع وضمان الدفع عند الاستلام',
     category: rawProd.category || 'عام',
+    products: sanitizedProducts,
+    catalog: sanitizedProducts,
   };
   const productJson = JSON.stringify(productObj).replace(/'/g, "''");
+  const productsJson = JSON.stringify(sanitizedProducts).replace(/'/g, "''");
   const categoriesJson = JSON.stringify(store.categories || ['عام']).replace(/'/g, "''");
 
-
   const query = `
-    INSERT INTO za3em_stores (name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id, is_active)
-    VALUES ('${nameEscaped}', '${cleanSub}', '${templateId}', '${codeEscaped}', '${sloganEscaped}', ${logoUrlEscaped}, ${bannerUrlEscaped}, '${categoriesJson}'::jsonb, '${productJson}'::jsonb, ${userEmailEscaped}, ${ownerIdEscaped}, ${isActiveVal})
+    INSERT INTO za3em_stores (name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, products, user_email, owner_id, is_active)
+    VALUES ('${nameEscaped}', '${cleanSub}', '${templateId}', '${codeEscaped}', '${sloganEscaped}', ${logoUrlEscaped}, ${bannerUrlEscaped}, '${categoriesJson}'::jsonb, '${productJson}'::jsonb, '${productsJson}'::jsonb, ${userEmailEscaped}, ${ownerIdEscaped}, ${isActiveVal})
     ON CONFLICT (subdomain) DO UPDATE
     SET name = EXCLUDED.name,
         template_id = EXCLUDED.template_id,
@@ -188,6 +223,7 @@ export async function saveCloudStore(store: {
         banner_url = EXCLUDED.banner_url,
         categories = EXCLUDED.categories,
         product = EXCLUDED.product,
+        products = EXCLUDED.products,
         user_email = COALESCE(EXCLUDED.user_email, za3em_stores.user_email),
         owner_id = COALESCE(EXCLUDED.owner_id, za3em_stores.owner_id),
         is_active = COALESCE(EXCLUDED.is_active, za3em_stores.is_active)
@@ -197,7 +233,7 @@ export async function saveCloudStore(store: {
   const result = await executeSql(query);
   const success = Boolean(result && Array.isArray(result.rows) && result.rows.length > 0);
   if (success) {
-    console.log(`[CloudDb] Store successfully saved: ${cleanSub}.za3em.shop (${codeEscaped})`);
+    console.log(`[CloudDb] Store successfully saved: ${cleanSub}.za3em.shop (${codeEscaped}) with ${sanitizedProducts.length} products`);
   }
   return success;
 }
@@ -225,7 +261,7 @@ export async function fetchCloudStore(subdomain: string): Promise<CloudStoreReco
   const clean = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
   if (!clean) return null;
 
-  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id, is_active FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, products, user_email, owner_id, is_active FROM za3em_stores WHERE subdomain = '${clean}' LIMIT 1;`;
   const result = await executeSql(query);
 
   if (result && Array.isArray(result.rows) && result.rows.length > 0) {
@@ -252,7 +288,7 @@ export async function fetchCloudStoreByUser(email: string, ownerId?: string): Pr
     whereClause = `owner_id = '${cleanOwner}'`;
   }
 
-  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, user_email, owner_id, is_active FROM za3em_stores WHERE ${whereClause} ORDER BY id DESC LIMIT 1;`;
+  const query = `SELECT id, name, subdomain, template_id, store_code, slogan, logo_url, banner_url, categories, product, products, user_email, owner_id, is_active FROM za3em_stores WHERE ${whereClause} ORDER BY id DESC LIMIT 1;`;
   const result = await executeSql(query);
 
   if (result && Array.isArray(result.rows) && result.rows.length > 0) {

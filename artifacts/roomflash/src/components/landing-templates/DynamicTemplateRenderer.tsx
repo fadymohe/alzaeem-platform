@@ -11,6 +11,7 @@ interface DynamicTemplateRendererProps {
   templateId?: string;
   store: TemplateStore;
   product: TemplateProduct;
+  products?: any[];
   onPlaceOrder: (orderData: any) => Promise<any>;
 }
 
@@ -18,6 +19,7 @@ export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = (
   templateId = "shoppingcart.1.2.7",
   store,
   product,
+  products,
   onPlaceOrder,
 }) => {
   const cleanTemplateId = (templateId || "").toLowerCase().trim();
@@ -64,6 +66,7 @@ export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = (
           activeTemplateId={validTemplateId}
           standalone={true}
           customProduct={product}
+          products={products}
           storeCode={store.storeCode}
           logoUrl={store.logoUrl}
         />

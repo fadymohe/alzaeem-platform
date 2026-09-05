@@ -81,14 +81,22 @@ export function ProductsPage() {
   const reloadProducts = () => {
     setIsRefreshing(true);
     setTimeout(() => {
-      setProducts(getStoredProducts());
+      const prods = getStoredProducts();
+      setProducts(prods);
+      if (prods.length > 0) {
+        syncProductToLiveStoreAndServer(prods[0], prods).catch(() => {});
+      }
       setIsRefreshing(false);
       showToast('تم تحديث قائمة المنتجات والمخزون بنجاح ✅');
     }, 450);
   };
 
   useEffect(() => {
-    setProducts(getStoredProducts());
+    const prods = getStoredProducts();
+    setProducts(prods);
+    if (prods.length > 0) {
+      syncProductToLiveStoreAndServer(prods[0], prods).catch(() => {});
+    }
   }, []);
 
   const openAddModal = () => {

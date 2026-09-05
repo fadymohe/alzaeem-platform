@@ -141,6 +141,7 @@ interface StoreTemplatesProps {
     image?: string;
     category?: string;
   };
+  products?: any[];
   storeCode?: string;
   logoUrl?: string;
 }
@@ -152,6 +153,7 @@ export function StoreTemplates({
   standalone = false,
   onTemplateChange,
   customProduct,
+  products,
   storeCode,
   logoUrl
 }: StoreTemplatesProps) {
@@ -175,22 +177,82 @@ export function StoreTemplates({
   const [custCity, setCustCity] = useState('بغداد');
 
   const baseProducts = getStoredProducts();
-  const productsList: StoreProduct[] = customProduct ? [
-    {
-      id: 999,
+
+  // Normalize incoming props.products if supplied
+  const incomingList: StoreProduct[] = Array.isArray(products) && products.length > 0
+    ? products.map((p: any, idx: number) => ({
+        id: p.id || (idx + 1),
+        name: p.name || p.title || `منتج ${idx + 1}`,
+        sku: p.sku || `PRD-${idx + 1}`,
+        price: Number(p.price) || 45000,
+        compareAtPrice: p.compareAtPrice ? Number(p.compareAtPrice) : Math.round((Number(p.price) || 45000) * 1.3),
+        imageUrl: p.imageUrl || p.image || '',
+        images: Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.imageUrl || p.image ? [p.imageUrl || p.image] : []),
+        category: p.category || 'عام',
+        stock: p.stock !== undefined ? Number(p.stock) : 20,
+        lowStockThreshold: p.lowStockThreshold || 3,
+        status: p.status || 'active',
+        description: p.description || '',
+      }))
+    : [];
+
+  let productsList: StoreProduct[] = [];
+  if (incomingList.length > 0) {
+    productsList = [...incomingList];
+    // If customProduct is provided and not yet in incomingList, prepend it
+    if (customProduct && (customProduct.title || customProduct.name)) {
+      const cName = (customProduct.title || customProduct.name || '').trim();
+      if (!productsList.some(p => p.name === cName)) {
+        productsList.unshift({
+          id: typeof customProduct.id === 'number' ? customProduct.id : 999,
+          name: cName,
+          sku: 'PRD-999',
+          price: Number(customProduct.price) || 45000,
+          compareAtPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
+          imageUrl: customProduct.imageUrl || (customProduct as any).image || '',
+          category: customProduct.category || 'المنتجات المميزة',
+          stock: 35,
+          lowStockThreshold: 5,
+          status: 'active',
+          description: customProduct.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'
+        });
+      }
+    }
+  } else if (baseProducts.length > 0) {
+    productsList = [...baseProducts];
+    if (customProduct && (customProduct.title || customProduct.name)) {
+      const cName = (customProduct.title || customProduct.name || '').trim();
+      if (!productsList.some(p => p.name === cName)) {
+        productsList.unshift({
+          id: typeof customProduct.id === 'number' ? customProduct.id : 999,
+          name: cName,
+          sku: 'PRD-999',
+          price: Number(customProduct.price) || 45000,
+          compareAtPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
+          imageUrl: customProduct.imageUrl || (customProduct as any).image || '',
+          category: customProduct.category || 'المنتجات المميزة',
+          stock: 35,
+          lowStockThreshold: 5,
+          status: 'active',
+          description: customProduct.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'
+        });
+      }
+    }
+  } else if (customProduct && (customProduct.title || customProduct.name)) {
+    productsList = [{
+      id: typeof customProduct.id === 'number' ? customProduct.id : 999,
       name: customProduct.title || customProduct.name || 'المنتج المختار',
       sku: 'PRD-999',
       price: Number(customProduct.price) || 45000,
       compareAtPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
-      imageUrl: customProduct.imageUrl || (customProduct as any).image || baseProducts[0]?.imageUrl || '',
+      imageUrl: customProduct.imageUrl || (customProduct as any).image || '',
       category: customProduct.category || 'المنتجات المميزة',
       stock: 35,
       lowStockThreshold: 5,
       status: 'active',
       description: customProduct.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'
-    },
-    ...baseProducts.filter(p => p.name !== (customProduct.title || customProduct.name))
-  ] : baseProducts;
+    }];
+  }
 
   const theme = TEMPLATES_MAP[currentThemeId] || TEMPLATES_MAP.volt;
   const fullDomain = `${subdomain}.za3em.shop`;
