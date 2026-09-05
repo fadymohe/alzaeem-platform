@@ -36,7 +36,28 @@ export interface RegisteredStoreData {
 
 // Built-in pre-registered stores & active demo stores
 export const BUILTIN_REGISTERED_STORES: Record<string, RegisteredStoreData> = {
+  "mahmod2": {
+    subdomain: "mahmod2",
+    storeName: "متجر محمود",
+    slogan: "سلة التسوق الشاملة - أفضل المنتجات مع التوصيل السريع لجميع المحافظات",
+    templateId: "shoppingcart.1.2.7",
+    storeCode: "ZAEEM-20XQYZ",
+    categories: ["عام", "عطور", "إلكترونيات"],
+    product: {
+      id: 1,
+      name: "عطر تاج الفخامة الفرنسي الملكي",
+      title: "عطر تاج الفخامة الفرنسي الملكي",
+      price: 45000,
+      compareAtPrice: 58000,
+      image: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
+      imageUrl: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80",
+      description: "عطر فاخر أصلي مع شحن سريع لكافة محافظات العراق وضمان الدفع عند الاستلام.",
+      category: "عطور",
+    },
+    freeShipmentsRemaining: 5,
+  },
   "fadymoheb945za3emshop": {
+
     subdomain: "fadymoheb945za3emshop",
     storeName: "متجر فادي مهيب",
     slogan: "أفضل المنتجات المختارة بعناية والتوصيل السريع لباب بيتك",

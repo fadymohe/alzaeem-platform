@@ -41,7 +41,7 @@ async function executeSql(query: string, params: any[] = []): Promise<any> {
     const res = await fetch(NEON_HTTP_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain',
         'Neon-Connection-String': NEON_CONN_STRING,
       },
       body: JSON.stringify({ query, params }),
