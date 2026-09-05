@@ -14,6 +14,7 @@ import {
   saveCloudShipment, fetchCloudShipments, trackCloudShipment,
   type CloudShipment
 } from '../utils/cloudDb';
+import { ShippingLabelModal } from '../components/shipping/ShippingLabelModal';
 
 export interface GovernorateDetail {
   name: Governorate;
@@ -612,136 +613,15 @@ export function ShipmentsPage() {
 
   return (
     <div className="space-y-6 rf-appear">
-      {/* Printable Waybill Area */}
+      {/* Thermal Shipping Label Modal & Print (100mm x 150mm) */}
       {waybillModalShipment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm print:p-0 print:bg-white print:static print:inset-auto">
-          <div className="zaeem-waybill-print-area max-w-2xl w-full bg-white rounded-3xl p-6 md:p-8 shadow-2xl border border-slate-200 text-slate-900 print:shadow-none print:border-0 print:w-full print:max-w-none print:p-6 print:rounded-none">
-            {/* Modal Header for screen */}
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 print:hidden">
-              <div className="flex items-center gap-2">
-                <Printer className="size-5 text-teal-700" />
-                <h3 className="font-extrabold text-lg text-slate-900">معاينة بوليصة الشحن الرسمية (PDF)</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setWaybillModalShipment(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            {/* Official Waybill Form */}
-            <div className="border-2 border-slate-900 p-5 rounded-2xl space-y-4">
-              {/* Waybill Top Header */}
-              <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 bg-slate-900 text-white rounded-lg">
-                      <Truck className="size-5" />
-                    </span>
-                    <div>
-                      <h2 className="text-xl font-black tracking-tight text-slate-950">شركة الزعيم للشحن السريع</h2>
-                      <p className="text-[11px] font-bold text-slate-600">Al-Zaeem Express Delivery & Logistics Iraq</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">الناقل الرسمي لمنصة الزعيم للتجارة الإلكترونية</p>
-                </div>
-
-                <div className="text-left font-mono">
-                  <div className="border border-slate-900 px-3 py-1 rounded-lg bg-slate-50 text-right">
-                    <span className="text-[10px] block font-bold text-slate-500">رقم البوليصة / Tracking ID</span>
-                    <span className="text-sm font-black tracking-wider text-slate-950">{waybillModalShipment.trackingNumber}</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1">تاريخ الإصدار: {waybillModalShipment.date || new Date().toISOString().split('T')[0]}</p>
-                </div>
-              </div>
-
-              {/* Barcode Visualization */}
-              <div className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="h-10 flex items-center justify-center gap-0.5 tracking-widest font-mono text-2xl font-black select-none">
-                  ||| | |||| | ||||| ||| || ||||| | |||| || |||
-                </div>
-                <span className="font-mono text-xs font-black tracking-widest mt-1">{waybillModalShipment.trackingNumber}</span>
-              </div>
-
-              {/* Merchant / Sender & Recipient Details */}
-              <div className="grid grid-cols-2 gap-4 border-b-2 border-slate-900 pb-4 text-xs">
-                {/* Sender */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="font-bold text-[10px] text-teal-800 uppercase tracking-wider block border-b border-slate-200 pb-1">
-                    بيانات التاجر / الراسل (Sender)
-                  </span>
-                  <p className="font-black text-slate-900 text-sm">{storeName}</p>
-                  <p className="text-slate-600">النطاق: {subdomain}.za3em.shop</p>
-                  <p className="text-slate-600 font-mono">هاتف الدعم: {storePhone}</p>
-                  <p className="text-slate-500">الموقع: العراق - بغداد</p>
-                </div>
-
-                {/* Recipient */}
-                <div className="p-3 rounded-xl bg-teal-50/50 border border-teal-200 space-y-1">
-                  <span className="font-bold text-[10px] text-teal-800 uppercase tracking-wider block border-b border-teal-200 pb-1">
-                    بيانات الزبون / المستلم (Consignee)
-                  </span>
-                  <p className="font-black text-slate-950 text-sm">{waybillModalShipment.recipientName}</p>
-                  <p className="text-slate-900 font-bold font-mono text-sm">هاتف: {waybillModalShipment.recipientPhone}</p>
-                  <p className="text-slate-700 font-bold">
-                    {waybillModalShipment.governorate} — {waybillModalShipment.district}
-                  </p>
-                  <p className="text-slate-600">النقطة الدالة: {waybillModalShipment.nearestLandmark}</p>
-                  <p className="text-slate-500 text-[11px] truncate">{waybillModalShipment.address}</p>
-                </div>
-              </div>
-
-              {/* Financial Breakdown (COD) */}
-              <div className="p-4 rounded-xl border-2 border-dashed border-slate-900 bg-slate-50 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-black text-slate-700 block">المبلغ المطلوب تحصيله نقداً عند الاستلام:</span>
-                  <p className="text-2xl font-black text-teal-900 font-mono mt-0.5">
-                    {formatIQD(waybillModalShipment.codAmount)}
-                  </p>
-                  <span className="text-[10px] text-slate-500 font-medium">شامل أجور الشحن المقررة: {formatIQD(waybillModalShipment.shippingCost || 5000)}</span>
-                </div>
-
-                <div className="text-center p-2 rounded-lg border border-slate-300 bg-white">
-                  <div className="size-14 rounded-lg border border-slate-900 grid place-items-center mx-auto text-[9px] font-bold">
-                    QR CODE
-                  </div>
-                  <span className="text-[9px] font-bold text-slate-600 mt-1 block">تأكيد التسليم</span>
-                </div>
-              </div>
-
-              {/* Notes & Seal */}
-              <div className="flex items-center justify-between text-xs pt-2">
-                <div className="max-w-xs text-[11px] text-slate-600">
-                  <strong>ملاحظات الشحنة:</strong> {waybillModalShipment.notes || 'يرجى الاتصال بالزبون والتسليم لباب المنزل مع فحص الطرد.'}
-                </div>
-                <div className="text-center border-2 border-teal-700 px-4 py-1.5 rounded-xl text-teal-800 font-black text-xs rotate-[-3deg]">
-                  ✓ معتمد للشحن الفوري - الزعيم
-                </div>
-              </div>
-            </div>
-
-            {/* Print Action Buttons */}
-            <div className="mt-6 flex justify-end gap-3 print:hidden">
-              <button
-                type="button"
-                onClick={() => setWaybillModalShipment(null)}
-                className="px-5 h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50"
-              >
-                إغلاق
-              </button>
-              <button
-                type="button"
-                onClick={executeWaybillPrint}
-                className="px-6 h-11 bg-teal-700 hover:bg-teal-800 text-white text-sm font-bold rounded-xl shadow-md flex items-center gap-2 transition-all"
-              >
-                <Printer className="size-4" />
-                <span>طباعة البوليصة (Print / PDF)</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <ShippingLabelModal
+          shipment={waybillModalShipment}
+          storeName={storeName}
+          subdomain={subdomain}
+          storePhone={storePhone}
+          onClose={() => setWaybillModalShipment(null)}
+        />
       )}
 
       {/* Success Modal after adding a shipment */}

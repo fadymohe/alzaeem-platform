@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, RefreshCw, CheckCircle2, Clock, Plus, Phone, MapPin, Truck, AlertCircle, X, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Search, RefreshCw, CheckCircle2, Clock, Plus, Phone, MapPin, Truck, AlertCircle, X, ChevronRight, Printer } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../data/iraqData';
 import { getStoredOrders, updateStoredOrderStatus, addStoredOrder, type StoreOrder } from '../data/storeState';
+import { ShippingLabelModal } from '../components/shipping/ShippingLabelModal';
 
 export function OrdersPage() {
   const [orders, setOrders] = useState<StoreOrder[]>([]);
@@ -10,6 +11,7 @@ export function OrdersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [printShipment, setPrintShipment] = useState<any>(null);
 
   // New order form state
   const [customerName, setCustomerName] = useState('');
@@ -339,14 +341,36 @@ export function OrdersPage() {
                       {getStatusBadge(ord.status)}
                     </td>
                     <td className="p-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleAdvanceStatus(ord.id, ord.status)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 dark:bg-slate-800 dark:hover:bg-teal-950/60 text-slate-700 dark:text-slate-300 hover:text-teal-700 text-xs font-bold border border-slate-200 dark:border-slate-700 transition-all"
-                      >
-                        <span>تحديث لـ {ord.status === 'pending' ? 'مؤكد' : ord.status === 'confirmed' ? 'تجهيز' : ord.status === 'processing' ? 'تسليم' : 'إعادة'}</span>
-                        <ChevronRight className="size-3" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setPrintShipment({
+                            trackingNumber: ord.trackingNumber || `ZAEEM-2026-${String(ord.id).slice(-6)}`,
+                            recipientName: ord.customerName,
+                            recipientPhone: ord.customerPhone,
+                            governorate: ord.customerCity,
+                            district: ord.customerCity,
+                            address: ord.address,
+                            codAmount: ord.total,
+                            shippingCost: 5000,
+                            shippingCompany: ord.shippingCompany || 'شركة الزعيم للشحن السريع',
+                            date: ord.createdAt ? ord.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+                          })}
+                          className="px-2 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-700 hover:text-white text-teal-700 dark:text-teal-300 text-xs font-bold border border-teal-200 dark:border-teal-800 transition-all flex items-center gap-1 cursor-pointer"
+                          title="طباعة بوليصة الشحن الحرارية"
+                        >
+                          <Printer className="size-3.5" />
+                          <span>بوليصة PDF</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAdvanceStatus(ord.id, ord.status)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 dark:bg-slate-800 dark:hover:bg-teal-950/60 text-slate-700 dark:text-slate-300 hover:text-teal-700 text-xs font-bold border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                        >
+                          <span>{ord.status === 'pending' ? 'تأكيد' : ord.status === 'confirmed' ? 'تجهيز' : ord.status === 'processing' ? 'تسليم' : 'إعادة'}</span>
+                          <ChevronRight className="size-3" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -543,6 +567,11 @@ export function OrdersPage() {
           </div>
         </div>
       )}
+
+      {/* THERMAL SHIPPING LABEL MODAL */}
+      <ShippingLabelModal shipment={printShipment} onClose={() => setPrintShipment(null)} />
     </div>
   );
 }
+
+
