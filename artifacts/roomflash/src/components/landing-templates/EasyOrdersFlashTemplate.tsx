@@ -13,6 +13,8 @@ import {
   ThumbsUp,
   Award,
   Zap,
+  Tag,
+  X,
 } from "lucide-react";
 import {
   SingleButtonShippingSelector,
@@ -85,6 +87,13 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
   // عداد تنازلي للخصم (Urgency)
   const [timeLeft, setTimeLeft] = useState({ hours: 3, minutes: 42, seconds: 18 });
 
+  // Coupon State
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState<number>(0);
+  const [couponMsg, setCouponMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -116,18 +125,49 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
       shipping = 0; // شحن مجاني عند طلب 3 قطع أو أكثر
     }
 
-    const grandTotal = Math.round(itemsTotal + shipping);
+    const grandTotal = Math.max(0, Math.round(itemsTotal - couponDiscount)) + shipping;
     return {
       itemsTotal,
       shipping,
       grandTotal,
       savings: Math.round(
-        (product.compareAtPrice || basePrice * 1.3) * quantity - itemsTotal
+        (product.compareAtPrice || basePrice * 1.3) * quantity - itemsTotal + couponDiscount
       ),
     };
   };
 
   const { itemsTotal, shipping, grandTotal, savings } = calculatePricing();
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setIsApplyingCoupon(true);
+    setCouponMsg(null);
+    try {
+      const { validateAndApplyCoupon } = await import("../../utils/cloudDb");
+      const res = await validateAndApplyCoupon(couponInput, itemsTotal);
+      if (res.valid) {
+        setAppliedCoupon(res.coupon);
+        setCouponDiscount(res.discountAmount);
+        setCouponMsg({ type: "success", text: res.message });
+      } else {
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+        setCouponMsg({ type: "error", text: res.message });
+      }
+    } catch (err: any) {
+      setCouponMsg({ type: "error", text: "حدث خطأ أثناء فحص الكوبون" });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponInput("");
+    setCouponMsg(null);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -482,12 +522,72 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
               </div>
             </div>
 
+            {/* قسم إدخال كود الكوبون والخصم المباشر */}
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Tag className="size-3.5 text-emerald-400" />
+                  <span>هل لديك كود خصم أو كوبون؟</span>
+                </label>
+                {appliedCoupon && (
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                    مفعّل: {appliedCoupon.code}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  maxLength={20}
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.replace(/[^A-Za-z0-9\u0600-\u06FF]/g, '').toUpperCase())}
+                  placeholder="أدخل كود الكوبون (مثال: EID2026)"
+                  disabled={Boolean(appliedCoupon)}
+                  className="flex-1 h-10 px-3.5 rounded-xl border border-slate-800 bg-slate-950 text-xs font-mono font-bold uppercase text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+                />
+                {appliedCoupon ? (
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="px-3.5 h-10 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <X className="size-3.5" />
+                    <span>إلغاء</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={isApplyingCoupon || !couponInput.trim()}
+                    className="px-4 h-10 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <span>{isApplyingCoupon ? "جارِ الفحص..." : "تطبيق"}</span>
+                  </button>
+                )}
+              </div>
+              {couponMsg && (
+                <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {couponMsg.text}
+                </p>
+              )}
+            </div>
+
             {/* ملخص الفاتورة بالدينار العراقي (IQD) */}
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <span>سعر المنتجات ({quantity} قطعة):</span>
                 <span className="font-mono font-bold">{formatIQD(itemsTotal)}</span>
               </div>
+
+              {couponDiscount > 0 && (
+                <div className="flex items-center justify-between text-xs text-emerald-400 font-bold bg-emerald-950/30 px-2.5 py-1.5 rounded-xl border border-emerald-500/20">
+                  <span className="flex items-center gap-1">
+                    <Tag className="size-3.5" />
+                    <span>خصم الكوبون ({appliedCoupon?.code}):</span>
+                  </span>
+                  <span className="font-mono font-bold">-{formatIQD(couponDiscount)}</span>
+                </div>
+              )}
 
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <span>

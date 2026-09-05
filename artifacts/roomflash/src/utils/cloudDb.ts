@@ -701,3 +701,252 @@ export async function updateCloudStoreFullSettings(settings: {
   }
 }
 
+export interface CloudCoupon {
+  id: string;
+  name: string;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minOrderValue: number;
+  startDate: string;
+  endDate: string;
+  status: 'نشط' | 'متوقف';
+  usesCount: number;
+}
+
+const LOCAL_COUPONS_KEY = 'zaeem_cloud_coupons';
+
+/**
+ * Fetch all coupons from Neon PostgreSQL with LocalStorage caching
+ */
+export async function fetchCloudCoupons(): Promise<CloudCoupon[]> {
+  try {
+    // 1. Ensure table exists
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS za3em_coupons (
+        id SERIAL PRIMARY KEY,
+        code VARCHAR(20) UNIQUE NOT NULL,
+        name VARCHAR(150) NOT NULL,
+        discount_type VARCHAR(20) NOT NULL DEFAULT 'percentage',
+        discount_value NUMERIC NOT NULL,
+        min_order_value NUMERIC DEFAULT 0,
+        start_date VARCHAR(50),
+        end_date VARCHAR(50),
+        status VARCHAR(20) DEFAULT 'نشط',
+        uses_count INT DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await executeSql(createTableQuery);
+
+    const query = `SELECT id, name, code, discount_type, discount_value, min_order_value, start_date, end_date, status, uses_count FROM za3em_coupons ORDER BY id DESC;`;
+    const res = await executeSql(query);
+
+    if (res && Array.isArray(res.rows)) {
+      const items: CloudCoupon[] = res.rows.map((r: any) => ({
+        id: String(r.id),
+        name: r.name,
+        code: String(r.code).toUpperCase().trim(),
+        discountType: (r.discount_type === 'fixed' ? 'fixed' : 'percentage'),
+        discountValue: Number(r.discount_value) || 0,
+        minOrderValue: Number(r.min_order_value) || 0,
+        startDate: r.start_date || '',
+        endDate: r.end_date || '',
+        status: r.status === 'متوقف' ? 'متوقف' : 'نشط',
+        usesCount: Number(r.uses_count) || 0,
+      }));
+
+      try {
+        localStorage.setItem(LOCAL_COUPONS_KEY, JSON.stringify(items));
+      } catch (e) {}
+
+      return items;
+    }
+  } catch (err) {
+    console.warn('[CloudDb] Error fetching coupons:', err);
+  }
+
+  // Fallback to local storage
+  try {
+    const cached = localStorage.getItem(LOCAL_COUPONS_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+
+  return [];
+}
+
+/**
+ * Save new or updated coupon directly to Neon PostgreSQL server
+ */
+export async function saveCloudCoupon(coupon: Omit<CloudCoupon, 'id' | 'usesCount'> & { id?: string }): Promise<CloudCoupon | null> {
+  try {
+    const cleanCode = (coupon.code || '').trim().toUpperCase().replace(/[^A-Z0-9\u0600-\u06FF]/gi, '').slice(0, 20);
+    const cleanName = (coupon.name || '').trim().replace(/'/g, "''");
+    const dType = coupon.discountType === 'fixed' ? 'fixed' : 'percentage';
+    let dVal = Number(coupon.discountValue) || 0;
+    if (dType === 'percentage' && dVal > 99) dVal = 99;
+    if (dVal < 0) dVal = 0;
+    const minOrder = Number(coupon.minOrderValue) || 0;
+    const status = coupon.status === 'متوقف' ? 'متوقف' : 'نشط';
+
+    const upsertQuery = `
+      INSERT INTO za3em_coupons (code, name, discount_type, discount_value, min_order_value, start_date, end_date, status, uses_count)
+      VALUES (
+        '${cleanCode}',
+        '${cleanName}',
+        '${dType}',
+        ${dVal},
+        ${minOrder},
+        '${coupon.startDate || ''}',
+        '${coupon.endDate || ''}',
+        '${status}',
+        0
+      )
+      ON CONFLICT (code) DO UPDATE SET
+        name = EXCLUDED.name,
+        discount_type = EXCLUDED.discount_type,
+        discount_value = EXCLUDED.discount_value,
+        min_order_value = EXCLUDED.min_order_value,
+        start_date = EXCLUDED.start_date,
+        end_date = EXCLUDED.end_date,
+        status = EXCLUDED.status
+      RETURNING id, code, name, discount_type, discount_value, min_order_value, start_date, end_date, status, uses_count;
+    `;
+
+    const res = await executeSql(upsertQuery);
+    if (res && Array.isArray(res.rows) && res.rows.length > 0) {
+      const r = res.rows[0];
+      const saved: CloudCoupon = {
+        id: String(r.id),
+        name: r.name,
+        code: r.code,
+        discountType: r.discount_type,
+        discountValue: Number(r.discount_value),
+        minOrderValue: Number(r.min_order_value),
+        startDate: r.start_date,
+        endDate: r.end_date,
+        status: r.status,
+        usesCount: Number(r.uses_count) || 0,
+      };
+
+      // Update local storage
+      const current = await fetchCloudCoupons().catch(() => []);
+      const updated = [saved, ...current.filter((c) => c.code !== saved.code)];
+      localStorage.setItem(LOCAL_COUPONS_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('zaeem_coupons_updated', { detail: updated }));
+
+      return saved;
+    }
+  } catch (err) {
+    console.warn('[CloudDb] Error saving coupon:', err);
+  }
+
+  // Local fallback
+  const fallback: CloudCoupon = {
+    id: coupon.id || String(Date.now()),
+    name: coupon.name,
+    code: coupon.code.toUpperCase().trim(),
+    discountType: coupon.discountType,
+    discountValue: Number(coupon.discountValue),
+    minOrderValue: Number(coupon.minOrderValue) || 0,
+    startDate: coupon.startDate,
+    endDate: coupon.endDate,
+    status: coupon.status,
+    usesCount: 0,
+  };
+  try {
+    const current = JSON.parse(localStorage.getItem(LOCAL_COUPONS_KEY) || '[]');
+    const updated = [fallback, ...current.filter((c: any) => c.code !== fallback.code)];
+    localStorage.setItem(LOCAL_COUPONS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('zaeem_coupons_updated', { detail: updated }));
+  } catch (e) {}
+
+  return fallback;
+}
+
+/**
+ * Toggle coupon status (active/paused) in Neon PostgreSQL
+ */
+export async function toggleCloudCouponStatus(id: string, currentStatus: 'نشط' | 'متوقف'): Promise<boolean> {
+  try {
+    const nextStatus = currentStatus === 'نشط' ? 'متوقف' : 'نشط';
+    const query = `UPDATE za3em_coupons SET status = '${nextStatus}' WHERE id = ${Number(id)} RETURNING id;`;
+    await executeSql(query);
+
+    const current: CloudCoupon[] = JSON.parse(localStorage.getItem(LOCAL_COUPONS_KEY) || '[]');
+    const updated = current.map((c) => (c.id === id ? { ...c, status: nextStatus } : c));
+    localStorage.setItem(LOCAL_COUPONS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('zaeem_coupons_updated', { detail: updated }));
+    return true;
+  } catch (err) {
+    console.warn('[CloudDb] Error toggling coupon status:', err);
+    return false;
+  }
+}
+
+/**
+ * Delete a coupon permanently from Neon PostgreSQL
+ */
+export async function deleteCloudCoupon(id: string): Promise<boolean> {
+  try {
+    const query = `DELETE FROM za3em_coupons WHERE id = ${Number(id)} RETURNING id;`;
+    await executeSql(query);
+
+    const current: CloudCoupon[] = JSON.parse(localStorage.getItem(LOCAL_COUPONS_KEY) || '[]');
+    const updated = current.filter((c) => c.id !== id);
+    localStorage.setItem(LOCAL_COUPONS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('zaeem_coupons_updated', { detail: updated }));
+    return true;
+  } catch (err) {
+    console.warn('[CloudDb] Error deleting coupon:', err);
+    return false;
+  }
+}
+
+/**
+ * Validate and apply a coupon in real-time during checkout
+ */
+export async function validateAndApplyCoupon(code: string, orderTotal: number): Promise<{
+  valid: boolean;
+  discountAmount: number;
+  message: string;
+  coupon?: CloudCoupon;
+}> {
+  const clean = (code || '').trim().toUpperCase();
+  if (!clean) {
+    return { valid: false, discountAmount: 0, message: 'يرجى إدخال كود الكوبون' };
+  }
+
+  const coupons = await fetchCloudCoupons();
+  const match = coupons.find((c) => c.code === clean && c.status === 'نشط');
+
+  if (!match) {
+    return { valid: false, discountAmount: 0, message: 'كود الكوبون غير صالح أو منتهي الصلاحية' };
+  }
+
+  // Check minimum order value
+  if (match.minOrderValue > 0 && orderTotal < match.minOrderValue) {
+    return {
+      valid: false,
+      discountAmount: 0,
+      message: `هذا الكوبون يتطلب حداً أدنى للطلب بقيمة ${match.minOrderValue.toLocaleString()} د.ع`,
+      coupon: match,
+    };
+  }
+
+  let discount = 0;
+  if (match.discountType === 'percentage') {
+    discount = Math.round(orderTotal * (match.discountValue / 100));
+  } else {
+    discount = Math.min(match.discountValue, orderTotal);
+  }
+
+  return {
+    valid: true,
+    discountAmount: discount,
+    message: `تم تطبيق كود الخصم (${match.name}) بنجاح! 🎉`,
+    coupon: match,
+  };
+}
+
+
