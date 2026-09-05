@@ -64,7 +64,18 @@ export function SettingsPage() {
   const handleToggleSubdomainActive = async () => {
     const nextState = !isSubdomainActive;
     setIsSubdomainActive(nextState);
-    await updateStoreActiveStatus(form.subdomain, nextState);
+
+    let sub = (form.subdomain || '').replace('.za3em.shop', '').replace(/^https?:\/\//, '').trim();
+    if (!sub) {
+      try {
+        const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+        if (rawStore) {
+          const p = JSON.parse(rawStore);
+          sub = (p.subdomain || '').replace('.za3em.shop', '').replace(/^https?:\/\//, '').trim();
+        }
+      } catch {}
+    }
+    await updateStoreActiveStatus(sub, nextState);
   };
 
   const handleSave = async (e: FormEvent) => {

@@ -49,7 +49,7 @@ export const BUILTIN_REGISTERED_STORES: Record<string, RegisteredStoreData> = {
 /**
  * Cookie Helper to read cookies by key
  */
-function getCookie(name: string): string | null {
+export function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
   return match ? decodeURIComponent(match[2]) : null;
@@ -58,7 +58,7 @@ function getCookie(name: string): string | null {
 /**
  * Cookie Helper to write cookies across all subdomains on za3em.shop
  */
-function setCrossSubdomainCookie(name: string, value: string, days = 365): void {
+export function setCrossSubdomainCookie(name: string, value: string, days = 365): void {
   if (typeof document === "undefined") return;
   try {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
@@ -222,41 +222,72 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
  */
 export async function updateStoreActiveStatus(subdomain: string, isActive: boolean): Promise<boolean> {
   const cleanSub = (subdomain || '').replace(".za3em.shop", "").toLowerCase().trim();
-  if (!cleanSub) return false;
 
-  // 1. Update localStorage
+  // 1. Update localStorage & Cookies
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem('zaeem_store_active', String(isActive));
+      setCrossSubdomainCookie('zaeem_store_active', String(isActive));
+
+      if (cleanSub) {
+        localStorage.setItem(`zaeem_store_active_${cleanSub}`, String(isActive));
+        setCrossSubdomainCookie(`zaeem_store_active_${cleanSub}`, String(isActive));
+      }
 
       const localMapRaw = localStorage.getItem("zaeem_stores_registry");
       if (localMapRaw) {
         const localMap = JSON.parse(localMapRaw);
-        if (localMap[cleanSub]) {
+        if (cleanSub && localMap[cleanSub]) {
           localMap[cleanSub].isActive = isActive;
-          localStorage.setItem("zaeem_stores_registry", JSON.stringify(localMap));
         }
+        for (const k of Object.keys(localMap)) {
+          if (cleanSub && k.toLowerCase() === cleanSub) {
+            localMap[k].isActive = isActive;
+          }
+        }
+        localStorage.setItem("zaeem_stores_registry", JSON.stringify(localMap));
       }
 
+      // Update stored single objects
       const updateStored = (key: string) => {
         const raw = localStorage.getItem(key);
         if (raw) {
-          const parsed = JSON.parse(raw);
-          parsed.isActive = isActive;
-          localStorage.setItem(key, JSON.stringify(parsed));
+          try {
+            const parsed = JSON.parse(raw);
+            parsed.isActive = isActive;
+            localStorage.setItem(key, JSON.stringify(parsed));
+          } catch {}
         }
       };
       updateStored('zaeem_store_data');
       updateStored('zaeem_onboarded_store');
 
-      window.dispatchEvent(new CustomEvent('zaeem_store_updated', { detail: { isActive } }));
-    } catch (e) {}
+      // Update shared cross-subdomain cookie map
+      try {
+        const cookieMapRaw = getCookie("zaeem_stores_registry");
+        if (cookieMapRaw) {
+          const cookieMap = JSON.parse(cookieMapRaw);
+          if (cleanSub && cookieMap[cleanSub]) {
+            cookieMap[cleanSub].isActive = isActive;
+          }
+          setCrossSubdomainCookie("zaeem_stores_registry", JSON.stringify(cookieMap));
+        }
+      } catch (e) {}
+
+      window.dispatchEvent(new CustomEvent('zaeem_store_updated', { detail: { isActive, subdomain: cleanSub } }));
+    } catch (e) {
+      console.warn("Error updating local active status:", e);
+    }
   }
 
   // 2. Update Neon Cloud DB
-  try {
-    await updateCloudStoreActive(cleanSub, isActive);
-  } catch (e) {}
+  if (cleanSub) {
+    try {
+      await updateCloudStoreActive(cleanSub, isActive);
+    } catch (e) {
+      console.warn("Error updating cloud active status:", e);
+    }
+  }
 
   return true;
 }
@@ -267,6 +298,26 @@ export async function updateStoreActiveStatus(subdomain: string, isActive: boole
 export function getRegisteredStore(subdomain: string): RegisteredStoreData | null {
   const cleanSub = (subdomain || "").replace(".za3em.shop", "").toLowerCase().trim();
   if (!cleanSub) return null;
+
+  // Active status override check
+  let activeOverride: boolean | undefined = undefined;
+  if (typeof window !== "undefined") {
+    const cSub = getCookie(`zaeem_store_active_${cleanSub}`);
+    const cGen = getCookie('zaeem_store_active');
+    const lSub = localStorage.getItem(`zaeem_store_active_${cleanSub}`);
+    const lGen = localStorage.getItem('zaeem_store_active');
+    if (cSub !== null) activeOverride = cSub === 'true';
+    else if (lSub !== null) activeOverride = lSub === 'true';
+    else if (cGen !== null) activeOverride = cGen === 'true';
+    else if (lGen !== null) activeOverride = lGen === 'true';
+  }
+
+  const applyActive = (s: RegisteredStoreData): RegisteredStoreData => {
+    if (activeOverride !== undefined) {
+      return { ...s, isActive: activeOverride };
+    }
+    return { ...s, isActive: s.isActive ?? true };
+  };
 
   if (typeof window !== "undefined") {
     // 1. Check URL hash or search params for instant seed transfer
@@ -283,13 +334,12 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
     if (seedParam) {
       const decoded = decodeStoreSeed(seedParam);
       if (decoded && decoded.subdomain.replace(".za3em.shop", "").toLowerCase() === cleanSub) {
-        // Register it locally and clean up the URL
         registerStore(decoded);
         try {
           const cleanUrl = window.location.pathname + (window.location.hash.split("#")[0] || "");
           window.history.replaceState(null, "", cleanUrl || window.location.pathname);
         } catch {}
-        return decoded;
+        return applyActive(decoded);
       }
     }
 
@@ -299,7 +349,7 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
       if (cookieMapRaw) {
         const cookieMap: Record<string, RegisteredStoreData> = JSON.parse(cookieMapRaw);
         if (cookieMap[cleanSub]) {
-          return cookieMap[cleanSub];
+          return applyActive(cookieMap[cleanSub]);
         }
       }
     } catch {}
@@ -310,7 +360,7 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
       if (localMapRaw) {
         const localMap: Record<string, RegisteredStoreData> = JSON.parse(localMapRaw);
         if (localMap[cleanSub]) {
-          return localMap[cleanSub];
+          return applyActive(localMap[cleanSub]);
         }
       }
     } catch {}
@@ -323,7 +373,7 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
         const onboarded = JSON.parse(onboardedRaw);
         const onbSub = (onboarded.subdomain || "").replace(".za3em.shop", "").toLowerCase().trim();
         if (onbSub === cleanSub && onboarded.storeCode) {
-          return {
+          return applyActive({
             subdomain: cleanSub,
             storeName: onboarded.storeName || `متجر ${cleanSub}`,
             slogan: onboarded.slogan,
@@ -331,7 +381,8 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
             categories: onboarded.categories,
             product: onboarded.product,
             freeShipmentsRemaining: onboarded.freeShipmentsRemaining || 5,
-          };
+            isActive: typeof onboarded.isActive === 'boolean' ? onboarded.isActive : true,
+          });
         }
       }
     } catch {}
@@ -339,7 +390,7 @@ export function getRegisteredStore(subdomain: string): RegisteredStoreData | nul
 
   // 5. Check built-in registered catalog
   if (BUILTIN_REGISTERED_STORES[cleanSub]) {
-    return BUILTIN_REGISTERED_STORES[cleanSub];
+    return applyActive(BUILTIN_REGISTERED_STORES[cleanSub]);
   }
 
   return null;

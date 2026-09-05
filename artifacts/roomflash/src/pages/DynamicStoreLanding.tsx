@@ -9,6 +9,7 @@ import {
   getRegisteredStore,
   RegisteredStoreData,
   updateStoreActiveStatus,
+  getCookie,
 } from "../utils/storeRegistry";
 import { fetchCloudStore } from "../utils/cloudDb";
 import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, PauseCircle, Power } from "lucide-react";
@@ -60,23 +61,43 @@ export function DynamicStoreLanding() {
 
   const [isStoreRegistered, setIsStoreRegistered] = useState<boolean>(isInitiallyKnown);
 
-  const [isStoreActive, setIsStoreActive] = useState<boolean>(() => {
+  const resolveCurrentActive = () => {
     try {
-      const localActive = localStorage.getItem('zaeem_store_active');
+      // 1. فحص كوكيز الدومين المشترك للدومين الفرعي
+      const cSub = getCookie(`zaeem_store_active_${cleanSubdomain}`);
+      if (cSub !== null) return cSub === 'true';
+
+      // 2. فحص التخزين المحلي للدومين الفرعي
+      const lSub = localStorage.getItem(`zaeem_store_active_${cleanSubdomain}`);
+      if (lSub !== null) return lSub === 'true';
+
+      // 3. فحص كوكيز الدومين المشترك العام
+      const cGen = getCookie('zaeem_store_active');
+      if (cGen !== null) return cGen === 'true';
+
+      // 4. فحص التخزين المحلي العام
+      const lGen = localStorage.getItem('zaeem_store_active');
+      if (lGen !== null) return lGen === 'true';
+
+      // 5. فحص كائن المتجر المحفوظ
       const rawStore = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
       if (rawStore) {
         const parsed = JSON.parse(rawStore);
         const storedSub = (parsed.subdomain || '').replace('.za3em.shop', '').toLowerCase().trim();
-        if (storedSub === cleanSubdomain && typeof parsed.isActive === 'boolean') {
+        if ((!cleanSubdomain || cleanSubdomain === storedSub || cleanSubdomain === 'shop') && typeof parsed.isActive === 'boolean') {
           return parsed.isActive;
         }
       }
-      if (localActive !== null) {
-        return localActive !== 'false';
+
+      // 6. فحص السجل المبدئي
+      if (initialRegisteredData && typeof initialRegisteredData.isActive === 'boolean') {
+        return initialRegisteredData.isActive;
       }
     } catch {}
     return true;
-  });
+  };
+
+  const [isStoreActive, setIsStoreActive] = useState<boolean>(resolveCurrentActive);
 
   // بيانات المتجر والمنتج المعتمدة
   const [store, setStore] = useState<TemplateStore>({
@@ -109,77 +130,77 @@ export function DynamicStoreLanding() {
   useEffect(() => {
     let isMounted = true;
 
-    // 1. فحص السجل المركزي للمتاجر (كوكيز الدومين المشترك .za3em.shop + الذاكرة المحلية + البذور)
+    // A. مزامنة الحالة اللحظية من الكوكيز والتخزين المحلي
+    const currentActive = resolveCurrentActive();
+    if (typeof currentActive === 'boolean' && isMounted) {
+      setIsStoreActive(currentActive);
+    }
+
+    // B. فحص السجل المباشر
     const registered = getRegisteredStore(cleanSubdomain);
-
-    if (registered) {
-      if (isMounted) {
-        setIsStoreRegistered(true);
-        setLoading(false);
-        if (typeof registered.isActive === 'boolean') {
-          setIsStoreActive(registered.isActive);
-        }
-        setStore({
+    if (registered && isMounted) {
+      setIsStoreRegistered(true);
+      setLoading(false);
+      if (typeof registered.isActive === 'boolean') {
+        setIsStoreActive(registered.isActive);
+      }
+      setStore({
+        id: 1,
+        name: registered.storeName || `متجر ${cleanSubdomain}`,
+        subdomain: cleanSubdomain,
+        templateId: registered.templateId || "shoppingcart.1.2.7",
+        storeCode: registered.storeCode || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
+        logoUrl: registered.logoUrl,
+        bannerUrl: registered.bannerUrl,
+      });
+      if (registered.product) {
+        setProduct({
           id: 1,
-          name: registered.storeName || `متجر ${cleanSubdomain}`,
-          subdomain: cleanSubdomain,
-          templateId: registered.templateId || "shoppingcart.1.2.7",
-          storeCode: registered.storeCode || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
-          logoUrl: registered.logoUrl,
-          bannerUrl: registered.bannerUrl,
+          title: registered.product.title || registered.product.name || "منتج العرض الحصري",
+          description: registered.product.description || registered.slogan || "منتج فاخر مع شحن سريع لجميع محافظات العراق.",
+          price: Number(registered.product.price) || 45000,
+          compareAtPrice: Number(registered.product.compareAtPrice) || Math.round((Number(registered.product.price) || 45000) * 1.3),
+          imageUrl: registered.product.imageUrl || registered.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
         });
-        if (registered.product) {
-          setProduct({
-            id: 1,
-            title: registered.product.title || registered.product.name || "منتج العرض الحصري",
-            description: registered.product.description || registered.slogan || "منتج فاخر مع شحن سريع لجميع محافظات العراق.",
-            price: Number(registered.product.price) || 45000,
-            compareAtPrice: Number(registered.product.compareAtPrice) || Math.round((Number(registered.product.price) || 45000) * 1.3),
-            imageUrl: registered.product.imageUrl || registered.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
-          });
-        }
       }
-      return;
-    }
-
-    // للمتاجر التجريبية المضمنة
-    if (cleanSubdomain === "zero" || cleanSubdomain === "demo") {
+    } else if (cleanSubdomain === "zero" || cleanSubdomain === "demo") {
       if (isMounted) {
         setIsStoreRegistered(true);
         setLoading(false);
       }
-      return;
     }
 
-    // 2. فحص قاعدة بيانات Neon السحابية المركزية (المصدر الحقيقي لكافة الدومينات الفرعية على الإنترنت)
-    async function resolveStore() {
-      if (isMounted) setLoading(true);
+    // C. الاستعلام الدائم من قاعدة بيانات Neon السحابية (المصدر الحقيقي لكافة الدومينات الفرعية)
+    async function syncCloudStore() {
       try {
         const cloudStore = await fetchCloudStore(cleanSubdomain);
         if (cloudStore && isMounted) {
           setIsStoreRegistered(true);
           setLoading(false);
-          if (typeof (cloudStore as any).is_active === 'boolean') {
-            setIsStoreActive((cloudStore as any).is_active);
+          // Neon DB هو المرجع الحاسم لحالة نشط / معطل عبر مختلف المتصفحات والأجهزة
+          if (typeof cloudStore.is_active === 'boolean') {
+            setIsStoreActive(cloudStore.is_active);
           }
-          setStore({
-            id: cloudStore.id || 1,
-            name: cloudStore.name || `متجر ${cleanSubdomain}`,
+          setStore((prev) => ({
+            ...prev,
+            id: cloudStore.id || prev.id,
+            name: cloudStore.name || prev.name,
             subdomain: cleanSubdomain,
-            templateId: cloudStore.template_id || "shoppingcart.1.2.7",
-            storeCode: cloudStore.store_code || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
-            logoUrl: cloudStore.logo_url,
-            bannerUrl: cloudStore.banner_url,
-          });
+            templateId: cloudStore.template_id || prev.templateId,
+            storeCode: cloudStore.store_code || prev.storeCode,
+            logoUrl: cloudStore.logo_url || prev.logoUrl,
+            bannerUrl: cloudStore.banner_url || prev.bannerUrl,
+          }));
           if (cloudStore.product) {
-            setProduct({
-              id: cloudStore.product.id || 1,
-              title: cloudStore.product.title || cloudStore.product.name || "عطر تاج الفخامة الفرنسي الملكي",
-              description: cloudStore.product.description || cloudStore.slogan || "منتج فاخر مع شحن سريع لجميع محافظات العراق.",
-              price: Number(cloudStore.product.price) || 45000,
-              compareAtPrice: Number(cloudStore.product.compareAtPrice) || Math.round((Number(cloudStore.product.price) || 45000) * 1.3),
-              imageUrl: cloudStore.product.imageUrl || cloudStore.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
-            });
+            setProduct((prev) => ({
+              ...prev,
+              id: cloudStore.product?.id || prev.id,
+              title: cloudStore.product?.title || cloudStore.product?.name || prev.title,
+              description: cloudStore.product?.description || cloudStore.slogan || prev.description,
+              price: Number(cloudStore.product?.price) || prev.price,
+              compareAtPrice: Number(cloudStore.product?.compareAtPrice) || Math.round((Number(cloudStore.product?.price) || prev.price) * 1.3),
+              imageUrl: cloudStore.product?.imageUrl || cloudStore.product?.image || prev.imageUrl,
+            }));
           }
           return;
         }
@@ -187,58 +208,49 @@ export function DynamicStoreLanding() {
         console.warn("Neon Cloud DB fetch error:", cloudErr);
       }
 
-      // 3. فحص السيرفر المحلي عبر API (في بيئة التطوير)
-      try {
-        const res = await fetch(`/api/tenant/stores/${cleanSubdomain}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted && data.store) {
-            setIsStoreRegistered(true);
-            setLoading(false);
-            setStore((prev) => ({
-              ...prev,
-              id: data.store.id || prev.id,
-              name: data.store.name || prev.name,
-              subdomain: data.store.subdomain || prev.subdomain,
-              templateId: data.store.templateId || prev.templateId || "shoppingcart.1.2.7",
-              storeCode: data.store.storeCode || prev.storeCode,
-              logoUrl: data.store.logoUrl || prev.logoUrl,
-              bannerUrl: data.store.bannerUrl || prev.bannerUrl,
-            }));
-            if (data.product) {
-              setProduct((prev) => ({
+      // فحص بديل عبر API السيرفر
+      if (!registered && cleanSubdomain !== "zero" && cleanSubdomain !== "demo") {
+        try {
+          const res = await fetch(`/api/tenant/stores/${cleanSubdomain}`);
+          if (res.ok && isMounted) {
+            const data = await res.json();
+            if (data.store) {
+              setIsStoreRegistered(true);
+              setLoading(false);
+              if (typeof data.store.isActive === 'boolean') {
+                setIsStoreActive(data.store.isActive);
+              }
+              setStore((prev) => ({
                 ...prev,
-                id: data.product.id || prev.id,
-                title: data.product.title || data.product.name || prev.title,
-                description: data.product.description || prev.description,
-                price: Number(data.product.price) || prev.price,
-                compareAtPrice: Math.round((Number(data.product.price) || prev.price) * 1.3),
-                imageUrl: data.product.imageUrl || prev.imageUrl,
+                id: data.store.id || prev.id,
+                name: data.store.name || prev.name,
+                subdomain: data.store.subdomain || prev.subdomain,
+                templateId: data.store.templateId || prev.templateId,
+                storeCode: data.store.storeCode || prev.storeCode,
+                logoUrl: data.store.logoUrl || prev.logoUrl,
+                bannerUrl: data.store.bannerUrl || prev.bannerUrl,
               }));
+              return;
             }
-            return;
           }
-        }
-      } catch (err) {
-        console.warn("API store check fallback:", err);
-      }
+        } catch (err) {}
 
-      // إذا وصلنا هنا ولم يتم العثور على المتجر في أي سجل
-      if (isMounted) {
-        setIsStoreRegistered(false);
-        setLoading(false);
+        if (isMounted) {
+          setIsStoreRegistered(false);
+          setLoading(false);
+        }
       }
     }
 
+    syncCloudStore();
 
-    resolveStore();
-
+    // D. الاستماع للتحديثات اللحظية عبر التبويبات والمكونات
     const handleUpdate = (e: any) => {
       if (e?.detail && typeof e.detail.isActive === 'boolean') {
         setIsStoreActive(e.detail.isActive);
       } else {
-        const active = localStorage.getItem('zaeem_store_active');
-        if (active !== null) setIsStoreActive(active !== 'false');
+        const freshActive = resolveCurrentActive();
+        if (typeof freshActive === 'boolean') setIsStoreActive(freshActive);
       }
     };
     window.addEventListener('zaeem_store_updated', handleUpdate);

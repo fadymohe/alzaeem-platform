@@ -424,7 +424,27 @@ export function StorePage() {
           </span>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xl">
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xl space-y-3">
+          {!isStoreActive && (
+            <div className="p-4 bg-rose-500/10 border-b border-rose-500/30 text-rose-300 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <span className="size-3 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                <div>
+                  <p className="text-xs font-black text-rose-400">حالة المتجر الحالية: معطل مؤقتاً (تحت الصيانة)</p>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    الموقع متوقف عن استقبال الطلبات خارجياً، وأي زائر للدومين يرى شاشة الصيانة. يمكنك إعادة تفعيله في أي وقت.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleStoreActive}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition-colors cursor-pointer shadow"
+              >
+                تنشيط الموقع الآن أونلاين
+              </button>
+            </div>
+          )}
           <StoreTemplates
             storeName={storeName}
             subdomain={subdomain}
