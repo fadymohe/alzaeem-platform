@@ -465,16 +465,18 @@ export function DynamicStoreLanding() {
       }
     } catch {}
 
-    // حفظ الطلب بتسلسل order0001, order0002... في التخزين المركزي للمتجر
+    // حفظ الطلب بتسلسل order0001, order0002... في التخزين المركزي للمتجر ورفعه لشركة الشحن فوراً
     const stored = addStoredOrder({
       customerName: orderPayload.customerName,
       customerPhone: orderPayload.customerPhone,
       customerCity: orderPayload.governorate || 'بغداد',
       address: orderPayload.customerAddress || `العراق — ${orderPayload.governorate || 'بغداد'}`,
       total: Number(orderPayload.totalAmount || (product.price * (orderPayload.quantity || 1) + (orderPayload.shippingCost || 0))),
+      shippingCost: Number(orderPayload.shippingCost) || 5000,
       itemsCount: orderPayload.quantity || 1,
       status: 'pending',
       paymentMethod: 'cod',
+      notes: orderPayload.notes,
       items: [{
         productName: product.title || (product as any).name || 'منتج المتجر',
         quantity: orderPayload.quantity || 1,
@@ -482,7 +484,15 @@ export function DynamicStoreLanding() {
       }]
     });
 
-    return apiResult || { success: true, orderNumber: stored.number, order: stored };
+    return {
+      success: true,
+      orderNumber: stored.number,
+      order: stored,
+      shipping: {
+        trackingNumber: stored.trackingNumber,
+        shippingCompany: stored.shippingCompany || 'شركة الزعيم للشحن السريع',
+      }
+    };
   };
 
   // =========================================================================

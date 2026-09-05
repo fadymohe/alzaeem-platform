@@ -1,5 +1,5 @@
 import { formatIQD } from './iraqData';
-import { saveCloudStore } from '../utils/cloudDb';
+import { saveCloudStore, saveCloudShipment, type CloudShipment } from '../utils/cloudDb';
 
 export interface StoreProduct {
   id: number;
@@ -29,6 +29,12 @@ export interface StoreOrder {
   status: 'pending' | 'confirmed' | 'processing' | 'delivered' | 'cancelled';
   paymentMethod: 'cod' | 'zain_cash' | 'card';
   createdAt: string;
+  trackingNumber?: string;
+  shippingCompany?: string;
+  shippingCost?: number;
+  district?: string;
+  nearestLandmark?: string;
+  notes?: string;
   items?: Array<{ productName: string; quantity: number; unitPrice: number }>;
 }
 
@@ -466,27 +472,92 @@ export function addStoredOrder(order: Omit<StoreOrder, 'id' | 'number' | 'create
   const orders = getStoredOrders();
   const orderNumber = getNextOrderNumber(orders);
 
+  // 1. Generate unique Iraqi shipment tracking number (e.g. ZAEEM-2026-XXXXXX)
+  const trackingNumber = order.trackingNumber || `ZAEEM-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+  const shippingCompany = order.shippingCompany || 'شركة الزعيم للشحن السريع';
+
   const newOrder: StoreOrder = {
     ...order,
     id: Date.now(),
     number: orderNumber,
+    trackingNumber,
+    shippingCompany,
     createdAt: new Date().toISOString()
   };
   const updated = [newOrder, ...orders];
   saveStoredOrders(updated);
 
-  // Sync Customer
+  // 2. Sync Customer record
   try {
     addStoredCustomer({
       name: order.customerName,
       phone: order.customerPhone,
       city: order.customerCity,
-      governorate: order.customerCity
+      governorate: order.customerCity,
+      address: order.address
     });
   } catch {}
 
+  // 3. Immediately create & upload Shipment to Al-Zaeem Logistics (Local + Neon Cloud Database)
+  try {
+    let sub = 'alzaeem';
+    try {
+      const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+      const rawUser = localStorage.getItem('zaeem_user');
+      const sObj = rawStore ? JSON.parse(rawStore) : null;
+      const uObj = rawUser ? JSON.parse(rawUser) : null;
+      sub = (sObj?.subdomain || uObj?.subdomain || 'alzaeem')
+        .replace('.za3em.shop', '')
+        .replace(/^https?:\/\//, '')
+        .trim() || 'alzaeem';
+    } catch {}
+
+    const newShipment: CloudShipment = {
+      trackingNumber,
+      subdomain: sub,
+      recipientName: order.customerName,
+      recipientPhone: order.customerPhone,
+      governorate: order.customerCity || 'بغداد',
+      district: order.district || order.customerCity || 'المركز',
+      nearestLandmark: order.nearestLandmark || '',
+      address: order.address || `العراق — ${order.customerCity || 'بغداد'}`,
+      codAmount: Number(order.total) || 0,
+      shippingCost: order.shippingCost || 5000,
+      paymentType: 'cod',
+      status: 'جديدة',
+      shippingCompany,
+      notes: order.notes || `طلب شراء إلكتروني (${orderNumber}) - الدفع عند الاستلام بعد المعاينة`,
+      createdAt: new Date().toISOString(),
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // Save to local shipments storage
+    try {
+      const rawLocal = localStorage.getItem('zaeem_local_shipments');
+      let localShipments: CloudShipment[] = [];
+      if (rawLocal) {
+        localShipments = JSON.parse(rawLocal);
+      }
+      const filtered = localShipments.filter(s => s.trackingNumber !== trackingNumber);
+      localStorage.setItem('zaeem_local_shipments', JSON.stringify([newShipment, ...filtered]));
+    } catch {}
+
+    // Upload directly to central Neon PostgreSQL database (za3em_shipments table)
+    saveCloudShipment(newShipment).catch(err => {
+      console.warn('[storeState] Neon cloud shipment upload warning:', err);
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('zaeem_shipment_added', { detail: newShipment }));
+      window.dispatchEvent(new CustomEvent('zaeem_shipments_updated', { detail: newShipment }));
+    }
+  } catch (shipErr) {
+    console.warn('[storeState] Error dispatching shipment to logistics:', shipErr);
+  }
+
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+    window.dispatchEvent(new CustomEvent('zaeem_store_updated', { detail: { order: newOrder } }));
+    window.dispatchEvent(new Event('storage'));
   }
 
   return newOrder;

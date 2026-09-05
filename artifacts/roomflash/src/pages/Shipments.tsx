@@ -130,25 +130,64 @@ export function ShipmentsPage() {
     loadShipmentsFromServer();
   }, [subdomain]);
 
+  // Listen to live shipment additions and order dispatches across tabs
+  useEffect(() => {
+    const handleUpdate = () => {
+      loadShipmentsFromServer();
+    };
+    window.addEventListener('zaeem_shipments_updated', handleUpdate);
+    window.addEventListener('zaeem_shipment_added', handleUpdate);
+    window.addEventListener('zaeem_store_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('zaeem_shipments_updated', handleUpdate);
+      window.removeEventListener('zaeem_shipment_added', handleUpdate);
+      window.removeEventListener('zaeem_store_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [subdomain]);
+
   // 2. Track Shipment State & Stages
-  const [trackCode, setTrackCode] = useState('');
+  const [trackCode, setTrackCode] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const fullUrl = window.location.href;
+      const match = fullUrl.match(/[?&#](?:track|q|code)=([^&#]+)/i);
+      return match ? decodeURIComponent(match[1]) : '';
+    } catch {
+      return '';
+    }
+  });
   const [trackedShipment, setTrackedShipment] = useState<CloudShipment | null>(null);
   const [isTrackingLoading, setIsTrackingLoading] = useState(false);
   const [trackError, setTrackError] = useState(false);
 
-  const handleTrackSearch = async (e: FormEvent) => {
-    e.preventDefault();
-    const clean = trackCode.trim();
-    if (!clean) return;
+  // Auto trigger tracking if trackCode was in URL
+  useEffect(() => {
+    if (trackCode && (activeTab === 'track' || window.location.href.includes('track'))) {
+      setActiveTab('track');
+      trackShipmentDirectly(trackCode);
+    }
+  }, [trackCode]);
 
+  const trackShipmentDirectly = async (clean: string) => {
+    if (!clean) return;
     setIsTrackingLoading(true);
     setTrackError(false);
     setTrackedShipment(null);
 
     try {
       // 1. Check local shipments first
-      const foundLocal = shipments.find(s =>
-        s.trackingNumber.toLowerCase() === clean.toLowerCase() ||
+      let localData: CloudShipment[] = shipments;
+      if (localData.length === 0) {
+        try {
+          const raw = localStorage.getItem('zaeem_local_shipments');
+          if (raw) localData = JSON.parse(raw);
+        } catch {}
+      }
+
+      const foundLocal = localData.find(s =>
+        s.trackingNumber?.toLowerCase() === clean.toLowerCase() ||
         s.recipientPhone === clean
       );
 
@@ -163,11 +202,18 @@ export function ShipmentsPage() {
           setTrackError(true);
         }
       }
-    } catch (err) {
+    } catch {
       setTrackError(true);
     } finally {
       setIsTrackingLoading(false);
     }
+  };
+
+  const handleTrackSearch = async (e: FormEvent) => {
+    e.preventDefault();
+    const clean = trackCode.trim();
+    if (!clean) return;
+    await trackShipmentDirectly(clean);
   };
 
   // Helper to determine active tracking stages (المراحل التي مرت بها الشحنة)

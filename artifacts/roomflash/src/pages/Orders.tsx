@@ -39,6 +39,15 @@ export function OrdersPage() {
 
   useEffect(() => {
     setOrders(getStoredOrders());
+    const handleUpdate = () => setOrders(getStoredOrders());
+    window.addEventListener('zaeem_store_updated', handleUpdate);
+    window.addEventListener('zaeem_shipments_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('zaeem_store_updated', handleUpdate);
+      window.removeEventListener('zaeem_shipments_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   const handleAdvanceStatus = (id: number, currentStatus: StoreOrder['status']) => {
@@ -212,6 +221,32 @@ export function OrdersPage() {
         </div>
       </div>
 
+      {/* Logistics Active Banner */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-950/40 via-slate-900 to-emerald-950/40 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-400 grid place-items-center shrink-0">
+            <Truck className="size-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+              <h4 className="text-xs font-black text-white">الربط الآلي مع شركة الزعيم للشحن السريع مفعل</h4>
+            </div>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              أي طلب يرد من صفحات الهبوط أو المتجر الإلكتروني يُسجل هنا وتُرفع بوليصة شحنه تلقائياً لأسطول الشحن في كافة محافظات العراق.
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="#/shipments"
+          className="px-3.5 py-1.5 rounded-xl bg-teal-600/30 hover:bg-teal-600/50 border border-teal-500/40 text-teal-200 text-xs font-bold transition-all flex items-center gap-1.5"
+        >
+          <span>لوحة الشحنات والتتبع</span>
+          <ChevronRight className="size-3.5" />
+        </a>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col gap-3 md:flex-row">
         <div className="relative flex-1">
@@ -220,7 +255,7 @@ export function OrdersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="ابحث برقم الطلب، اسم الزبون، المدينة أو رقم الهاتف..."
+            placeholder="ابحث برقم الطلب، رقم البوليصة ZAEEM، اسم الزبون، المدينة أو الهاتف..."
             className="w-full h-11 pr-10 pl-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm outline-none focus:border-teal-600"
           />
         </div>
@@ -247,6 +282,7 @@ export function OrdersPage() {
               <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500">
                 <tr>
                   <th className="p-4">رقم الطلب</th>
+                  <th className="p-4">بوليصة الشحن والتتبع</th>
                   <th className="p-4">الزبون والهاتف</th>
                   <th className="p-4">المحافظة والعنوان</th>
                   <th className="p-4">الإجمالي (IQD)</th>
@@ -259,6 +295,26 @@ export function OrdersPage() {
                   <tr key={ord.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                     <td className="p-4 font-mono font-extrabold text-teal-700 dark:text-teal-400">
                       {ord.number}
+                    </td>
+                    <td className="p-4">
+                      <div className="space-y-1">
+                        <a
+                          href={`#/shipments?track=${ord.trackingNumber || ''}`}
+                          className="font-mono font-bold text-xs text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1.5"
+                          title="تتبع هذه الشحنة"
+                        >
+                          <Truck className="size-3.5 text-teal-500 shrink-0" />
+                          <span>{ord.trackingNumber || `ZAEEM-2026-${String(ord.id).slice(-6)}`}</span>
+                        </a>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-1.5 py-0.5 rounded">
+                            {ord.shippingCompany || 'شركة الزعيم للشحن'}
+                          </span>
+                          <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold">
+                            مرفوعة للشحن 🚀
+                          </span>
+                        </div>
+                      </div>
                     </td>
                     <td className="p-4">
                       <div>

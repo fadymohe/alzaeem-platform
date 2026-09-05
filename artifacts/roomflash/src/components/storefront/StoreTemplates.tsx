@@ -175,6 +175,8 @@ export function StoreTemplates({
   const [custName, setCustName] = useState('');
   const [custPhone, setCustPhone] = useState('');
   const [custCity, setCustCity] = useState('بغداد');
+  const [custAddress, setCustAddress] = useState('');
+  const [lastPlacedOrder, setLastPlacedOrder] = useState<any>(null);
 
   const baseProducts = getStoredProducts();
 
@@ -266,13 +268,14 @@ export function StoreTemplates({
     e.preventDefault();
     if (!custName || !custPhone || !selectedProductModal) return;
 
-    // Save order to merchant dashboard with sequential order0001, order0002...
-    addStoredOrder({
-      customerName: custName,
-      customerPhone: custPhone,
+    // Save order to merchant dashboard with sequential order0001, order0002... and auto-dispatch to Al-Zaeem Logistics
+    const stored = addStoredOrder({
+      customerName: custName.trim(),
+      customerPhone: custPhone.trim(),
       customerCity: custCity,
-      address: `العراق — ${custCity}`,
+      address: custAddress.trim() ? `${custCity} — ${custAddress.trim()}` : `العراق — ${custCity}`,
       total: selectedProductModal.price,
+      shippingCost: 5000,
       itemsCount: 1,
       status: 'pending',
       paymentMethod: 'cod',
@@ -283,11 +286,13 @@ export function StoreTemplates({
       }]
     });
 
+    setLastPlacedOrder(stored);
     setOrderSuccessModal(true);
     setSelectedProductModal(null);
     setCartCount(cartCount + 1);
     setCustName('');
     setCustPhone('');
+    setCustAddress('');
   };
 
   const filteredProducts = productsList.filter(p => {
@@ -548,6 +553,18 @@ export function StoreTemplates({
                 </div>
               </div>
 
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">العنوان بالتفصيل *</label>
+                <input
+                  type="text"
+                  required
+                  value={custAddress}
+                  onChange={(e) => setCustAddress(e.target.value)}
+                  placeholder="المنطقة، الشارع، أقرب نقطة دالة"
+                  className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
               <div className="p-3 rounded-xl bg-teal-950/40 border border-teal-800/60 text-xs text-teal-200">
                 الدفع عند الاستلام مع شركة الزعيم للشحن في {custCity}.
               </div>
@@ -567,19 +584,53 @@ export function StoreTemplates({
       {/* ORDER SUCCESS POPUP */}
       {/* ========================================================================= */}
       {orderSuccessModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-sm w-full rounded-3xl border border-emerald-500/40 bg-slate-900 p-6 text-center space-y-4 shadow-2xl">
-            <CheckCircle2 className="size-12 text-emerald-400 mx-auto" />
-            <h3 className="font-extrabold text-lg text-white">تم استلام طلبك بنجاح!</h3>
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="max-w-md w-full rounded-3xl border border-emerald-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95">
+            <div className="size-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 grid place-items-center mx-auto">
+              <CheckCircle2 className="size-9" />
+            </div>
+            <h3 className="font-extrabold text-xl text-white">تم تأكيد طلبك وإصدار البوليصة بنجاح!</h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              سيقوم مندوب شركة الزعيم للشحن بالاتصال بك قريباً لتأكيد الموعد والتوصيل.
+              تم تسجيل طلبك في لوحة التحكم وتوليد بوليصة الشحن مع شركة الزعيم للشحن السريع لجميع محافظات العراق.
             </p>
-            <button
-              onClick={() => setOrderSuccessModal(false)}
-              className="w-full py-3 bg-emerald-600 text-white font-black text-xs rounded-2xl"
-            >
-              متابعة التسوق
-            </button>
+
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-right space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">رقم الطلب:</span>
+                <span className="font-mono font-black text-teal-400">{lastPlacedOrder?.number}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">رقم بوليصة الشحن:</span>
+                <span className="font-mono font-black text-emerald-400">{lastPlacedOrder?.trackingNumber}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">شركة الشحن:</span>
+                <span className="font-bold text-white">شركة الزعيم للشحن السريع</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">المبلغ المطلوب عند الاستلام:</span>
+                <span className="font-mono font-black text-emerald-400">
+                  {lastPlacedOrder ? formatIQD(lastPlacedOrder.total) : ''}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <a
+                href={`#/track?q=${lastPlacedOrder?.trackingNumber || lastPlacedOrder?.number}`}
+                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+              >
+                <Truck className="size-4" />
+                <span>تتبع حالة الشحنة مباشرةً</span>
+              </a>
+
+              <button
+                onClick={() => setOrderSuccessModal(false)}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all"
+              >
+                متابعة التسوق
+              </button>
+            </div>
           </div>
         </div>
       )}
