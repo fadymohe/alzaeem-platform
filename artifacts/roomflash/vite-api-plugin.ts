@@ -143,6 +143,7 @@ export function zaeemApiPlugin(): Plugin {
             });
           }
 
+          // 1. Check local stores database
           const stores = getStores();
           if (stores[cleanSub]) {
             return sendJson(200, {
@@ -151,6 +152,29 @@ export function zaeemApiPlugin(): Plugin {
               message: `هذا النطاق (${cleanSub}.za3em.shop) محجوز مسبقاً من متجر آخر`,
               suggestions: [`${cleanSub}-store`, `${cleanSub}-shop`, `${cleanSub}-iq`, `${cleanSub}2026`]
             });
+          }
+
+          // 2. Check Supabase cloud database
+          try {
+            const supabaseUrl = `https://cfpmbasxvjlcfcteyyaa.supabase.co/rest/v1/za3em_stores?subdomain=eq.${cleanSub}`;
+            const sRes = await fetch(supabaseUrl, {
+              headers: {
+                'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+              }
+            });
+            if (sRes.ok) {
+              const dbStores = await sRes.json();
+              if (Array.isArray(dbStores) && dbStores.length > 0) {
+                return sendJson(200, {
+                  available: false,
+                  reason: 'taken',
+                  message: `هذا النطاق (${cleanSub}.za3em.shop) محجوز مسبقاً في قاعدة بيانات منصة الزعيم`,
+                  suggestions: [`${cleanSub}-store`, `${cleanSub}-shop`, `${cleanSub}-iq`, `${cleanSub}2026`]
+                });
+              }
+            }
+          } catch (sbErr) {
+            console.warn('[Vite API] Supabase check error:', sbErr);
           }
 
           return sendJson(200, {
@@ -200,7 +224,27 @@ export function zaeemApiPlugin(): Plugin {
           stores[cleanSub] = newStoreEntry;
           saveStores(stores);
 
-          console.log(`[Vite API] Store successfully registered: ${cleanSub}.za3em.shop (${generatedCode})`);
+          // Try to sync with Supabase cloud table as well
+          try {
+            await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/rest/v1/za3em_stores', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2',
+                'Prefer': 'resolution=merge-duplicates'
+              },
+              body: JSON.stringify({
+                subdomain: cleanSub,
+                store_name: name,
+                store_code: generatedCode,
+                template_id: templateId || 'shoppingcart.1.2.7',
+                slogan: slogan || '',
+                settings: newStoreEntry
+              })
+            }).catch(() => null);
+          } catch {}
+
+          console.log(`[Vite API] Store successfully registered & reserved: ${cleanSub}.za3em.shop (${generatedCode})`);
 
           return sendJson(200, {
             success: true,
@@ -216,7 +260,38 @@ export function zaeemApiPlugin(): Plugin {
           const cleanSub = rawSub.replace(/[^a-z0-9-]/g, '');
 
           const stores = getStores();
-          const found = stores[cleanSub];
+          let found = stores[cleanSub];
+
+          // If not in local cache, check Supabase cloud table
+          if (!found) {
+            try {
+              const sRes = await fetch(`https://cfpmbasxvjlcfcteyyaa.supabase.co/rest/v1/za3em_stores?subdomain=eq.${cleanSub}`, {
+                headers: { 'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2' }
+              });
+              if (sRes.ok) {
+                const dbStores = await sRes.json();
+                if (Array.isArray(dbStores) && dbStores.length > 0) {
+                  const row = dbStores[0];
+                  found = row.settings || {
+                    id: row.id || Date.now(),
+                    name: row.store_name,
+                    subdomain: row.subdomain,
+                    templateId: row.template_id || 'shoppingcart.1.2.7',
+                    storeCode: row.store_code,
+                    product: {
+                      id: 1,
+                      title: 'منتج المتجر الحصري',
+                      price: 45000,
+                      compareAtPrice: 58000,
+                      imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80'
+                    }
+                  };
+                  stores[cleanSub] = found;
+                  saveStores(stores);
+                }
+              }
+            } catch {}
+          }
 
           if (found) {
             return sendJson(200, {

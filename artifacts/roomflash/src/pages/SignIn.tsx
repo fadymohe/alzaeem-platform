@@ -53,23 +53,61 @@ export function SignInPage() {
       const onboarded = onboardedRaw ? JSON.parse(onboardedRaw) : null;
       const storeCode = onboarded?.storeCode || meta?.store_code || `ZAEEM-${Math.floor(100000 + Math.random() * 900000)}`;
       const storeName = onboarded?.storeName || meta?.store_name || userObj.storeName || `متجر ${userObj.name}`;
-      const subdomain = onboarded?.subdomain ? (onboarded.subdomain.includes('.za3em.shop') ? onboarded.subdomain : `${onboarded.subdomain}.za3em.shop`) : (meta?.subdomain || userObj.subdomain);
-      const selectedTheme = onboarded?.templateId || meta?.selected_theme || 'shoppingcart.1.2.7';
+      const rawSub = onboarded?.subdomain || meta?.subdomain || userObj.subdomain;
+      const cleanSub = rawSub ? rawSub.replace('.za3em.shop', '') : (userObj.email ? userObj.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') : 'store');
+      const subdomain = `${cleanSub}.za3em.shop`;
+      const selectedTheme = onboarded?.templateId || meta?.template_id || meta?.selected_theme || 'shoppingcart.1.2.7';
+
+      // Restore custom product if present
+      const product = onboarded?.product || meta?.product || {
+        id: 1,
+        title: 'عطر تاج الفخامة الفرنسي الملكي',
+        price: 45000,
+        compareAtPrice: 58000,
+        imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80'
+      };
 
       const fullStoreData = {
         ...userObj,
         storeName,
         subdomain,
         selectedTheme,
+        templateId: selectedTheme,
         storeCode,
+        logoUrl: onboarded?.logoUrl || meta?.logo_url,
+        bannerUrl: onboarded?.bannerUrl || meta?.banner_url,
         plan: meta?.plan || 'free',
         orderLimit: meta?.order_limit || 5,
-        categories: onboarded?.categories || ['عام'],
-        product: onboarded?.product
+        categories: onboarded?.categories || meta?.categories || ['عام'],
+        product
       };
 
       localStorage.setItem('zaeem_user', JSON.stringify(userObj));
       localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
+      localStorage.setItem('zaeem_onboarded_store', JSON.stringify(fullStoreData));
+      localStorage.setItem('zaeem_onboarding_completed', 'true');
+      localStorage.setItem('zaeem_auth_action', 'signin');
+
+      // Also ensure custom product is saved to zaeem_store_products for dashboard
+      try {
+        const curProducts = JSON.parse(localStorage.getItem('zaeem_store_products') || '[]');
+        if (product && (!curProducts || curProducts.length === 0)) {
+          localStorage.setItem('zaeem_store_products', JSON.stringify([{
+            id: 1,
+            name: product.title || product.name || 'منتج المتجر الحصري',
+            sku: `PRD-${cleanSub.toUpperCase()}`,
+            description: fullStoreData.slogan || 'منتج أصلي فاخر مع شحن سريع وضمان الدفع عند الاستلام',
+            price: Number(product.price) || 45000,
+            compareAtPrice: Number(product.compareAtPrice) || 58000,
+            stock: 50,
+            lowStockThreshold: 5,
+            category: product.category || 'عام',
+            status: 'active',
+            imageUrl: product.imageUrl || product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+            weightGrams: 500
+          }]));
+        }
+      } catch {}
     } catch (e) {
       localStorage.setItem('zaeem_user', JSON.stringify(userObj));
     }
@@ -523,6 +561,7 @@ export function SignInPage() {
   // Trigger Real Google / Apple OAuth via Supabase
   const handleOAuthClick = (provider: 'google' | 'apple') => {
     setOauthLoading(true);
+    localStorage.setItem('zaeem_auth_action', 'signin');
     const redirectUrl = `${window.location.origin}/`;
     const authorizeUrl = `https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
     window.location.href = authorizeUrl;

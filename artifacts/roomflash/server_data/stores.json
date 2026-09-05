@@ -85,5 +85,27 @@
       "description": "منتج فاخر عالي الجودة مع شحن سريع وضمان الدفع عند الاستلام."
     },
     "createdAt": "2026-09-04T22:14:36.189Z"
+  },
+  "goldstars-test": {
+    "id": 1788578794418,
+    "name": "متجر النجوم الذهبية",
+    "subdomain": "goldstars-test",
+    "templateId": "volt",
+    "storeCode": "ZAEEM-GOLD-9988",
+    "slogan": "فخامة لا تنتهي",
+    "categories": [
+      "عام"
+    ],
+    "product": {
+      "id": 1,
+      "title": "ساعة يد أوتوماتيك فخمة",
+      "name": "ساعة يد أوتوماتيك فخمة",
+      "price": 65000,
+      "compareAtPrice": 84500,
+      "imageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80",
+      "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80",
+      "description": "فخامة لا تنتهي"
+    },
+    "createdAt": "2026-09-05T03:26:34.418Z"
   }
 }

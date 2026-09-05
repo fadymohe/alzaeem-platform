@@ -196,18 +196,18 @@ function RoutedApp() {
           if (user && user.email) {
             const meta = user.user_metadata || {};
             const cleanSlug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+            const authAction = localStorage.getItem('zaeem_auth_action') || 'signin';
 
-            // 1. Recover saved onboarding store settings if available
+            // Check if user already has an established store in database metadata or local storage
             let onboarded: any = null;
             try {
               const rawOnb = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
               if (rawOnb) onboarded = JSON.parse(rawOnb);
             } catch {}
 
-            const storeCode = onboarded?.storeCode || meta.store_code || `ZAEEM-${cleanSlug.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
-            const storeName = onboarded?.storeName || meta.store_name || `متجر ${meta.full_name || cleanSlug}`;
-            const subdomain = onboarded?.subdomain ? (onboarded.subdomain.includes('.za3em.shop') ? onboarded.subdomain : `${onboarded.subdomain}.za3em.shop`) : `${cleanSlug}.za3em.shop`;
-            const selectedTheme = onboarded?.templateId || onboarded?.selectedTheme || meta.selected_theme || 'shoppingcart.1.2.7';
+            const hasDbStore = Boolean(meta.onboarding_completed === true || (meta.store_code && meta.subdomain));
+            const hasLocalStore = Boolean(onboarded?.storeCode && localStorage.getItem('zaeem_onboarding_completed') === 'true');
+            const isReturningMerchant = (authAction === 'signin') || hasDbStore || hasLocalStore;
 
             const userObj = {
               id: user.id,
@@ -215,40 +215,94 @@ function RoutedApp() {
               name: meta.full_name || meta.name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : user.email.split('@')[0]),
               phone: meta.phone || user.phone || '+9647700000000',
               governorate: meta.governorate || 'بغداد',
-              storeName,
-              subdomain,
+              storeName: meta.store_name || onboarded?.storeName || `متجر ${meta.full_name || cleanSlug}`,
+              subdomain: meta.subdomain || onboarded?.subdomain || `${cleanSlug}.za3em.shop`,
               token: token,
               provider: user.app_metadata?.provider || 'google',
               loggedIn: true,
               time: new Date().toISOString()
             };
 
-            const fullStoreData = {
-              ...userObj,
-              storeName,
-              subdomain,
-              selectedTheme,
-              storeCode,
-              logoUrl: onboarded?.logoUrl,
-              bannerUrl: onboarded?.bannerUrl,
-              plan: meta.plan || 'free',
-              orderLimit: meta.order_limit || 5,
-              categories: onboarded?.categories || ['عام'],
-              product: onboarded?.product
-            };
-
             localStorage.setItem('zaeem_user', JSON.stringify(userObj));
-            localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
-            if (!onboarded) {
-              localStorage.setItem('zaeem_onboarded_store', JSON.stringify(fullStoreData));
-            }
 
-            // Remove hash token and redirect DIRECTLY to Dashboard
-            try {
-              window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
-            } catch {}
-            window.location.hash = '#/dashboard';
-            window.location.reload();
+            if (isReturningMerchant) {
+              // SIGN IN: Restore saved store settings and skip onboarding directly to Dashboard!
+              const storeCode = meta.store_code || onboarded?.storeCode || `ZAEEM-${cleanSlug.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
+              const storeName = meta.store_name || onboarded?.storeName || userObj.storeName;
+              const rawSub = meta.subdomain || onboarded?.subdomain || `${cleanSlug}.za3em.shop`;
+              const subdomain = rawSub.includes('.za3em.shop') ? rawSub : `${rawSub}.za3em.shop`;
+              const selectedTheme = meta.template_id || meta.selected_theme || onboarded?.templateId || onboarded?.selectedTheme || 'shoppingcart.1.2.7';
+              const product = meta.product || onboarded?.product || {
+                id: 1,
+                title: 'عطر تاج الفخامة الفرنسي الملكي',
+                price: 45000,
+                compareAtPrice: 58000,
+                imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80'
+              };
+
+              const fullStoreData = {
+                ...userObj,
+                storeName,
+                subdomain,
+                selectedTheme,
+                templateId: selectedTheme,
+                storeCode,
+                logoUrl: meta.logo_url || onboarded?.logoUrl,
+                bannerUrl: meta.banner_url || onboarded?.bannerUrl,
+                plan: meta.plan || 'free',
+                orderLimit: meta.order_limit || 5,
+                categories: meta.categories || onboarded?.categories || ['عام'],
+                product
+              };
+
+              localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
+              localStorage.setItem('zaeem_onboarded_store', JSON.stringify(fullStoreData));
+              localStorage.setItem('zaeem_onboarding_completed', 'true');
+              localStorage.setItem('zaeem_auth_action', 'signin');
+
+              // Save product to zaeem_store_products if not present
+              try {
+                const curProds = JSON.parse(localStorage.getItem('zaeem_store_products') || '[]');
+                if (product && (!curProds || curProds.length === 0)) {
+                  localStorage.setItem('zaeem_store_products', JSON.stringify([{
+                    id: 1,
+                    name: product.title || product.name || 'منتج المتجر الحصري',
+                    sku: `PRD-${cleanSlug.toUpperCase()}`,
+                    description: fullStoreData.slogan || 'منتج أصلي فاخر مع شحن سريع وضمان الدفع عند الاستلام',
+                    price: Number(product.price) || 45000,
+                    compareAtPrice: Number(product.compareAtPrice) || 58000,
+                    stock: 50,
+                    lowStockThreshold: 5,
+                    category: product.category || 'عام',
+                    status: 'active',
+                    imageUrl: product.imageUrl || product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+                    weightGrams: 500
+                  }]));
+                }
+              } catch {}
+
+              try {
+                window.history.replaceState(null, '', window.location.pathname + '#/dashboard');
+              } catch {}
+              window.location.hash = '#/dashboard';
+              window.location.reload();
+            } else {
+              // SIGN UP: New merchant -> Direct to onboarding to prepare their store!
+              localStorage.setItem('zaeem_auth_action', 'signup');
+              localStorage.removeItem('zaeem_onboarding_completed');
+              localStorage.removeItem('zaeem_onboarded_store');
+              localStorage.setItem('zaeem_store_data', JSON.stringify({
+                ...userObj,
+                plan: 'free',
+                orderLimit: 5
+              }));
+
+              try {
+                window.history.replaceState(null, '', window.location.pathname + '#/onboarding');
+              } catch {}
+              window.location.hash = '#/onboarding';
+              window.location.reload();
+            }
           } else {
             setOauthProcessing(false);
           }
@@ -263,6 +317,8 @@ function RoutedApp() {
   }, []);
 
   if (oauthProcessing) {
+    const authAction = typeof window !== 'undefined' ? localStorage.getItem('zaeem_auth_action') : 'signin';
+    const isSignup = authAction === 'signup';
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50 text-slate-900 p-4 font-sans" dir="rtl">
         <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-xl text-center space-y-4 max-w-sm w-full animate-fadeIn">
@@ -273,8 +329,12 @@ function RoutedApp() {
             </svg>
           </div>
           <div>
-            <h2 className="text-base font-black text-slate-900">جاري تسجيل الدخول عبر Google...</h2>
-            <p className="text-xs text-slate-500 mt-1">يتم تجهيز متجرك وتحويلك مباشرة إلى لوحة التحكم</p>
+            <h2 className="text-base font-black text-slate-900">
+              {isSignup ? 'جاري إنشاء حسابك الجديد عبر Google...' : 'جاري تسجيل الدخول عبر Google...'}
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              {isSignup ? 'يتم تحويلك إلى صفحة تجهيز متجرك الجديد...' : 'يتم استرجاع إعدادات متجرك وتحويلك مباشرة إلى لوحة التحكم'}
+            </p>
           </div>
         </div>
       </div>

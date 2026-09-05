@@ -27,12 +27,23 @@ export function DynamicStoreLanding() {
   );
   const querySub = searchParams.get("subdomain");
 
+  // استخراج النطاق الفرعي من الهاش مباشرة كضمان إضافي مع Wouter HashLocation
+  let hashSub = "";
+  if (hash.includes('/store/') || hash.includes('/view-store/') || hash.includes('/landing/')) {
+    const parts = hash.split('?')[0].split('/');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart && lastPart !== 'store' && lastPart !== 'landing' && lastPart !== 'view-store') {
+      hashSub = lastPart;
+    }
+  }
+
   const rawSub =
     (hostSub && hostSub !== "www" && hostSub !== "za3em")
       ? hostSub
       : paramsView?.subdomain ||
         paramsStore?.subdomain ||
         paramsLanding?.subdomain ||
+        hashSub ||
         querySub ||
         "zero";
 
@@ -113,7 +124,7 @@ export function DynamicStoreLanding() {
       return;
     }
 
-    // 2. إذا لم يكن موجوداً في السجل، نحاول فحص الـ API إذا كان السيرفر متاحاً
+    // 2. فحص السيرفر المحلي عبر API
     async function checkApiStore() {
       try {
         const res = await fetch(`/api/tenant/stores/${cleanSubdomain}`);
@@ -127,6 +138,9 @@ export function DynamicStoreLanding() {
               name: data.store.name || prev.name,
               subdomain: data.store.subdomain || prev.subdomain,
               templateId: data.store.templateId || prev.templateId || "shoppingcart.1.2.7",
+              storeCode: data.store.storeCode || prev.storeCode,
+              logoUrl: data.store.logoUrl || prev.logoUrl,
+              bannerUrl: data.store.bannerUrl || prev.bannerUrl,
             }));
             if (data.product) {
               setProduct((prev) => ({
@@ -146,7 +160,48 @@ export function DynamicStoreLanding() {
         console.warn("API store check fallback:", err);
       }
 
-      // إذا وصلنا هنا ولم يتم العثور على المتجر في السجل، فهو غير مسجل
+      // 3. فحص قاعدة بيانات Supabase السحابية مباشرة
+      try {
+        const sbRes = await fetch(`https://cfpmbasxvjlcfcteyyaa.supabase.co/rest/v1/za3em_stores?subdomain=eq.${cleanSubdomain}`, {
+          headers: {
+            'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+          }
+        });
+        if (sbRes.ok) {
+          const dbStores = await sbRes.json();
+          if (Array.isArray(dbStores) && dbStores.length > 0) {
+            const row = dbStores[0];
+            const st = row.settings || {};
+            if (isMounted) {
+              setIsStoreRegistered(true);
+              setStore({
+                id: row.id || 1,
+                name: row.store_name || st.name || `متجر ${cleanSubdomain}`,
+                subdomain: cleanSubdomain,
+                templateId: row.template_id || st.templateId || "shoppingcart.1.2.7",
+                storeCode: row.store_code || st.storeCode || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-1001`,
+                logoUrl: st.logoUrl,
+                bannerUrl: st.bannerUrl,
+              });
+              if (st.product) {
+                setProduct({
+                  id: 1,
+                  title: st.product.title || st.product.name || "منتج العرض الحصري",
+                  description: st.product.description || "منتج أصلي عالي الجودة مع شحن سريع وضمان الدفع عند الاستلام.",
+                  price: Number(st.product.price) || 45000,
+                  compareAtPrice: Number(st.product.compareAtPrice) || 58000,
+                  imageUrl: st.product.imageUrl || st.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
+                });
+              }
+              return;
+            }
+          }
+        }
+      } catch (sbErr) {
+        console.warn("Direct Supabase query fallback:", sbErr);
+      }
+
+      // إذا وصلنا هنا ولم يتم العثور على المتجر في أي سجل
       if (isMounted) {
         setIsStoreRegistered(false);
       }

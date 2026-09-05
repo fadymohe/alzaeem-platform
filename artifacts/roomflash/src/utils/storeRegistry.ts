@@ -193,6 +193,8 @@ export function registerStore(data: RegisteredStoreData): RegisteredStoreData {
 
       // 3. Update legacy single keys for fast fallback and onboarding persistence
       localStorage.setItem("zaeem_onboarded_store", JSON.stringify(normalizedData));
+      localStorage.setItem("zaeem_onboarding_completed", "true");
+      localStorage.setItem("zaeem_auth_action", "signin");
       localStorage.setItem("zaeem_store_data", JSON.stringify({
         storeName: normalizedData.storeName,
         subdomain: `${cleanSub}.za3em.shop`,
@@ -409,27 +411,62 @@ export async function checkSubdomainAvailability(rawSubdomain: string): Promise<
     };
   }
 
-  // Check backend API
+  // Check local storage registered stores
+  try {
+    const localTaken: string[] = JSON.parse(localStorage.getItem('zaeem_registered_stores') || '[]');
+    if (localTaken.includes(clean)) {
+      return {
+        available: false,
+        reason: 'taken',
+        message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً في قائمة المتاجر المسجلة`,
+        suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
+      };
+    }
+  } catch {}
+
+  // Check backend API (which checks local stores.json + Supabase)
   try {
     const res = await fetch(`/api/stores/check-subdomain?subdomain=${clean}`);
     if (res.ok) {
       const text = await res.text();
       try {
         const data = JSON.parse(text);
-        if (!data.available) {
+        if (data && data.available === false) {
           return {
             available: false,
             reason: data.reason || 'taken',
             message: data.message || `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً من متجر آخر`,
-            suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`],
+            suggestions: data.suggestions || [`${clean}-store`, `${clean}-shop`, `${clean}-iq`],
           };
         }
       } catch {
-        // Non-JSON response (e.g., HTML fallback), ignore
+        // Non-JSON response
       }
     }
   } catch (err) {
     console.warn('API subdomain check fallback:', err);
+  }
+
+  // Directly check Supabase cloud database as an independent guarantee
+  try {
+    const sbRes = await fetch(`https://cfpmbasxvjlcfcteyyaa.supabase.co/rest/v1/za3em_stores?subdomain=eq.${clean}`, {
+      headers: {
+        'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2'
+      }
+    });
+    if (sbRes.ok) {
+      const dbStores = await sbRes.json();
+      if (Array.isArray(dbStores) && dbStores.length > 0) {
+        return {
+          available: false,
+          reason: 'taken',
+          message: `هذا النطاق (${clean}.za3em.shop) محجوز مسبقاً في قاعدة بيانات منصة الزعيم`,
+          suggestions: [`${clean}-store`, `${clean}-shop`, `${clean}-iq`, `${clean}2026`],
+        };
+      }
+    }
+  } catch (sbErr) {
+    console.warn('Direct Supabase check error:', sbErr);
   }
 
   return {

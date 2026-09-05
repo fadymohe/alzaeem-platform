@@ -344,8 +344,9 @@ export function OnboardingPage() {
         });
       } catch {
         setSubdomainCheck({
-          status: 'available',
-          message: 'الدومين متاح ومحجوز لمتجرك'
+          status: 'unavailable',
+          message: 'تعذر التحقق من توفر الدومين في قاعدة البيانات، يرجى المحاولة مرة أخرى',
+          reason: 'invalid'
         });
       }
     }, 250);
@@ -511,9 +512,11 @@ export function OnboardingPage() {
         fullSubdomain: `${cleanSub}.za3em.shop`,
         completedAt: new Date().toISOString()
       }));
+      localStorage.setItem('zaeem_onboarding_completed', 'true');
+      localStorage.setItem('zaeem_auth_action', 'signin');
     } catch {}
 
-    // 3. Register with server API to permanently bind subdomain and template in stores.json
+    // 3. Register with server API to permanently bind subdomain and template in stores.json and Supabase
     try {
       await fetch('/api/tenant/stores', {
         method: 'POST',
@@ -532,6 +535,39 @@ export function OnboardingPage() {
       });
     } catch (apiErr) {
       console.warn('API store register fallback:', apiErr);
+    }
+
+    // 4. Update Supabase user metadata with onboarding_completed = true and full store settings
+    try {
+      const userRaw = localStorage.getItem('zaeem_user');
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        if (u.token) {
+          await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/user', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': 'sb_publishable_sCozsAhhHZ9v9nWEkiNVlQ_Ne5IoXq2',
+              'Authorization': `Bearer ${u.token}`
+            },
+            body: JSON.stringify({
+              data: {
+                onboarding_completed: true,
+                store_code: storeCode,
+                store_name: storeName,
+                subdomain: `${cleanSub}.za3em.shop`,
+                template_id: selectedTheme,
+                selected_theme: selectedTheme,
+                slogan: slogan,
+                categories: categories,
+                product: payload.product
+              }
+            })
+          }).catch(() => null);
+        }
+      }
+    } catch (sbErr) {
+      console.warn('Supabase metadata update error:', sbErr);
     }
 
     setIsLaunching(false);
@@ -563,6 +599,29 @@ export function OnboardingPage() {
   };
 
   const activeTheme = REAL_STORE_TEMPLATES.find(t => t.id === selectedTheme) || REAL_STORE_TEMPLATES[0];
+
+  const [existingStoreInfo] = useState<{
+    hasStore: boolean;
+    storeName?: string;
+    storeCode?: string;
+    subdomain?: string;
+  }>(() => {
+    try {
+      const raw = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.storeCode && (localStorage.getItem('zaeem_onboarding_completed') === 'true')) {
+          return {
+            hasStore: true,
+            storeName: parsed.storeName,
+            storeCode: parsed.storeCode,
+            subdomain: parsed.subdomain
+          };
+        }
+      }
+    } catch {}
+    return { hasStore: false };
+  });
 
   return (
     <main dir="rtl" className="min-h-[100dvh] bg-[#0b0f19] text-slate-200 font-sans select-none flex flex-col relative overflow-x-hidden">
@@ -608,6 +667,29 @@ export function OnboardingPage() {
           </div>
         </div>
       </header>
+
+      {/* Existing Store Notification Banner */}
+      {existingStoreInfo.hasStore && (
+        <div className="bg-gradient-to-r from-blue-950/90 via-slate-900 to-indigo-950/90 border-b border-blue-500/30 px-4 md:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 text-blue-200">
+            <CheckCircle2 className="size-4 text-blue-400 shrink-0" />
+            <span>
+              لديك متجر نشط محفوظ: <strong>{existingStoreInfo.storeName}</strong> (رمز المتجر: <code className="font-mono text-white bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700">{existingStoreInfo.storeCode}</code>).
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = '#/dashboard';
+              setLocation('/dashboard');
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs transition-colors cursor-pointer shadow-md"
+          >
+            <span>الانتقال المباشر إلى لوحة التحكم</span>
+            <ChevronLeft className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 2️⃣ STEP TRACKER */}
@@ -1360,17 +1442,26 @@ export function OnboardingPage() {
               </div>
 
               {/* Big Launch Button */}
+              {subdomainCheck.status === 'unavailable' && (
+                <div className="p-3.5 rounded-2xl bg-rose-950/60 border border-rose-800/80 text-rose-200 text-xs font-bold flex items-center gap-2.5 animate-shake">
+                  <AlertCircle className="size-4 shrink-0 text-rose-400" />
+                  <span>عذراً، النطاق الفرعي ({subdomain}) محجوز مسبقاً أو غير متاح في قاعدة البيانات. يرجى الرجوع للخطوة 1 واختيار اسم متاح.</span>
+                </div>
+              )}
+
               <button
                 type="button"
-                disabled={isLaunching}
+                disabled={isLaunching || subdomainCheck.status === 'unavailable' || subdomainCheck.status === 'checking'}
                 onClick={handleCompleteAndLaunch}
-                className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 py-4 text-sm font-black text-white shadow-2xl shadow-blue-600/30 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 py-4 text-sm font-black text-white shadow-2xl shadow-blue-600/30 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLaunching ? (
                   <>
                     <RefreshCw className="size-4 animate-spin" />
                     <span>جاري ربط القالب بالدومين وإطلاق المتجر على الإنترنت...</span>
                   </>
+                ) : subdomainCheck.status === 'unavailable' ? (
+                  <span>النطاق محجوز مسبقاً — يرجى الرجوع للخطوة 1 وتغييره</span>
                 ) : (
                   <span>ربط القالب وافتتاح المتجر أونلاين فوراً</span>
                 )}

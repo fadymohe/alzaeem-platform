@@ -73,18 +73,52 @@ export function SignUpPage() {
         .then(res => res.json())
         .then(user => {
           if (user && user.email) {
+            const meta = user.user_metadata || {};
+            const cleanSlug = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
             const userObj = {
+              id: user.id,
               email: user.email,
-              name: user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0],
-              phone: user.phone || '+9647700000000',
-              governorate: 'بغداد',
-              storeName: user.email.split('@')[0],
-              subdomain: `${user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '')}-${Date.now().toString().slice(-4)}.za3em.shop`,
+              name: meta.full_name || meta.name || user.email.split('@')[0],
+              phone: meta.phone || user.phone || '+9647700000000',
+              governorate: meta.governorate || 'بغداد',
+              storeName: meta.store_name || user.email.split('@')[0],
+              subdomain: meta.subdomain || `${cleanSlug}-${Date.now().toString().slice(-4)}.za3em.shop`,
               provider: user.app_metadata?.provider || 'google',
+              token: token,
               loggedIn: true,
               time: new Date().toISOString()
             };
             localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+
+            // If user already had a completed store in their account metadata, restore it
+            if (meta.onboarding_completed === true && meta.store_code) {
+              const fullStoreData = {
+                ...userObj,
+                storeName: meta.store_name || userObj.storeName,
+                subdomain: meta.subdomain || userObj.subdomain,
+                selectedTheme: meta.template_id || meta.selected_theme || 'shoppingcart.1.2.7',
+                templateId: meta.template_id || meta.selected_theme || 'shoppingcart.1.2.7',
+                storeCode: meta.store_code,
+                logoUrl: meta.logo_url,
+                bannerUrl: meta.banner_url,
+                plan: meta.plan || 'free',
+                orderLimit: meta.order_limit || 5,
+                categories: meta.categories || ['عام'],
+                product: meta.product
+              };
+              localStorage.setItem('zaeem_store_data', JSON.stringify(fullStoreData));
+              localStorage.setItem('zaeem_onboarded_store', JSON.stringify(fullStoreData));
+              localStorage.setItem('zaeem_onboarding_completed', 'true');
+              localStorage.setItem('zaeem_auth_action', 'signin');
+              window.location.hash = '#/dashboard';
+              setLocation('/dashboard');
+              return;
+            }
+
+            // Fresh account -> Proceed to onboarding
+            localStorage.setItem('zaeem_auth_action', 'signup');
+            localStorage.removeItem('zaeem_onboarding_completed');
+            localStorage.removeItem('zaeem_onboarded_store');
             localStorage.setItem('zaeem_store_data', JSON.stringify({
               ...userObj,
               plan: 'free',
@@ -509,6 +543,9 @@ export function SignUpPage() {
 
     // Save locally
     localStorage.setItem('zaeem_user', JSON.stringify(userObj));
+    localStorage.setItem('zaeem_auth_action', 'signup');
+    localStorage.removeItem('zaeem_onboarding_completed');
+    localStorage.removeItem('zaeem_onboarded_store');
     localStorage.setItem('zaeem_store_data', JSON.stringify(storePayload));
 
     // Update registered stores
@@ -526,6 +563,9 @@ export function SignUpPage() {
   // Trigger Real Google / Apple OAuth via Supabase
   const handleOAuthClick = (provider: 'google' | 'apple') => {
     setOauthLoading(true);
+    localStorage.setItem('zaeem_auth_action', 'signup');
+    localStorage.removeItem('zaeem_onboarding_completed');
+    localStorage.removeItem('zaeem_onboarded_store');
     const redirectUrl = `${window.location.origin}/`;
     const authorizeUrl = `https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
     window.location.href = authorizeUrl;
