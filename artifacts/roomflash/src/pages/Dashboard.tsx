@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
 import {
-  getStoredOrders, getStoredProducts, getStoredCustomers, updateStoredOrderStatus,
+  getStoredOrders, getStoredProducts, getStoredCustomers, updateStoredOrderStatus, syncCloudOrders,
   type StoreOrder, type StoreProduct, type StoreCustomer
 } from '../data/storeState';
 
@@ -112,6 +112,14 @@ export function DashboardPage() {
   useEffect(() => {
     loadData();
     loadStoreInfo();
+
+    // Fetch and sync live cloud orders
+    syncCloudOrders().then(synced => {
+      if (synced && synced.length > 0) {
+        setOrders(synced);
+        setCustomers(getStoredCustomers());
+      }
+    });
 
     const handleUpdate = () => {
       loadStoreInfo();

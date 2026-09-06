@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Search, RefreshCw, CheckCircle2, Clock, Plus, Phone, MapPin, Truck, AlertCircle, X, ChevronRight, Printer } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../data/iraqData';
-import { getStoredOrders, updateStoredOrderStatus, addStoredOrder, type StoreOrder } from '../data/storeState';
+import { getStoredOrders, updateStoredOrderStatus, addStoredOrder, syncCloudOrders, type StoreOrder } from '../data/storeState';
 import { ShippingLabelModal } from '../components/shipping/ShippingLabelModal';
 
 export function OrdersPage() {
@@ -30,17 +30,31 @@ export function OrdersPage() {
     }, 3500);
   };
 
-  const reloadOrders = () => {
+  const reloadOrders = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
+    try {
+      const synced = await syncCloudOrders();
+      setOrders(synced || getStoredOrders());
+      showToast('تم تحديث ومزامنة قائمة الطلبات بنجاح ✅');
+    } catch {
       setOrders(getStoredOrders());
+      showToast('تم تحديث قائمة الطلبات ✅');
+    } finally {
       setIsRefreshing(false);
-      showToast('تم تحديث قائمة الطلبات بنجاح ✅');
-    }, 450);
+    }
   };
 
   useEffect(() => {
+    // 1. Load immediate cached orders
     setOrders(getStoredOrders());
+
+    // 2. Fetch live orders from central database
+    syncCloudOrders().then(synced => {
+      if (synced && synced.length > 0) {
+        setOrders(synced);
+      }
+    });
+
     const handleUpdate = () => setOrders(getStoredOrders());
     window.addEventListener('zaeem_store_updated', handleUpdate);
     window.addEventListener('zaeem_shipments_updated', handleUpdate);

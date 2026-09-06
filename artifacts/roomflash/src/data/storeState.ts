@@ -35,6 +35,7 @@ export interface StoreOrder {
   district?: string;
   nearestLandmark?: string;
   notes?: string;
+  subdomain?: string;
   items?: Array<{ productName: string; quantity: number; unitPrice: number }>;
 }
 
@@ -476,12 +477,37 @@ export function addStoredOrder(order: Omit<StoreOrder, 'id' | 'number' | 'create
   const trackingNumber = order.trackingNumber || `ZAEEM-2026-${Math.floor(100000 + Math.random() * 900000)}`;
   const shippingCompany = order.shippingCompany || 'شركة الزعيم للشحن السريع';
 
+  let sub = order.subdomain || '';
+  if (!sub && typeof window !== 'undefined') {
+    const hostParts = window.location.hostname.split('.');
+    if (hostParts.length > 2 && hostParts[0] !== 'www' && hostParts[0] !== 'za3em') {
+      sub = hostParts[0];
+    } else {
+      const hash = window.location.hash || '';
+      const match = hash.match(/\/store\/([^/?]+)/);
+      if (match) sub = match[1];
+    }
+  }
+  if (!sub) {
+    try {
+      const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+      const rawUser = localStorage.getItem('zaeem_user');
+      const sObj = rawStore ? JSON.parse(rawStore) : null;
+      const uObj = rawUser ? JSON.parse(rawUser) : null;
+      sub = (sObj?.subdomain || uObj?.subdomain || 'alzaeem')
+        .replace('.za3em.shop', '')
+        .replace(/^https?:\/\//, '')
+        .trim() || 'alzaeem';
+    } catch {}
+  }
+
   const newOrder: StoreOrder = {
     ...order,
     id: Date.now(),
     number: orderNumber,
     trackingNumber,
     shippingCompany,
+    subdomain: sub,
     createdAt: new Date().toISOString()
   };
   const updated = [newOrder, ...orders];
@@ -500,18 +526,6 @@ export function addStoredOrder(order: Omit<StoreOrder, 'id' | 'number' | 'create
 
   // 3. Immediately create & upload Shipment to Al-Zaeem Logistics (Local + Neon Cloud Database)
   try {
-    let sub = 'alzaeem';
-    try {
-      const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
-      const rawUser = localStorage.getItem('zaeem_user');
-      const sObj = rawStore ? JSON.parse(rawStore) : null;
-      const uObj = rawUser ? JSON.parse(rawUser) : null;
-      sub = (sObj?.subdomain || uObj?.subdomain || 'alzaeem')
-        .replace('.za3em.shop', '')
-        .replace(/^https?:\/\//, '')
-        .trim() || 'alzaeem';
-    } catch {}
-
     const newShipment: CloudShipment = {
       trackingNumber,
       subdomain: sub,
@@ -563,14 +577,141 @@ export function addStoredOrder(order: Omit<StoreOrder, 'id' | 'number' | 'create
   return newOrder;
 }
 
+/**
+ * Sync orders seamlessly between central Neon PostgreSQL database and merchant dashboard
+ */
+export async function syncCloudOrders(targetSubdomain?: string): Promise<StoreOrder[]> {
+  try {
+    let sub = targetSubdomain;
+    if (!sub) {
+      try {
+        const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+        const rawUser = localStorage.getItem('zaeem_user');
+        const sObj = rawStore ? JSON.parse(rawStore) : null;
+        const uObj = rawUser ? JSON.parse(rawUser) : null;
+        sub = (sObj?.subdomain || uObj?.subdomain || '')
+          .replace('.za3em.shop', '')
+          .replace(/^https?:\/\//, '')
+          .trim();
+      } catch {}
+    }
+
+    const { fetchCloudShipments } = await import('../utils/cloudDb');
+    const shipments = await fetchCloudShipments(sub);
+    if (!shipments || shipments.length === 0) {
+      return getStoredOrders();
+    }
+
+    const currentOrders = getStoredOrders();
+    const existingTrackingMap = new Map<string, StoreOrder>();
+    currentOrders.forEach(o => {
+      if (o.trackingNumber) existingTrackingMap.set(o.trackingNumber, o);
+    });
+
+    let hasNew = false;
+    const syncedOrders: StoreOrder[] = [...currentOrders];
+
+    shipments.forEach((ship, idx) => {
+      if (ship.trackingNumber && !existingTrackingMap.has(ship.trackingNumber)) {
+        // Map cloud shipment status to merchant order status
+        let mappedStatus: StoreOrder['status'] = 'pending';
+        if (ship.status === 'تم التسليم') mappedStatus = 'delivered';
+        else if (ship.status === 'قيد التجهيز') mappedStatus = 'processing';
+        else if (ship.status === 'خرجت للتوصيل' || ship.status === 'في المستودع') mappedStatus = 'confirmed';
+        else if (ship.status === 'مرتجعة' || ship.status === 'فشل التسليم') mappedStatus = 'cancelled';
+
+        // Extract order number from notes (e.g. order0001) or generate sequential
+        let ordNumber = `order${String(shipments.length - idx).padStart(4, '0')}`;
+        const match = ship.notes?.match(/order\d+/i);
+        if (match) ordNumber = match[0].toLowerCase();
+
+        // Extract product name from notes or provide default
+        let pName = 'منتج المتجر';
+        if (ship.notes && !ship.notes.includes('طلب شراء إلكتروني')) {
+          pName = ship.notes;
+        }
+
+        const newOrd: StoreOrder = {
+          id: Number(ship.id) || Date.now() + idx,
+          number: ordNumber,
+          customerName: ship.recipientName || 'زبون المتجر',
+          customerPhone: ship.recipientPhone || '',
+          customerCity: ship.governorate || 'بغداد',
+          address: ship.address || `العراق — ${ship.governorate || 'بغداد'}`,
+          total: Number(ship.codAmount) || 0,
+          shippingCost: Number(ship.shippingCost) || 5000,
+          itemsCount: 1,
+          status: mappedStatus,
+          paymentMethod: 'cod',
+          createdAt: ship.createdAt || new Date().toISOString(),
+          trackingNumber: ship.trackingNumber,
+          shippingCompany: ship.shippingCompany || 'شركة الزعيم للشحن السريع',
+          subdomain: ship.subdomain,
+          notes: ship.notes,
+          items: [{
+            productName: pName,
+            quantity: 1,
+            unitPrice: Number(ship.codAmount) || 0
+          }]
+        };
+
+        syncedOrders.push(newOrd);
+        existingTrackingMap.set(ship.trackingNumber, newOrd);
+        hasNew = true;
+
+        // Sync Customer record as well
+        try {
+          addStoredCustomer({
+            name: ship.recipientName,
+            phone: ship.recipientPhone,
+            city: ship.governorate,
+            governorate: ship.governorate,
+            address: ship.address
+          });
+        } catch {}
+      }
+    });
+
+    if (hasNew) {
+      syncedOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      saveStoredOrders(syncedOrders);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zaeem_store_updated', { detail: { orders: syncedOrders } }));
+        window.dispatchEvent(new Event('storage'));
+      }
+    }
+
+    return syncedOrders;
+  } catch (e) {
+    console.warn('[storeState] Error syncing cloud orders:', e);
+    return getStoredOrders();
+  }
+}
+
 export function updateStoredOrderStatus(id: number, nextStatus: StoreOrder['status']): StoreOrder | null {
   const orders = getStoredOrders();
   const idx = orders.findIndex(o => o.id === id);
   if (idx === -1) return null;
   orders[idx].status = nextStatus;
   saveStoredOrders(orders);
+
+  // Sync status to Central Neon database if trackingNumber exists
+  if (orders[idx].trackingNumber) {
+    let cloudStatus: CloudShipment['status'] = 'جديدة';
+    if (nextStatus === 'confirmed') cloudStatus = 'في المستودع';
+    else if (nextStatus === 'processing') cloudStatus = 'قيد التجهيز';
+    else if (nextStatus === 'delivered') cloudStatus = 'تم التسليم';
+    else if (nextStatus === 'cancelled') cloudStatus = 'مرتجعة';
+
+    import('../utils/cloudDb').then(({ executeSql }) => {
+      const q = `UPDATE za3em_shipments SET status = '${cloudStatus}' WHERE tracking_number = '${orders[idx].trackingNumber?.replace(/'/g, "''")}';`;
+      executeSql(q).catch(() => {});
+    });
+  }
+
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+    window.dispatchEvent(new CustomEvent('zaeem_shipments_updated'));
   }
   return orders[idx];
 }
