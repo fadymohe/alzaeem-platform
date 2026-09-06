@@ -322,78 +322,23 @@
 }
 
 /* ========================================================================= */
-/* AL-ZAEEM THERMAL SHIPPING LABEL PRINT MEDIA (100mm x 150mm / 4x6 inch)    */
+/* AL-ZAEEM SHIPPING LABEL PRINT MEDIA                                       */
 /* ========================================================================= */
 @media print {
-  /* تصفير هوامش الصفحة بالكامل */
   @page {
-    size: 100mm 150mm;
-    margin: 0 !important;
+    size: auto;
+    margin: 5mm;
   }
 
-  html, body {
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-    overflow: hidden !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: flex-start !important; /* لتبدأ من أعلى الورقة تماماً */
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* إخفاء كل العناصر الأخرى */
-  body * {
-    visibility: hidden !important;
-  }
-
-  /* كارت البوليصة فقط */
-  #print-shipping-card,
-  #print-shipping-card *,
-  #shipping-label,
-  #shipping-label * {
-    visibility: visible !important;
-  }
-
-  #print-shipping-card,
-  #shipping-label {
-    /* إلغاء الـ fixed أو absolute لتفادي خطأ الإزاحة */
-    position: relative !important;
-    left: auto !important;
-    right: auto !important;
-    top: 0 !important;
-    margin: 0 auto !important; /* توسيط تلقائي أفقي */
-    width: 100mm !important;
-    max-width: 100mm !important;
-    height: 148mm !important; /* تقليل 2 ملم لمنع رميها في صفحة ثانية */
-    box-sizing: border-box !important;
-    padding: 3.5mm 4mm !important;
+  body {
     background: #ffffff !important;
     color: #000000 !important;
-    border: 2px solid #000000 !important;
-    border-radius: 0 !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-    overflow: hidden !important;
-  }
-
-  /* تباين عالي لطباعة الباركود */
-  #print-shipping-card svg,
-  #shipping-label svg {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* إخفاء أزرار التحكم */
-  button,
   .print\:hidden,
   .no-print {
     display: none !important;
-    visibility: hidden !important;
   }
 }
