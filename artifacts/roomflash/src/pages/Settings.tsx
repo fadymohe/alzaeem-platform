@@ -310,14 +310,18 @@ export function SettingsPage() {
                   </span>
                   <button
                     type="button"
+                    dir="ltr"
+                    role="switch"
+                    aria-checked={isSubdomainActive}
                     onClick={handleToggleSubdomainActive}
-                    className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ${
+                    className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-300 focus:outline-none ${
                       isSubdomainActive ? 'bg-emerald-500' : 'bg-slate-700'
                     }`}
+                    title={isSubdomainActive ? 'اضغط لإيقاف المتجر مؤقتاً' : 'اضغط لتنشيط المتجر'}
                   >
                     <span
-                      className={`pointer-events-none flex items-center justify-center size-7 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
-                        isSubdomainActive ? 'translate-x-8' : 'translate-x-0'
+                      className={`pointer-events-none block size-6 transform rounded-full bg-white shadow-md transition-transform duration-300 ${
+                        isSubdomainActive ? 'translate-x-7' : 'translate-x-0'
                       }`}
                     />
                   </button>

@@ -364,10 +364,10 @@ export function StorePage() {
         <div className="flex items-center gap-2.5 flex-wrap">
           {/* حالة المتجر (نشط / معطل) */}
           <div className="flex items-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl shadow-sm">
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-black flex items-center gap-1.5 ${
+            <span className={`px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1.5 ${
               isStoreActive
-                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
-                : 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/30'
+                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                : 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'
             }`}>
               <span className={`size-1.5 rounded-full ${isStoreActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
               {isStoreActive ? 'الموقع نشط' : 'الموقع معطل'}
@@ -375,17 +375,18 @@ export function StorePage() {
 
             <button
               type="button"
+              dir="ltr"
               onClick={handleToggleStoreActive}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${
-                isStoreActive ? 'bg-emerald-500' : 'bg-slate-400 dark:bg-slate-600'
+              className={`relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-300 ease-in-out focus:outline-none ${
+                isStoreActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
               }`}
               role="switch"
               aria-checked={isStoreActive}
               title={isStoreActive ? 'اضغط لتعطيل المتجر مؤقتاً' : 'اضغط لتنشيط المتجر'}
             >
               <span
-                className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
-                  isStoreActive ? 'translate-x-5' : 'translate-x-0'
+                className={`pointer-events-none block size-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out ${
+                  isStoreActive ? 'translate-x-6' : 'translate-x-0'
                 }`}
               />
             </button>
