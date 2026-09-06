@@ -1913,89 +1913,93 @@ export function OnboardingPage() {
       {/* 5️⃣ INSTANT ONLINE LAUNCH CELEBRATION MODAL */}
       {/* ========================================================================= */}
       {launchSuccessData && launchSuccessData.open && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center p-4 animate-fadeIn">
-          <div className="max-w-lg w-full rounded-3xl border border-blue-500/40 bg-[#0f172a] p-6 md:p-8 text-right space-y-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 size-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn">
+          <div className="max-w-md w-full rounded-2xl sm:rounded-3xl border border-blue-500/40 bg-[#0f172a] p-4 sm:p-6 text-right space-y-3 sm:space-y-4 shadow-2xl relative my-auto max-h-[94vh] flex flex-col justify-between overflow-y-auto rf-scrollbar">
+            <div className="absolute top-0 right-0 size-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
-            <div className="text-center space-y-2">
-              <div className="size-16 rounded-2xl bg-blue-500/20 border border-blue-500/40 text-blue-400 mx-auto grid place-items-center shadow-lg shadow-blue-500/20">
-                <Sparkles className="size-8 animate-bounce" />
+            <div className="text-center space-y-1.5">
+              <div className="size-11 sm:size-12 rounded-2xl bg-blue-500/20 border border-blue-500/40 text-blue-400 mx-auto grid place-items-center shadow-lg shadow-blue-500/20">
+                <Sparkles className="size-6 text-blue-400 animate-pulse" />
               </div>
-              <span className="inline-block text-[11px] font-black text-blue-400 bg-blue-950/80 px-3 py-1 rounded-full border border-blue-800/80">
+              <span className="inline-block text-[10px] font-black text-blue-400 bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-800/80">
                 تم الربط والإطلاق أونلاين بنجاح
               </span>
-              <h2 className="text-2xl font-black text-white">
+              <h2 className="text-lg sm:text-xl font-black text-white">
                 متجرك انطلق الآن على الإنترنت
               </h2>
-              <p className="text-xs text-slate-300 max-w-sm mx-auto">
-                تم حجز دومينك وربطه بقالب (<span className="text-blue-300 font-bold">{launchSuccessData.templateName}</span>) وأصبح متاحاً للزبائن للطلب فوراً.
+              <p className="text-[11px] text-slate-300 max-w-sm mx-auto leading-relaxed">
+                تم حجز دومينك وربطه بقالب (<span className="text-blue-300 font-bold">{launchSuccessData.templateName}</span>) وأصبح متاحاً للزبائن فوراً.
               </p>
             </div>
 
-            {/* Store Code Box */}
-            <div className="p-3.5 rounded-2xl bg-slate-900 border border-indigo-900/50 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold block">الرمز التعريفي الفريد لمتجرك:</span>
-                <span className="font-mono text-sm font-black text-indigo-400">{launchSuccessData.storeCode}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleCopyStoreCode(launchSuccessData.storeCode)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black transition-colors cursor-pointer"
-              >
-                <Copy className="size-3" />
-                <span>{codeCopied ? 'تم النسخ' : 'نسخ الرمز'}</span>
-              </button>
-            </div>
-
-            {/* Live Store URL Box */}
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-700/80 space-y-2">
-              <span className="text-[10px] text-slate-400 font-bold block">رابط متجرك الحقيقي المباشر:</span>
-              <div className="flex items-center justify-between gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                <span className="font-mono text-xs text-blue-400 font-bold truncate dir-ltr">
-                  https://{launchSuccessData.subdomain}.za3em.shop
-                </span>
+            {/* Store Code & Live Link Compact Cards */}
+            <div className="space-y-2">
+              {/* Store Code Box */}
+              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/90 border border-indigo-900/50 flex items-center justify-between">
+                <div>
+                  <span className="text-[9px] text-slate-400 font-bold block">الرمز التعريفي الفريد لمتجرك:</span>
+                  <span className="font-mono text-xs sm:text-sm font-black text-indigo-400">{launchSuccessData.storeCode}</span>
+                </div>
                 <button
                   type="button"
-                  onClick={() => handleCopyStoreLink(`https://${launchSuccessData.subdomain}.za3em.shop`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black transition-colors shrink-0 cursor-pointer"
+                  onClick={() => handleCopyStoreCode(launchSuccessData.storeCode)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black transition-colors cursor-pointer"
                 >
                   <Copy className="size-3" />
-                  <span>{linkCopied ? 'تم النسخ' : 'نسخ الرابط'}</span>
+                  <span>{codeCopied ? 'تم النسخ' : 'نسخ الرمز'}</span>
                 </button>
               </div>
-            </div>
 
-            {/* Quick Preview Link */}
-            <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs text-slate-300">
-              <span className="text-[11px]">معاينة فورية داخل المنصة:</span>
-              <a
-                href={`/#/store/${launchSuccessData.subdomain}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-400 hover:text-blue-300 font-bold underline flex items-center gap-1 font-mono text-[11px]"
-              >
-                <span>زيارة المتجر الآن</span>
-                <ExternalLink className="size-3" />
-              </a>
-            </div>
+              {/* Live Store URL Box */}
+              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/90 border border-slate-700/80 space-y-1.5">
+                <span className="text-[9px] text-slate-400 font-bold block">رابط متجرك الحقيقي المباشر:</span>
+                <div className="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800">
+                  <span className="font-mono text-[11px] sm:text-xs text-blue-400 font-bold truncate dir-ltr">
+                    https://{launchSuccessData.subdomain}.za3em.shop
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyStoreLink(`https://${launchSuccessData.subdomain}.za3em.shop`)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black transition-colors shrink-0 cursor-pointer"
+                  >
+                    <Copy className="size-3" />
+                    <span>{linkCopied ? 'تم النسخ' : 'نسخ الرابط'}</span>
+                  </button>
+                </div>
+              </div>
 
-            {/* Logistics & 5 Free Shipments Active */}
-            <div className="p-3.5 rounded-2xl bg-blue-950/40 border border-blue-800/60 text-xs text-blue-300 flex items-center gap-2 font-bold">
-              <Truck className="size-4 text-blue-400 shrink-0" />
-              <span>رصيد 5 شحنات مجانية مفعل لمتجرك مع أسطول الزعيم في العراق!</span>
+              {/* Quick Preview & Free Shipments Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-slate-300">
+                  <span>معاينة بالمنصة:</span>
+                  <a
+                    href={`/#/store/${launchSuccessData.subdomain}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-400 hover:text-blue-300 font-bold underline flex items-center gap-0.5"
+                  >
+                    <span>زيارة الآن</span>
+                    <ExternalLink className="size-2.5" />
+                  </a>
+                </div>
+
+                <div className="p-2 rounded-xl bg-blue-950/40 border border-blue-800/60 text-blue-300 flex items-center gap-1.5 font-bold">
+                  <Truck className="size-3 text-blue-400 shrink-0" />
+                  <span className="truncate">5 شحنات مجانية مفعلة!</span>
+                </div>
+              </div>
             </div>
 
             {/* Actions */}
-            <div className="space-y-2 pt-2">
+            <div className="space-y-2 pt-1">
               <a
                 href={launchSuccessData.seedUrl || `https://${launchSuccessData.subdomain}.za3em.shop`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer"
+                className="w-full py-2.5 sm:py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs text-center flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/25 transition-all cursor-pointer"
               >
                 <span>فتح وتجربة المتجر المباشر</span>
-                <ExternalLink className="size-4" />
+                <ExternalLink className="size-3.5" />
               </a>
 
               <button
@@ -2004,7 +2008,7 @@ export function OnboardingPage() {
                   window.location.hash = '#/dashboard';
                   setLocation('/dashboard');
                 }}
-                className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors cursor-pointer"
+                className="w-full py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 الانتقال للوحة التحكم ومتابعة الشحنات
               </button>
