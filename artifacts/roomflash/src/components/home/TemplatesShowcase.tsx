@@ -7,52 +7,52 @@ interface TemplatesShowcaseProps {
 }
 
 export function TemplatesShowcase({ isAr = true }: TemplatesShowcaseProps) {
-  const [selectedTab, setSelectedTab] = useState<'brick' | 'nova' | 'classic' | 'aurit'>('brick');
+  const [selectedTab, setSelectedTab] = useState<'nexora' | 'sneak' | 'gizmo' | 'novatrend'>('nexora');
   const [isPaused, setIsPaused] = useState(false);
   const [animKey, setAnimKey] = useState(0);
 
   const tabs = [
     {
-      id: 'brick' as const,
-      label: isAr ? 'بريك' : 'Brick',
-      tag: isAr ? 'أزياء وإكسسوارات' : 'Fashion & Accessories',
-      domain: 'brick.zaeem.iq',
-      image: 'templates/store-brick.jpg',
-      badge: isAr ? 'متجر أزياء متكامل' : 'Modern Fashion Boutique',
-      highlightColor: 'from-rose-500 to-amber-500',
+      id: 'nexora' as const,
+      label: isAr ? 'نيكسورا' : 'Nexora',
+      tag: isAr ? 'أحذية وسنيكرز رياضية' : 'Next-Gen Footwear',
+      domain: 'nexora.zaeem.iq',
+      image: '/templates/store-nexora.png',
+      badge: isAr ? 'سنيكرز وأحذية رياضية عصرية' : 'Next-Gen Footwear & Sneakers',
+      highlightColor: 'from-lime-500 to-emerald-600',
     },
     {
-      id: 'nova' as const,
-      label: isAr ? 'نوفا' : 'Nova',
-      tag: isAr ? 'عبايات وأقمشة' : 'Abayas & Fabrics',
-      domain: 'nova.zaeem.iq',
-      image: 'templates/store-nova.jpg',
-      badge: isAr ? 'بوتيك فاخر للموضة الشرقية' : 'Luxury Arabian Modest Store',
-      highlightColor: 'from-emerald-600 to-teal-500',
+      id: 'sneak' as const,
+      label: isAr ? 'سنيك كونكت' : 'Sneak Connect',
+      tag: isAr ? 'أزياء وستريت وير رياضي' : 'Sports & Streetwear',
+      domain: 'sneak.zaeem.iq',
+      image: '/templates/store-sneak.png',
+      badge: isAr ? 'أحذية وأزياء رياضية احترافية' : 'Pro Athletic Footwear & Apparel',
+      highlightColor: 'from-slate-700 to-slate-900',
     },
     {
-      id: 'classic' as const,
-      label: isAr ? 'كلاسيك' : 'Classic',
-      tag: isAr ? 'عطور ومستلزمات عامة' : 'Perfumes & Retail',
-      domain: 'classic.zaeem.iq',
-      image: 'templates/store-classic.jpg',
-      badge: isAr ? 'عطور وبخور وساعات ريتيل' : 'Oud, Fragrances & Retail',
-      highlightColor: 'from-amber-600 to-yellow-500',
+      id: 'gizmo' as const,
+      label: isAr ? 'جيزموهاب' : 'GizmoHub',
+      tag: isAr ? 'إلكترونيات وأجهزة ذكية' : 'Smart Tech & Gadgets',
+      domain: 'gizmohub.zaeem.iq',
+      image: '/templates/store-gizmo.png',
+      badge: isAr ? 'سماعات، ساعات، وتقنيات حديثة' : 'Smart Tech, Gadgets & Audio',
+      highlightColor: 'from-blue-600 to-indigo-600',
     },
     {
-      id: 'aurit' as const,
-      label: isAr ? 'أوريت' : 'Aurit',
-      tag: isAr ? 'إلكترونيات وتقنية' : 'Electronics & Tech',
-      domain: 'aurit.zaeem.iq',
-      image: 'templates/store-aurit.jpg',
-      badge: isAr ? 'تقنية وأجهزة وقيمنق' : 'High-Tech & Smart Devices',
-      highlightColor: 'from-cyan-500 to-blue-600',
+      id: 'novatrend' as const,
+      label: isAr ? 'نوفا تريند' : 'NovaTrend',
+      tag: isAr ? 'تريند وموضة عصرية' : 'Trending Lifestyle',
+      domain: 'novatrend.zaeem.iq',
+      image: '/templates/store-novatrend.png',
+      badge: isAr ? 'متجر تريند شامل ولايف ستايل' : 'Curated Modern Lifestyle Store',
+      highlightColor: 'from-orange-500 to-rose-500',
     },
   ];
 
   const currentTab = tabs.find((t) => t.id === selectedTab) || tabs[0];
 
-  const handleTabChange = (tabId: 'brick' | 'nova' | 'classic' | 'aurit') => {
+  const handleTabChange = (tabId: 'nexora' | 'sneak' | 'gizmo' | 'novatrend') => {
     setSelectedTab(tabId);
     // Trigger reset animation
     setAnimKey((prev) => prev + 1);
