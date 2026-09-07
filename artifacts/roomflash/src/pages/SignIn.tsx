@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { fetchCloudStoreByUser } from '../utils/cloudDb';
 import { supabase } from '../utils/supabase';
+import { ensureAccountDataIsolation } from '../data/storeState';
 
 const GOOGLE_CLIENT_ID = '142585183945-gtdbluikj92oj5r5qpb902467a4ag95f.apps.googleusercontent.com';
 
@@ -54,6 +55,9 @@ export function SignInPage() {
     try {
       const userEmail = (userObj.email || '').toLowerCase().trim();
       const userId = userObj.id || meta?.sub || '';
+
+      // Ensure account data isolation: if switching users on same browser, wipe previous account's store data
+      ensureAccountDataIsolation(userId || userEmail);
 
       // 1. استعلام قاعدة البيانات السحابية المركزية لمعرفة ما إذا كان للتاجر متجر مسبقاً
       let dbStore: any = null;

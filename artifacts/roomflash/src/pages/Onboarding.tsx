@@ -14,6 +14,7 @@ import { formatIQD, IRAQ_GOVERNORATES } from '../data/iraqData';
 import { registerStore, encodeStoreSeed, checkSubdomainAvailability } from '../utils/storeRegistry';
 import { saveCloudStore } from '../utils/cloudDb';
 import { getStoredProducts, saveStoredProducts, type StoreProduct } from '../data/storeState';
+import { validateProductImageSafety } from '../utils/nsfwDetector';
 
 export interface RealTemplateOption {
   id: string;
@@ -450,12 +451,21 @@ export function OnboardingPage() {
   };
 
   // Permanent Base64 Image Reader with Automatic Canvas Compression (Prevents broken blob URLs & huge payloads)
-  const handleFileUpload = (
+  const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     target: 'product' | 'logo' | 'banner'
   ) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+
+      // Validate image safety & NSFW heuristics
+      const safety = await validateProductImageSafety(file, file.name);
+      if (!safety.isSafe) {
+        alert(safety.reason || 'عذراً، تم حظر الصورة لمخالفتها معايير النشر ومحتوى المنصة.');
+        e.target.value = '';
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         const rawResult = reader.result as string;

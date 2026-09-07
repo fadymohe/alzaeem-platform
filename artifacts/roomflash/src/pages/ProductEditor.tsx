@@ -9,33 +9,34 @@ import {
   type StoreProduct
 } from '../data/storeState';
 import { compressImageFile } from '../utils/imageHelper';
+import { validateProductImageSafety } from '../utils/nsfwDetector';
 
 const PRODUCT_CATEGORIES = [
   'عطور وتجميل',
   'أزياء وملابس رجالي',
   'أزياء وملابس نسائي',
   'إلكترونيات وموبايل',
-  'ساعات وإكسسوارات',
+  'ساعات وإكسسوات',
   'أحذية وحقائب',
   'عناية وصحة',
-  'مستلزمات المنزل',
-  'هدايا وتحف',
-  'عام'
+  'مستلزمات منزلية',
+  'أخرى'
 ];
 
 export function ProductEditorPage() {
   const params = useParams<{ id?: string }>();
   const [, setLocation] = useLocation();
+  const isEditing = Boolean(params?.id && params.id !== 'new');
 
-  const allStored = getStoredProducts();
-  const existingItem = params.id ? allStored.find((p) => p.id === Number(params.id)) : null;
+  const products = getStoredProducts();
+  const existingItem = isEditing ? products.find((p) => p.id === Number(params.id)) : null;
 
   const [name, setName] = useState('');
   const [sku, setSku] = useState('');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('45000');
-  const [compareAtPrice, setCompareAtPrice] = useState('58000');
-  const [stock, setStock] = useState('10');
+  const [price, setPrice] = useState('');
+  const [compareAtPrice, setCompareAtPrice] = useState('');
+  const [stock, setStock] = useState('20');
   const [category, setCategory] = useState('عطور وتجميل');
   const [status, setStatus] = useState<'active' | 'draft'>('active');
   const [images, setImages] = useState<string[]>(['', '', '']);
@@ -51,22 +52,25 @@ export function ProductEditorPage() {
 
   useEffect(() => {
     if (existingItem) {
-      setName(existingItem.name);
-      setSku(existingItem.sku);
-      setDescription(existingItem.description || '');
-      setPrice(String(existingItem.price));
+      setName(existingItem.name || '');
+      setSku(existingItem.sku || '');
+      setPrice(String(existingItem.price || ''));
       setCompareAtPrice(existingItem.compareAtPrice ? String(existingItem.compareAtPrice) : '');
-      setStock(String(existingItem.stock));
+      setStock(String(existingItem.stock ?? 20));
       setCategory(existingItem.category || 'عطور وتجميل');
+      setDescription(existingItem.description || '');
       setStatus(existingItem.status === 'archived' ? 'draft' : existingItem.status);
 
-      const existingImgs = existingItem.images && existingItem.images.length > 0
-        ? [...existingItem.images]
-        : (existingItem.imageUrl ? [existingItem.imageUrl] : []);
-      while (existingImgs.length < 3) existingImgs.push('');
-      setImages(existingImgs.slice(0, 3));
+      const loadedImgs = Array.isArray(existingItem.images) && existingItem.images.length > 0
+        ? existingItem.images
+        : existingItem.imageUrl ? [existingItem.imageUrl] : [];
+      setImages([
+        loadedImgs[0] || '',
+        loadedImgs[1] || '',
+        loadedImgs[2] || ''
+      ]);
     } else {
-      const randomSuffix = Math.floor(100 + Math.random() * 900);
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       setSku(`PRD-${randomSuffix}`);
     }
   }, [existingItem]);
@@ -77,7 +81,23 @@ export function ProductEditorPage() {
 
     try {
       setIsUploading(index);
+
+      // 1. Validate image safety & NSFW heuristics
+      const safety = await validateProductImageSafety(file, file.name);
+      if (!safety.isSafe) {
+        alert(safety.reason || 'عذراً، تم حظر الصورة لمخالفتها معايير النشر الآمن وسياسة المنصة.');
+        return;
+      }
+
       const compressedDataUrl = await compressImageFile(file, 800, 800, 0.8);
+
+      // 2. Validate compressed data URL as well
+      const safetyAfterCompress = await validateProductImageSafety(compressedDataUrl, file.name);
+      if (!safetyAfterCompress.isSafe) {
+        alert(safetyAfterCompress.reason || 'عذراً، تم حظر الصورة لمخالفتها معايير النشر الآمن وسياسة المنصة.');
+        return;
+      }
+
       setImages((prev) => {
         const next = [...prev];
         next[index] = compressedDataUrl;

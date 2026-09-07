@@ -699,10 +699,11 @@ export async function updateCloudStoreFullSettings(settings: {
     let query = `UPDATE za3em_stores SET ${updates.join(', ')} WHERE subdomain = '${targetSub}' RETURNING id;`;
     let res = await executeSql(query);
 
-    // If subdomain was renamed, also migrate landing pages and shipments
+    // If subdomain was renamed, also migrate landing pages and shipments, and delete old subdomain reservation
     if (cleanPrevSub && cleanPrevSub !== cleanSub) {
       await executeSql(`UPDATE za3em_landing_pages SET subdomain = '${cleanSub}' WHERE subdomain = '${cleanPrevSub}';`).catch(() => {});
       await executeSql(`UPDATE za3em_shipments SET subdomain = '${cleanSub}' WHERE subdomain = '${cleanPrevSub}';`).catch(() => {});
+      await executeSql(`DELETE FROM za3em_stores WHERE subdomain = '${cleanPrevSub}' AND subdomain != '${cleanSub}';`).catch(() => {});
     }
 
     // If no row was updated, insert store as new row
@@ -730,6 +731,21 @@ export async function updateCloudStoreFullSettings(settings: {
     return Boolean(res && !res.error);
   } catch (err) {
     console.warn('[CloudDb] Error updating store full settings:', err);
+    return false;
+  }
+}
+
+/**
+ * Completely deletes a subdomain reservation from Neon DB so it becomes immediately available for anyone to register
+ */
+export async function releaseCloudSubdomain(oldSubdomain: string): Promise<boolean> {
+  const clean = (oldSubdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+  if (!clean) return false;
+  try {
+    const res = await executeSql(`DELETE FROM za3em_stores WHERE subdomain = '${clean}';`);
+    return Boolean(res && !res.error);
+  } catch (err) {
+    console.warn('Error releasing cloud subdomain:', err);
     return false;
   }
 }

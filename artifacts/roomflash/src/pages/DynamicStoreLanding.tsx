@@ -569,18 +569,21 @@ export function DynamicStoreLanding() {
           </div>
 
           <div className="space-y-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-800/80 text-amber-300 text-xs font-bold">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-rose-950/80 border border-rose-800/80 text-rose-300 text-xs font-bold">
               <AlertTriangle className="size-3.5" />
-              <span>هذا الدومين الفرعي غير مسجل بعد في منصة الزعيم</span>
+              <span>المتجر غير متوفر حالياً</span>
             </span>
 
-            <h2 className="text-2xl sm:text-3xl font-black text-white font-mono dir-ltr">
-              https://{cleanSubdomain}.za3em.shop
+            <h2 className="text-2xl sm:text-3xl font-black text-white">
+              هذا الموقع غير متوفر حالياً
             </h2>
 
+            <p className="text-xs sm:text-sm text-slate-300 font-mono dir-ltr">
+              https://{cleanSubdomain}.za3em.shop
+            </p>
+
             <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-              لم يتم إنشاء أو ربط أي متجر إلكتروني على هذا الرابط حتى الآن.
-              إذا كان هذا الاسم يخص علامتك التجارية أو تجارتك، فيمكنك حجزه فوراً وإطلاق متجرك الإلكتروني في أقل من دقيقتين مجاناً!
+              هذا الرابط غير متوفر حالياً أو ربما تم تغيير نطاق المتجر القديم وإتاحته مجدداً. أصبح هذا النطاق متاحاً الآن ويمكنك حجزه فوراً وإطلاق متجرك الإلكتروني في أقل من دقيقتين مجاناً!
             </p>
           </div>
 

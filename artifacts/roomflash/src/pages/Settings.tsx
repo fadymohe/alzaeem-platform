@@ -5,8 +5,8 @@ import {
   AlertCircle, Smartphone, Key, User, Mail, Sparkles, ExternalLink, Clock,
   MapPin, Phone, Building2, HelpCircle, ArrowRight
 } from 'lucide-react';
-import { updateStoreActiveStatus } from '../utils/storeRegistry';
-import { updateCloudStoreFullSettings, checkCloudSubdomain, saveCloudStore } from '../utils/cloudDb';
+import { updateStoreActiveStatus, unregisterStore } from '../utils/storeRegistry';
+import { updateCloudStoreFullSettings, checkCloudSubdomain, saveCloudStore, releaseCloudSubdomain } from '../utils/cloudDb';
 import { IRAQ_GOVERNORATES } from '../data/iraqData';
 import { useLocation } from 'wouter';
 
@@ -131,6 +131,12 @@ export function SettingsPage() {
         country: 'Iraq',
         currency: 'IQD',
       };
+
+      // If subdomain was changed, release the previous subdomain completely
+      if (originalSubdomain && cleanSub !== originalSubdomain) {
+        unregisterStore(originalSubdomain);
+        await releaseCloudSubdomain(originalSubdomain).catch(() => {});
+      }
 
       // 1. Save to cloud PostgreSQL server
       await updateCloudStoreFullSettings({

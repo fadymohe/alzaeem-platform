@@ -1,5 +1,6 @@
 import { formatIQD } from './iraqData';
 import { saveCloudStore, saveCloudShipment, type CloudShipment } from '../utils/cloudDb';
+import { addAppNotification } from '../utils/notificationStore';
 
 export interface StoreProduct {
   id: number;
@@ -457,6 +458,20 @@ export function getStoredOrders(): StoreOrder[] {
       if (hasChange) {
         saveStoredOrders(cleaned);
       }
+
+      // Scope to active merchant subdomain if set
+      let currentSub = '';
+      try {
+        const rawStore = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
+        if (rawStore) {
+          currentSub = (JSON.parse(rawStore).subdomain || '').replace('.za3em.shop', '').toLowerCase().trim();
+        }
+      } catch {}
+
+      if (currentSub) {
+        return cleaned.filter((o) => !o.subdomain || o.subdomain === currentSub || o.subdomain === 'alzaeem');
+      }
+
       return cleaned;
     }
   } catch (e) {}
@@ -513,14 +528,26 @@ export function addStoredOrder(order: Omit<StoreOrder, 'id' | 'number' | 'create
   const updated = [newOrder, ...orders];
   saveStoredOrders(updated);
 
-  // 2. Sync Customer record
+  // 2. Sync Customer record with actual order amount
   try {
     addStoredCustomer({
       name: order.customerName,
       phone: order.customerPhone,
       city: order.customerCity,
       governorate: order.customerCity,
-      address: order.address
+      address: order.address,
+      ordersCount: 1,
+      totalSpent: Number(order.total) || 0
+    });
+  } catch {}
+
+  // 2.1 Trigger Live Notification for new order
+  try {
+    addAppNotification({
+      title: `طلب شراء جديد #${orderNumber}`,
+      desc: `استلمت طلباً جديداً من ${order.customerName} بقيمة ${formatIQD(order.total)} (${order.customerCity || 'بغداد'})`,
+      type: 'order',
+      link: '/orders'
     });
   } catch {}
 
@@ -659,14 +686,26 @@ export async function syncCloudOrders(targetSubdomain?: string): Promise<StoreOr
         existingTrackingMap.set(ship.trackingNumber, newOrd);
         hasNew = true;
 
-        // Sync Customer record as well
+        // Sync Customer record as well with actual order amount
         try {
           addStoredCustomer({
             name: ship.recipientName,
             phone: ship.recipientPhone,
             city: ship.governorate,
             governorate: ship.governorate,
-            address: ship.address
+            address: ship.address,
+            ordersCount: 1,
+            totalSpent: Number(ship.codAmount) || 0
+          });
+        } catch {}
+
+        // Trigger notification for incoming cloud order
+        try {
+          addAppNotification({
+            title: `طلب شراء جديد #${newOrd.number}`,
+            desc: `طلب وارد من ${newOrd.customerName} بقيمة ${formatIQD(newOrd.total)} (${newOrd.customerCity})`,
+            type: 'order',
+            link: '/orders'
           });
         } catch {}
       }
@@ -709,6 +748,16 @@ export function updateStoredOrderStatus(id: number, nextStatus: StoreOrder['stat
         mod.executeSql(q).catch(() => {});
       }
     });
+
+    // Trigger Notification for shipment status change
+    try {
+      addAppNotification({
+        title: `تحديث حالة الشحنة #${orders[idx].trackingNumber || orders[idx].number}`,
+        desc: `تم تغيير حالة الشحنة للزبون (${orders[idx].customerName}) إلى "${cloudStatus}"`,
+        type: 'shipment',
+        link: '/shipments'
+      });
+    } catch {}
   }
 
   if (typeof window !== 'undefined') {
@@ -753,8 +802,8 @@ export function addStoredCustomer(customer: Omit<StoreCustomer, 'id' | 'ordersCo
   const customers = getStoredCustomers();
   const existingIdx = customers.findIndex(c => c.phone === customer.phone || (c.name === customer.name && c.city === customer.city));
 
-  const ordersCount = typeof customer.ordersCount === 'number' ? customer.ordersCount : 1;
-  const totalSpent = typeof customer.totalSpent === 'number' ? customer.totalSpent : 45000;
+  const ordersCount = typeof customer.ordersCount === 'number' ? customer.ordersCount : 0;
+  const totalSpent = typeof customer.totalSpent === 'number' ? customer.totalSpent : 0;
 
   if (existingIdx !== -1) {
     customers[existingIdx].ordersCount += ordersCount;
@@ -784,4 +833,49 @@ export function addStoredCustomer(customer: Omit<StoreCustomer, 'id' | 'ordersCo
     window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
   }
   return newCustomer;
+}
+
+/**
+ * Completely purges previous user/account cached store records on logout
+ * to prevent cross-account data leakage in the same browser.
+ */
+export function clearMerchantSessionData(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const keysToRemove = [
+      ORDERS_KEY,
+      CUSTOMERS_KEY,
+      PRODUCTS_KEY,
+      'zaeem_local_shipments',
+      'zaeem_store_data',
+      'zaeem_onboarded_store',
+      'zaeem_store_active',
+      'zaeem_support_tickets',
+      'zaeem_notifications',
+      'zaeem_user',
+      'zaeem_active_subdomain',
+      'zaeem_onboarding_completed'
+    ];
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+    window.dispatchEvent(new CustomEvent('zaeem_notifications_updated'));
+  } catch (e) {
+    console.warn('Error clearing merchant session data:', e);
+  }
+}
+
+/**
+ * Ensures account data isolation: if a different merchant logs in on the same browser,
+ * cleans previous merchant data so it starts pristine and re-syncs from cloud.
+ */
+export function ensureAccountDataIsolation(currentUserIdOrEmail: string): void {
+  if (!currentUserIdOrEmail || typeof window === 'undefined') return;
+  try {
+    const cleanId = currentUserIdOrEmail.toLowerCase().trim();
+    const lastId = localStorage.getItem('zaeem_active_account_id');
+    if (lastId && lastId !== cleanId) {
+      clearMerchantSessionData();
+    }
+    localStorage.setItem('zaeem_active_account_id', cleanId);
+  } catch {}
 }

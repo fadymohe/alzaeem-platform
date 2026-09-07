@@ -12,8 +12,8 @@ import {
   StoreTemplates, type TemplateId, TEMPLATES_MAP, isMerchantPro, normalizeTemplateId, type TemplateConfig
 } from '../components/storefront/StoreTemplates';
 import { getStoredOrders, getStoredProducts } from '../data/storeState';
-import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus } from '../utils/storeRegistry';
-import { updateCloudStoreFullSettings, fetchCloudStore } from '../utils/cloudDb';
+import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus, unregisterStore } from '../utils/storeRegistry';
+import { updateCloudStoreFullSettings, fetchCloudStore, releaseCloudSubdomain } from '../utils/cloudDb';
 import { LandingPageBuilderPage } from './LandingPageBuilder';
 
 export function StorePage() {
@@ -192,6 +192,12 @@ export function StorePage() {
         localStorage.setItem('zaeem_user', JSON.stringify(u));
       }
 
+      // If subdomain was changed, release the previous subdomain completely so it becomes available for others
+      if (subdomain && cleanSub !== subdomain) {
+        unregisterStore(subdomain);
+        await releaseCloudSubdomain(subdomain).catch(() => {});
+      }
+
       await updateCloudStoreFullSettings({
         subdomain: cleanSub,
         previousSubdomain: subdomain,
@@ -243,8 +249,8 @@ export function StorePage() {
   return (
     <div className="space-y-7 rf-appear" dir="rtl">
       
-      {/* 1. Header Bar with Direct Link to Theme Customizer */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
+      {/* 1. Header Bar */}
+      <div className="flex flex-col gap-2 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-teal-700 dark:text-teal-400 mb-1">
             <StoreIcon className="size-4" /> قنوات البيع • المتجر الإلكتروني
@@ -256,31 +262,6 @@ export function StorePage() {
               {fullDomain}
             </span>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            تصاميم كاملة جاهزة لمتجرك بالكامل. عاين الثيم مباشرةً، وطبّقه بنقرة واحدة، ثم خصصه في المحرّر المرئي.
-          </p>
-        </div>
-
-        {/* Top Action Buttons */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setLocation('/theme-customizer')}
-            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-2 transition-transform hover:scale-105"
-          >
-            <Sliders className="size-4" />
-            <span>محرر وتخصيص الثيم (Theme Customizer)</span>
-          </button>
-
-          <a
-            href={fullUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="px-4 py-2.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all"
-          >
-            <span>زيارة المتجر الحي</span>
-            <ExternalLink className="size-3.5" />
-          </a>
         </div>
       </div>
 

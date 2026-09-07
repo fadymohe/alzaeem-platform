@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { supabase } from '../../utils/supabase';
+import { clearMerchantSessionData } from '../../data/storeState';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -91,6 +92,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
 
   const handleSignOut = () => {
     try {
+      clearMerchantSessionData();
       localStorage.removeItem('zaeem_user');
       localStorage.removeItem('zaeem_auth_action');
       supabase.auth.signOut().catch(() => null);

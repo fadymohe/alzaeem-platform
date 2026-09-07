@@ -4,6 +4,7 @@ import {
   Building, MessageCircle, Clock, ShieldCheck, ArrowRight, ExternalLink,
   FileText, Sparkles
 } from 'lucide-react';
+import { addAppNotification } from '../utils/notificationStore';
 
 interface SupportTicket {
   id: string;
@@ -110,6 +111,16 @@ export function SupportPage() {
       } catch {
         // ignore
       }
+
+      // Trigger Live Platform Notification for support interaction
+      try {
+        addAppNotification({
+          title: `تم فتح تذكرة دعم فني #${newTicketId}`,
+          desc: `تم توثيق استفسارك (${subject.trim()}) بنجاح، وسيتواصل معك فريق الدعم الفني قريباً.`,
+          type: 'support',
+          link: '/support'
+        });
+      } catch {}
 
       setLastTicket(newTicket);
       setSubmitting(false);

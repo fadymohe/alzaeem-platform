@@ -26,6 +26,7 @@ import {
   type StoreProduct
 } from '../data/storeState';
 import { compressImageFile } from '../utils/imageHelper';
+import { validateProductImageSafety } from '../utils/nsfwDetector';
 
 const PRODUCT_CATEGORIES = [
   'عطور وتجميل',
@@ -142,7 +143,23 @@ export function ProductsPage() {
 
     try {
       setIsUploading(index);
+
+      // 1. Validate image safety & NSFW heuristics
+      const safety = await validateProductImageSafety(file, file.name);
+      if (!safety.isSafe) {
+        alert(safety.reason || 'عذراً، تم حظر الصورة لمخالفتها معايير النشر الآمن ومحتوى المنصة.');
+        return;
+      }
+
       const compressedDataUrl = await compressImageFile(file, 800, 800, 0.8);
+
+      // 2. Validate compressed data URL as well
+      const safetyAfterCompress = await validateProductImageSafety(compressedDataUrl, file.name);
+      if (!safetyAfterCompress.isSafe) {
+        alert(safetyAfterCompress.reason || 'عذراً، تم حظر الصورة لمخالفتها معايير النشر الآمن ومحتوى المنصة.');
+        return;
+      }
+
       setImages((prev) => {
         const next = [...prev];
         next[index] = compressedDataUrl;

@@ -22,6 +22,7 @@ import {
   getStoredCustomers,
   saveStoredCustomers,
   addStoredCustomer,
+  getStoredOrders,
   type StoreCustomer,
 } from '../data/storeState';
 import { saveCloudCustomer, fetchCloudCustomers } from '../utils/cloudDb';
@@ -61,6 +62,7 @@ export function CustomersPage() {
     try {
       // 1. Load from local storage
       const localCustomers = getStoredCustomers();
+      const storedOrders = getStoredOrders();
 
       // 2. Fetch from Neon Cloud DB in background and merge if any server records exist
       let serverCustomers: StoreCustomer[] = [];
@@ -87,8 +89,31 @@ export function CustomersPage() {
       });
 
       const merged = Array.from(combinedMap.values());
-      saveStoredCustomers(merged);
-      setCustomers(merged);
+
+      // Correct and calculate actual totalSpent and ordersCount dynamically from actual orders
+      const correctedCustomers = merged.map((c) => {
+        const cleanPhone = (c.phone || '').replace(/[^0-9]/g, '');
+        const matchingOrders = storedOrders.filter((o) => {
+          const oPhone = (o.customerPhone || '').replace(/[^0-9]/g, '');
+          const phoneMatch = Boolean(cleanPhone && oPhone && (cleanPhone.includes(oPhone) || oPhone.includes(cleanPhone)));
+          const nameMatch = Boolean(o.customerName && c.name && o.customerName.trim().toLowerCase() === c.name.trim().toLowerCase());
+          return phoneMatch || nameMatch;
+        });
+
+        const actualOrdersCount = matchingOrders.length > 0 ? matchingOrders.length : (c.ordersCount && c.ordersCount > 0 && c.totalSpent !== 45000 ? c.ordersCount : 0);
+        const actualTotalSpent = matchingOrders.length > 0
+          ? matchingOrders.reduce((sum, ord) => sum + (Number(ord.total) || 0), 0)
+          : (c.totalSpent && c.totalSpent !== 45000 ? c.totalSpent : 0);
+
+        return {
+          ...c,
+          ordersCount: actualOrdersCount,
+          totalSpent: actualTotalSpent,
+        };
+      });
+
+      saveStoredCustomers(correctedCustomers);
+      setCustomers(correctedCustomers);
 
       if (showNotification) {
         showToast('تم تحديث قائمة الزبائن وسجل المبيعات بنجاح ✅');
@@ -111,8 +136,8 @@ export function CustomersPage() {
     setGovernorate('بغداد');
     setCity('');
     setAddress('');
-    setOrdersCount('1');
-    setTotalSpent('45000');
+    setOrdersCount('0');
+    setTotalSpent('0');
     setErrors({});
     setShowAddModal(true);
   };
@@ -190,8 +215,8 @@ export function CustomersPage() {
     const trimmedName = name.trim();
     const trimmedAddress = address.trim();
     const trimmedCity = city.trim();
-    const parsedOrders = parseInt(ordersCount, 10) || 1;
-    const parsedSpent = parseFloat(totalSpent) || 45000;
+    const parsedOrders = parseInt(ordersCount, 10) || 0;
+    const parsedSpent = parseFloat(totalSpent) || 0;
 
     try {
       // 1. الحفظ في التخزين المحلي فوراً

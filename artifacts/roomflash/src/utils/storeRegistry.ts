@@ -80,6 +80,13 @@ export function setCrossSubdomainCookie(name: string, value: string, days = 365)
 }
 
 /**
+ * Cookie Helper to delete a cookie across subdomains
+ */
+export function eraseCookie(name: string): void {
+  setCrossSubdomainCookie(name, "", -1);
+}
+
+/**
  * Encode a store object into a URL-safe compact string
  */
 export function encodeStoreSeed(data: RegisteredStoreData): string {
@@ -291,6 +298,48 @@ export async function updateStoreActiveStatus(subdomain: string, isActive: boole
   }
 
   return true;
+}
+
+/**
+ * Release an old subdomain from registries and caches so it becomes immediately available for others,
+ * and mark that old subdomain as unavailable.
+ */
+export function unregisterStore(subdomain: string): void {
+  const cleanSub = (subdomain || "").replace(".za3em.shop", "").toLowerCase().trim();
+  if (!cleanSub) return;
+
+  if (typeof window !== "undefined") {
+    try {
+      // 1. Remove from localStorage registry map
+      const localMapRaw = localStorage.getItem("zaeem_stores_registry");
+      if (localMapRaw) {
+        const localMap = JSON.parse(localMapRaw);
+        if (localMap[cleanSub]) {
+          delete localMap[cleanSub];
+          localStorage.setItem("zaeem_stores_registry", JSON.stringify(localMap));
+        }
+      }
+
+      // 2. Remove from shared cross-subdomain cookie map
+      const cookieMapRaw = getCookie("zaeem_stores_registry");
+      if (cookieMapRaw) {
+        const cookieMap = JSON.parse(cookieMapRaw);
+        if (cookieMap[cleanSub]) {
+          delete cookieMap[cleanSub];
+          setCrossSubdomainCookie("zaeem_stores_registry", JSON.stringify(cookieMap));
+        }
+      }
+
+      // 3. Clear active status cookies/localStorage for this old subdomain
+      eraseCookie(`zaeem_store_active_${cleanSub}`);
+      localStorage.removeItem(`zaeem_store_active_${cleanSub}`);
+      
+      // Dispatch update event
+      window.dispatchEvent(new CustomEvent('zaeem_store_updated', { detail: { unassignedSubdomain: cleanSub } }));
+    } catch (e) {
+      console.warn("Error unregistering store:", e);
+    }
+  }
 }
 
 /**

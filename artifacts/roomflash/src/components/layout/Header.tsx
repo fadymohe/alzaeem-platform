@@ -1,22 +1,27 @@
-import { useState } from 'react';
-
-import { useUser, UserButton } from '@clerk/react';
-import { Menu, Bell, Check, ShoppingBag, Truck, AlertTriangle, Sparkles, X, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { useUser } from '@clerk/react';
+import {
+  Menu,
+  Bell,
+  Check,
+  ShoppingBag,
+  Truck,
+  Sparkles,
+  LifeBuoy,
+  X,
+  ExternalLink,
+} from 'lucide-react';
+import {
+  getStoredNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type AppNotification,
+} from '../../utils/notificationStore';
 
 interface HeaderProps {
   onOpenMobile: () => void;
 }
-
-interface NotificationItem {
-  id: string;
-  title: string;
-  desc: string;
-  time: string;
-  read: boolean;
-  type: 'order' | 'shipment' | 'stock' | 'system';
-}
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
 
 function SafeUserAvatar() {
   let zaeemUser: any = null;
@@ -84,13 +89,62 @@ function SafeUserAvatar() {
 }
 
 export function Header({ onOpenMobile }: HeaderProps) {
+  const [, setLocation] = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => getStoredNotifications());
+
+  const reloadNotifs = () => {
+    setNotifications(getStoredNotifications());
+  };
+
+  useEffect(() => {
+    reloadNotifs();
+    const handleUpdate = () => reloadNotifs();
+    window.addEventListener('zaeem_notifications_updated', handleUpdate);
+    window.addEventListener('zaeem_store_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('zaeem_notifications_updated', handleUpdate);
+      window.removeEventListener('zaeem_store_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
+  const handleMarkAllRead = () => {
+    markAllNotificationsRead();
+    reloadNotifs();
+  };
+
+  const handleNotificationClick = (n: AppNotification) => {
+    markNotificationRead(n.id);
+    reloadNotifs();
+    setShowNotifications(false);
+    if (n.link) {
+      setLocation(n.link);
+    } else if (n.type === 'order') {
+      setLocation('/orders');
+    } else if (n.type === 'shipment') {
+      setLocation('/shipments');
+    } else if (n.type === 'support') {
+      setLocation('/support');
+    }
+  };
+
+  const getIcon = (type: AppNotification['type']) => {
+    switch (type) {
+      case 'order':
+        return <ShoppingBag className="size-4 text-emerald-500 shrink-0" />;
+      case 'shipment':
+        return <Truck className="size-4 text-blue-500 shrink-0" />;
+      case 'support':
+        return <LifeBuoy className="size-4 text-purple-500 shrink-0" />;
+      case 'system':
+      default:
+        return <Sparkles className="size-4 text-amber-500 shrink-0" />;
+    }
   };
 
   return (
@@ -121,25 +175,34 @@ export function Header({ onOpenMobile }: HeaderProps) {
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             className="relative p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-            title="الإشعارات"
+            title="الإشعارات والتنبيهات"
           >
             <Bell className="size-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
+                {unreadCount > 9 ? '+9' : unreadCount}
+              </span>
             )}
           </button>
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className="absolute left-0 mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xl z-50 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <h3 className="font-extrabold text-xs text-slate-900 dark:text-white">الإشعارات والتنبيهات</h3>
+            <div className="absolute left-0 mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xl z-50 space-y-3 animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-xs text-slate-900 dark:text-white">الإشعارات والتنبيهات</h3>
+                  {unreadCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 dark:bg-teal-900/50 text-teal-800 dark:text-teal-300">
+                      {unreadCount} غير مقروء
+                    </span>
+                  )}
+                </div>
                 {unreadCount > 0 && (
                   <button
-                    onClick={markAllAsRead}
-                    className="text-[11px] font-bold text-teal-700 dark:text-teal-400 hover:underline"
+                    onClick={handleMarkAllRead}
+                    className="text-[11px] font-bold text-teal-700 dark:text-teal-400 hover:underline cursor-pointer"
                   >
-                    تحديد الكل كقروء
+                    تحديد الكل كمقروء
                   </button>
                 )}
               </div>
@@ -157,20 +220,34 @@ export function Header({ onOpenMobile }: HeaderProps) {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-72 overflow-y-auto rf-scrollbar">
+                <div className="space-y-2 max-h-80 overflow-y-auto rf-scrollbar pr-0.5">
                   {notifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`p-3 rounded-xl border transition-colors ${n.read
-                        ? 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 opacity-70'
-                        : 'bg-teal-50/50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/50'
+                      onClick={() => handleNotificationClick(n)}
+                      className={`p-3 rounded-xl border transition-all cursor-pointer hover:border-teal-400/60 ${n.read
+                        ? 'bg-slate-50/50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800/80 opacity-75'
+                        : 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-200/70 dark:border-teal-800/60 shadow-xs'
                         }`}
                     >
-                      <div className="flex items-start justify-between">
-                        <p className="font-extrabold text-xs text-slate-900 dark:text-white">{n.title}</p>
-                        <span className="text-[10px] text-slate-400 font-mono">{n.time}</span>
+                      <div className="flex items-start gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 shrink-0">
+                          {getIcon(n.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                              {n.title}
+                            </p>
+                            <span className="text-[10px] text-slate-400 font-medium shrink-0">
+                              {n.time}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                            {n.desc}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{n.desc}</p>
                     </div>
                   ))}
                 </div>
