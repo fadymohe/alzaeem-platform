@@ -8,7 +8,8 @@ import {
   CheckCircle2, AlertCircle, Tag, Package, Gift, Plus,
   CheckCheck, Globe, Star, Copy, ShoppingBag,
   X, Search, ShoppingCart, Shield, Laptop, RotateCcw,
-  SlidersHorizontal, Heart, Zap, Phone, MapPin, CheckCircle
+  SlidersHorizontal, Heart, Zap, Phone, MapPin, CheckCircle,
+  Tablet, Monitor, Maximize2, Minimize2
 } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../data/iraqData';
 import { registerStore, encodeStoreSeed, checkSubdomainAvailability } from '../utils/storeRegistry';
@@ -16,6 +17,7 @@ import { saveCloudStore } from '../utils/cloudDb';
 import { getStoredProducts, saveStoredProducts, type StoreProduct } from '../data/storeState';
 import { validateProductImageSafety } from '../utils/nsfwDetector';
 import { StoreTemplates, TEMPLATES_MAP, type TemplateId, normalizeTemplateId } from '../components/storefront/StoreTemplates';
+import { StoreIframePreview } from '../components/storefront/StoreIframePreview';
 
 export interface RealTemplateOption {
   id: string;
@@ -496,7 +498,8 @@ export function OnboardingPage() {
   const [productAdded, setProductAdded] = useState(false);
 
   // Interactive Live Preview Controls
-  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
+  const [fullscreenPreview, setFullscreenPreview] = useState<boolean>(false);
   const [previewQuantity, setPreviewQuantity] = useState(1);
   const [previewGov, setPreviewGov] = useState('بغداد');
   const [previewCustomerName, setPreviewCustomerName] = useState('');
@@ -1631,18 +1634,20 @@ export function OnboardingPage() {
                           </span>
 
                           <div className="flex items-center gap-1.5">
-                            {/* Live External Preview Link */}
+                            {/* Live Interactive Fullscreen Preview Modal */}
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handlePreviewTemplateExternal(tmpl.id);
+                                setSelectedTheme(tmpl.id);
+                                setPreviewReloadKey(k => k + 1);
+                                setFullscreenPreview(true);
                               }}
                               className="flex items-center gap-1 text-[11px] font-bold text-teal-300 hover:text-white bg-teal-950/60 hover:bg-teal-900 border border-teal-800/60 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-sm"
-                              title={`فتح المعاينة الحية للقالب على دومين ${tmpl.id.replace('store-', '')}.za3em.shop`}
+                              title={`معاينة تفاعلية حية لمتجرك بقالب ${tmpl.name}`}
                             >
-                              <ExternalLink className="size-3 text-teal-400" />
-                              <span>معاينة</span>
+                              <Eye className="size-3 text-teal-400" />
+                              <span>معاينة حية</span>
                             </button>
 
                             {/* Quick Modal Preview */}
@@ -1653,9 +1658,8 @@ export function OnboardingPage() {
                                 setPreviewModalTemplate(tmpl);
                               }}
                               className="flex items-center gap-1 text-[11px] font-bold text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                              title="معاينة تفاصيل الثيم"
+                              title="تفاصيل ومميزات الثيم"
                             >
-                              <Eye className="size-3 text-slate-400" />
                               <span>تفاصيل</span>
                             </button>
                           </div>
@@ -1929,7 +1933,7 @@ export function OnboardingPage() {
         {/* ========================================================================= */}
         <div className="lg:col-span-5 order-2">
           <div className="sticky top-20 rounded-3xl border border-slate-800 bg-[#0f172a]/95 backdrop-blur-xl p-4 flex flex-col space-y-3.5 shadow-2xl">
-            {/* Top Controls: Live Indicator + Device Mode Switcher */}
+            {/* Top Controls: Live Indicator + Device Mode Switcher + Fullscreen */}
             <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Globe className="size-4 text-emerald-400" />
@@ -1937,17 +1941,17 @@ export function OnboardingPage() {
                 <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
               </div>
 
-              {/* Mobile / Desktop Toggle & Reload Button */}
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl">
+              {/* Mobile / Tablet / Desktop Toggle & Reload & Maximize Buttons */}
+              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setPreviewDevice('mobile')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                     previewDevice === 'mobile'
                       ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
                   }`}
-                  title="عرض هاتف محمول"
+                  title="عرض هاتف محمول (375px)"
                 >
                   <Smartphone className="size-3" />
                   <span className="hidden sm:inline">جوال</span>
@@ -1955,8 +1959,22 @@ export function OnboardingPage() {
 
                 <button
                   type="button"
+                  onClick={() => setPreviewDevice('tablet')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                    previewDevice === 'tablet'
+                      ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="عرض جهاز لوحي (768px)"
+                >
+                  <Tablet className="size-3" />
+                  <span className="hidden sm:inline">لوحي</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setPreviewDevice('desktop')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                     previewDevice === 'desktop'
                       ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
@@ -1979,32 +1997,51 @@ export function OnboardingPage() {
                 >
                   <RotateCcw className={`size-3 ${previewIsReloading ? 'animate-spin text-teal-400' : ''}`} />
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFullscreenPreview(true)}
+                  className="p-1 rounded-lg bg-emerald-950/80 text-emerald-400 hover:text-white hover:bg-emerald-800/80 border border-emerald-700/60 transition-colors cursor-pointer"
+                  title="تكبير المعاينة بالكامل (ملء الشاشة)"
+                >
+                  <Maximize2 className="size-3" />
+                </button>
               </div>
             </div>
 
-            {/* Current Active Theme Indicator */}
+            {/* Current Active Theme Indicator & Quick Fullscreen Button */}
             <div className="flex items-center justify-between px-1 text-[11px]">
               <span className="text-slate-400 font-bold flex items-center gap-1.5">
                 <span>القالب المطبق:</span>
                 <span className="text-emerald-400 font-black">{activeTheme.name}</span>
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-bold">معتمد 100%</span>
               </span>
-              <span className="text-slate-500 font-mono text-[10px]">
-                {previewDevice === 'mobile' ? 'Mobile View (375px)' : 'Desktop View (Full)'}
-              </span>
+              <button
+                type="button"
+                onClick={() => setFullscreenPreview(true)}
+                className="text-[10px] text-teal-400 hover:text-teal-300 font-bold flex items-center gap-1 cursor-pointer hover:underline"
+              >
+                <Maximize2 className="size-2.5" />
+                <span>تكبير المعاينة</span>
+              </button>
             </div>
 
             {/* Realistic Browser Window Frame */}
-            <div className={`transition-all duration-300 mx-auto w-full ${previewDevice === 'mobile' ? 'max-w-[410px]' : 'max-w-full'}`}>
+            <div className="transition-all duration-300 mx-auto w-full">
               <div className={`rounded-3xl border-2 border-slate-700/80 bg-slate-900 overflow-hidden shadow-2xl flex flex-col transition-all ${previewIsReloading ? 'opacity-50 scale-[0.99]' : 'opacity-100 scale-100'}`}>
 
                 {/* macOS Chrome Bar */}
                 <div className="bg-[#1e293b] border-b border-slate-700/80 px-3 py-2 flex items-center justify-between gap-2 select-none">
-                  {/* Traffic Lights */}
+                  {/* Traffic Lights - Clicking green opens fullscreen */}
                   <div className="flex items-center gap-1.5 text-[10px] shrink-0">
                     <span className="size-2.5 rounded-full bg-[#ef4444] inline-block" />
                     <span className="size-2.5 rounded-full bg-[#f59e0b] inline-block" />
-                    <span className="size-2.5 rounded-full bg-[#10b981] inline-block" />
+                    <button
+                      type="button"
+                      onClick={() => setFullscreenPreview(true)}
+                      className="size-2.5 rounded-full bg-[#10b981] inline-block hover:opacity-80 cursor-pointer"
+                      title="تكبير المعاينة"
+                    />
                   </div>
 
                   {/* HTTPS Omnibar */}
@@ -2029,48 +2066,325 @@ export function OnboardingPage() {
                     </button>
                   </div>
 
-                  {/* Live Status Pill */}
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-600/60 text-emerald-300 text-[9px] font-black shrink-0">
-                    <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>مباشر</span>
+                  {/* Live Status Pill & Maximize */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-600/60 text-emerald-300 text-[9px] font-black">
+                      <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>مباشر</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Main Store Viewport (Mobile or Desktop) */}
+                {/* Main Store Viewport (Mobile, Tablet, or Desktop) */}
                 {previewDevice === 'mobile' ? (
+                  /* Realistic iPhone Frame with Dynamic Island */
                   <div className="bg-slate-950 p-2 sm:p-3 flex justify-center">
-                    <div className="w-[375px] max-w-full rounded-[38px] border-[5px] border-slate-800 bg-slate-900 overflow-hidden shadow-2xl relative">
-                      {/* Dynamic Island */}
-                      <div className="bg-slate-950 h-4 w-24 mx-auto rounded-b-xl flex items-center justify-center mb-1">
-                        <span className="size-1.5 rounded-full bg-slate-800" />
+                    <div className="w-[365px] max-w-full h-[600px] rounded-[42px] border-[6px] border-slate-800 bg-slate-900 overflow-hidden shadow-2xl relative flex flex-col">
+                      {/* Dynamic Island Header */}
+                      <div className="bg-slate-950 px-5 pt-2 pb-1 flex items-center justify-between text-[10px] text-slate-400 font-mono select-none shrink-0">
+                        <span>09:41</span>
+                        <div className="h-4 w-20 bg-black rounded-full flex items-center justify-center gap-1.5 px-2">
+                          <span className="size-1.5 rounded-full bg-slate-700" />
+                          <span className="size-1 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px]">5G</span>
+                          <span className="size-2 rounded-full border border-slate-400 inline-block" />
+                        </div>
                       </div>
-                      <div className="overflow-y-auto max-h-[580px] rf-scrollbar text-right">
-                        <StoreTemplates
-                          key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
-                          storeName={storeName || 'متجري'}
-                          subdomain={subdomain.replace('.za3em.shop', '')}
-                          activeTemplateId={selectedTheme as any}
-                          standalone={true}
-                          logoUrl={logoUrl}
-                          storeCode={storeCode}
-                          customProduct={
-                            productAdded && productName
-                              ? {
-                                  id: 1,
-                                  name: productName,
-                                  price: Number(productPrice) || 35000,
-                                  imageUrl: productImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80',
-                                  category: productCategory || 'عام',
-                                  description: slogan || 'منتج أصلي معتمد'
-                                }
-                              : undefined
-                          }
-                        />
+
+                      {/* True Isolated Mobile Viewport via Iframe */}
+                      <div className="flex-1 w-full overflow-hidden relative bg-white">
+                        <StoreIframePreview
+                          width="100%"
+                          height="100%"
+                          reloadKey={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                        >
+                          <StoreTemplates
+                            key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                            storeName={storeName || 'متجري'}
+                            subdomain={subdomain.replace('.za3em.shop', '')}
+                            activeTemplateId={selectedTheme as any}
+                            standalone={true}
+                            logoUrl={logoUrl}
+                            storeCode={storeCode}
+                            customProduct={
+                              productAdded && productName
+                                ? {
+                                    id: 1,
+                                    name: productName,
+                                    price: Number(productPrice) || 35000,
+                                    imageUrl: productImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80',
+                                    category: productCategory || 'عام',
+                                    description: slogan || 'منتج أصلي معتمد'
+                                  }
+                                : undefined
+                            }
+                          />
+                        </StoreIframePreview>
+                      </div>
+
+                      {/* Home Indicator Bar */}
+                      <div className="bg-slate-950 py-1.5 flex justify-center shrink-0">
+                        <div className="w-28 h-1 bg-slate-500 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                ) : previewDevice === 'tablet' ? (
+                  /* Realistic Tablet Frame */
+                  <div className="bg-slate-950 p-2 sm:p-3 flex justify-center">
+                    <div className="w-full max-w-[460px] h-[600px] rounded-[28px] border-[6px] border-slate-800 bg-slate-900 overflow-hidden shadow-2xl relative flex flex-col">
+                      <div className="bg-slate-950 h-3 flex items-center justify-center shrink-0">
+                        <span className="size-1 rounded-full bg-slate-700" />
+                      </div>
+                      <div className="flex-1 w-full overflow-hidden relative bg-white">
+                        <StoreIframePreview
+                          width="100%"
+                          height="100%"
+                          reloadKey={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                        >
+                          <StoreTemplates
+                            key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                            storeName={storeName || 'متجري'}
+                            subdomain={subdomain.replace('.za3em.shop', '')}
+                            activeTemplateId={selectedTheme as any}
+                            standalone={true}
+                            logoUrl={logoUrl}
+                            storeCode={storeCode}
+                            customProduct={
+                              productAdded && productName
+                                ? {
+                                    id: 1,
+                                    name: productName,
+                                    price: Number(productPrice) || 35000,
+                                    imageUrl: productImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80',
+                                    category: productCategory || 'عام',
+                                    description: slogan || 'منتج أصلي معتمد'
+                                  }
+                                : undefined
+                            }
+                          />
+                        </StoreIframePreview>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="overflow-y-auto max-h-[620px] rf-scrollbar bg-slate-950 text-right">
+                  /* Scaled Desktop Viewport in Sidebar */
+                  <div className="bg-slate-950 p-2 sm:p-3 flex flex-col items-center">
+                    <div className="w-full mb-1.5 flex items-center justify-between text-[10px] text-slate-400 px-1">
+                      <span>محاكاة شاشة سطح المكتب</span>
+                      <button
+                        type="button"
+                        onClick={() => setFullscreenPreview(true)}
+                        className="text-teal-400 hover:text-teal-300 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Maximize2 className="size-3" />
+                        <span>فتح بالحجم الكامل (100%)</span>
+                      </button>
+                    </div>
+                    <div className="w-full h-[580px] overflow-hidden rounded-2xl border-2 border-slate-800 bg-white relative">
+                      <div
+                        className="origin-top-right overflow-y-auto rf-scrollbar"
+                        style={{
+                          width: '1000px',
+                          height: '1260px',
+                          transform: 'scale(0.46)',
+                          transformOrigin: 'top right'
+                        }}
+                      >
+                        <StoreIframePreview
+                          width="1000px"
+                          height="1260px"
+                          reloadKey={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                        >
+                          <StoreTemplates
+                            key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                            storeName={storeName || 'متجري'}
+                            subdomain={subdomain.replace('.za3em.shop', '')}
+                            activeTemplateId={selectedTheme as any}
+                            standalone={true}
+                            logoUrl={logoUrl}
+                            storeCode={storeCode}
+                            customProduct={
+                              productAdded && productName
+                                ? {
+                                    id: 1,
+                                    name: productName,
+                                    price: Number(productPrice) || 35000,
+                                    imageUrl: productImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80',
+                                    category: productCategory || 'عام',
+                                    description: slogan || 'منتج أصلي معتمد'
+                                  }
+                                : undefined
+                            }
+                          />
+                        </StoreIframePreview>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Mobile Live Preview Trigger Button (Visible only on mobile/tablets) */}
+      <div className="lg:hidden fixed bottom-5 left-4 right-4 z-40">
+        <button
+          type="button"
+          onClick={() => setFullscreenPreview(true)}
+          className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-600 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-xs shadow-2xl shadow-teal-950/80 flex items-center justify-between border border-teal-400/40 cursor-pointer animate-pulse hover:animate-none"
+        >
+          <div className="flex items-center gap-2">
+            <Eye className="size-4 text-teal-200" />
+            <span>معاينة المتجر المباشر الآن</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] bg-slate-950/60 px-2.5 py-1 rounded-full border border-teal-500/30">
+            <span className="text-emerald-300 font-bold">{activeTheme.name}</span>
+            <Maximize2 className="size-3 text-teal-300" />
+          </div>
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3.5 FULLSCREEN INTERACTIVE STORE PREVIEW MODAL */}
+      {/* ========================================================================= */}
+      {fullscreenPreview && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex flex-col p-2 sm:p-4 animate-fadeIn">
+          {/* Modal Header Controls */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 mb-2 flex items-center justify-between gap-3 shadow-xl select-none">
+            {/* Left: Window Controls + Title */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setFullscreenPreview(false)}
+                  className="size-3 rounded-full bg-[#ef4444] hover:opacity-80 cursor-pointer"
+                  title="إغلاق المعاينة"
+                />
+                <span className="size-3 rounded-full bg-[#f59e0b]" />
+                <span className="size-3 rounded-full bg-[#10b981]" />
+              </div>
+              <div className="h-5 w-px bg-slate-800 hidden sm:block" />
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="font-black text-white text-xs">{storeName || 'متجري'}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">
+                  {activeTheme.name}
+                </span>
+              </div>
+            </div>
+
+            {/* Center: Device Viewport Switcher */}
+            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('mobile')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  previewDevice === 'mobile'
+                    ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Smartphone className="size-3.5" />
+                <span className="hidden sm:inline">هاتف (375px)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('tablet')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  previewDevice === 'tablet'
+                    ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Tablet className="size-3.5" />
+                <span className="hidden sm:inline">لوحي (768px)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('desktop')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  previewDevice === 'desktop'
+                    ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Monitor className="size-3.5" />
+                <span className="hidden sm:inline">شاشة كمبيوتر (كامل)</span>
+              </button>
+            </div>
+
+            {/* Right: Omnibar, Reload & Close */}
+            <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-full px-3 py-1 text-xs font-mono text-slate-300">
+                <ShieldCheck className="size-3.5 text-emerald-400" />
+                <span className="text-emerald-400">https://</span>
+                <span>{subdomain.replace('.za3em.shop', '')}</span>
+                <span className="text-slate-500">.za3em.shop</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`https://${subdomain.replace('.za3em.shop', '')}.za3em.shop`);
+                    setCopiedUrl(true);
+                    setTimeout(() => setCopiedUrl(false), 2000);
+                  }}
+                  className="mr-1 text-slate-400 hover:text-white cursor-pointer"
+                  title="نسخ الرابط"
+                >
+                  {copiedUrl ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPreviewIsReloading(true);
+                  setPreviewReloadKey(k => k + 1);
+                  setTimeout(() => setPreviewIsReloading(false), 450);
+                }}
+                className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors cursor-pointer"
+                title="إعادة تحميل المعاينة"
+              >
+                <RotateCcw className={`size-3.5 ${previewIsReloading ? 'animate-spin text-teal-400' : ''}`} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFullscreenPreview(false)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold transition-colors cursor-pointer"
+              >
+                <X className="size-3.5" />
+                <span>العودة للإعداد</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Main Interactive Preview Canvas */}
+          <div className="flex-1 w-full overflow-hidden flex items-center justify-center p-2 rounded-2xl bg-slate-950/60 border border-slate-800 relative">
+            {previewDevice === 'mobile' ? (
+              /* Fullscreen Mobile Bezel */
+              <div className="w-[375px] max-w-full h-full max-h-[82vh] rounded-[48px] border-[8px] border-slate-800 bg-slate-900 shadow-2xl flex flex-col relative overflow-hidden">
+                <div className="bg-slate-950 px-6 pt-2.5 pb-1 flex items-center justify-between text-[10px] text-slate-400 font-mono select-none shrink-0">
+                  <span>09:41</span>
+                  <div className="h-4 w-24 bg-black rounded-full flex items-center justify-center gap-1.5 px-2">
+                    <span className="size-1.5 rounded-full bg-slate-700" />
+                    <span className="size-1 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px]">5G</span>
+                    <span className="size-2 rounded-full border border-slate-400 inline-block" />
+                  </div>
+                </div>
+
+                <div className="flex-1 w-full overflow-hidden relative bg-white">
+                  <StoreIframePreview
+                    width="100%"
+                    height="100%"
+                    reloadKey={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                  >
                     <StoreTemplates
                       key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
                       storeName={storeName || 'متجري'}
@@ -2092,13 +2406,123 @@ export function OnboardingPage() {
                           : undefined
                       }
                     />
-                  </div>
-                )}
+                  </StoreIframePreview>
+                </div>
+
+                <div className="bg-slate-950 py-2 flex justify-center shrink-0">
+                  <div className="w-32 h-1 bg-slate-500 rounded-full" />
+                </div>
               </div>
+            ) : previewDevice === 'tablet' ? (
+              /* Fullscreen Tablet Bezel */
+              <div className="w-[768px] max-w-full h-full max-h-[82vh] rounded-[36px] border-[8px] border-slate-800 bg-slate-900 shadow-2xl flex flex-col relative overflow-hidden">
+                <div className="bg-slate-950 h-3 flex items-center justify-center shrink-0">
+                  <span className="size-1.5 rounded-full bg-slate-700" />
+                </div>
+                <div className="flex-1 w-full overflow-hidden relative bg-white">
+                  <StoreIframePreview
+                    width="100%"
+                    height="100%"
+                    reloadKey={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                  >
+                    <StoreTemplates
+                      key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                      storeName={storeName || 'متجري'}
+                      subdomain={subdomain.replace('.za3em.shop', '')}
+                      activeTemplateId={selectedTheme as any}
+                      standalone={true}
+                      logoUrl={logoUrl}
+                      storeCode={storeCode}
+                      customProduct={
+                        productAdded && productName
+                          ? {
+                              id: 1,
+                              name: productName,
+                              price: Number(productPrice) || 35000,
+                              imageUrl: productImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80',
+                              category: productCategory || 'عام',
+                              description: slogan || 'منتج أصلي معتمد'
+                            }
+                          : undefined
+                      }
+                    />
+                  </StoreIframePreview>
+                </div>
+              </div>
+            ) : (
+              /* Fullscreen Desktop Viewport */
+              <div className="w-full max-w-[1360px] h-full max-h-[84vh] rounded-2xl border-2 border-slate-800 bg-slate-900 shadow-2xl overflow-hidden flex flex-col">
+                <div className="flex-1 w-full overflow-hidden relative bg-white">
+                  <StoreIframePreview
+                    width="100%"
+                    height="100%"
+                    reloadKey={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                  >
+                    <StoreTemplates
+                      key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                      storeName={storeName || 'متجري'}
+                      subdomain={subdomain.replace('.za3em.shop', '')}
+                      activeTemplateId={selectedTheme as any}
+                      standalone={true}
+                      logoUrl={logoUrl}
+                      storeCode={storeCode}
+                      customProduct={
+                        productAdded && productName
+                          ? {
+                              id: 1,
+                              name: productName,
+                              price: Number(productPrice) || 35000,
+                              imageUrl: productImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80',
+                              category: productCategory || 'عام',
+                              description: slogan || 'منتج أصلي معتمد'
+                            }
+                          : undefined
+                      }
+                    />
+                  </StoreIframePreview>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Modal Bottom Template Switcher Quick Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 mt-2 flex items-center justify-between gap-2 overflow-x-auto rf-scrollbar select-none shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-bold text-slate-400">تبديل القالب المباشر:</span>
             </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto rf-scrollbar">
+              {REAL_STORE_TEMPLATES.map((tmpl) => (
+                <button
+                  key={tmpl.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTheme(tmpl.id);
+                    setPreviewReloadKey(k => k + 1);
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                    selectedTheme === tmpl.id
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-1 ring-emerald-400'
+                      : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+                  }`}
+                >
+                  <span className={`size-2 rounded-full ${tmpl.colorDot}`} />
+                  <span>{tmpl.name}</span>
+                  {selectedTheme === tmpl.id && <Check className="size-3" />}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setFullscreenPreview(false)}
+              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-xs font-black shadow-md cursor-pointer shrink-0"
+            >
+              اعتماد ومتابعة الإعداد
+            </button>
           </div>
         </div>
-      </div>
+      )}
 
 {/* 4️⃣ FULL-SCREEN TEMPLATE LIVE PREVIEW MODAL */}
       {/* ========================================================================= */}
