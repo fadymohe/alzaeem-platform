@@ -1,4 +1,6 @@
 {
+  "buildCommand": "pnpm --filter @workspace/roomflash build || cd artifacts/roomflash && npm install && npm run build",
+  "outputDirectory": "artifacts/roomflash/dist",
   "cleanUrls": true,
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }

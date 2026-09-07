@@ -43,7 +43,8 @@ jobs:
           PORT: 5000
           BASE_PATH: /
           VITE_CLERK_PUBLISHABLE_KEY: pk_test_bW9kZXJuLWNhdGZpc2gtNzQuY2xlcmsuYWNjb3VudHMuZGV2JA
-        run: pnpm --filter roomflash build
+        run: |
+          pnpm --filter @workspace/roomflash build || (cd artifacts/roomflash && npm install && npm run build)
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
