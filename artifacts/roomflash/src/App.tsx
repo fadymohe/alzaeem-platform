@@ -37,6 +37,8 @@ import { SettingsPage } from './pages/Settings';
 import { SupportPage } from './pages/Support';
 import { ThemeCustomizerPage } from './pages/ThemeCustomizer';
 import { supabase } from './utils/supabase';
+import { setStoreDocumentIdentity } from './utils/storeIdentityHelper';
+import { getRegisteredStore } from './utils/storeRegistry';
 
 
 
@@ -184,6 +186,21 @@ function RoutedApp() {
     const search = window.location.search || '';
     return hash.includes('access_token=') || search.includes('access_token=') || search.includes('code=') || hash.includes('code=');
   });
+
+  // Early Subdomain Identity Sync for immediate tab title & favicon update
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hostMatch = window.location.hostname.match(/^([a-zA-Z0-9-]+)\.za3em\.shop$/i);
+    const hostSub = hostMatch?.[1]?.toLowerCase();
+    if (hostSub && !RESERVED_SUBDOMAINS.includes(hostSub)) {
+      const reg = getRegisteredStore(hostSub);
+      if (reg?.storeName) {
+        setStoreDocumentIdentity(reg.storeName, reg.logoUrl);
+      } else {
+        setStoreDocumentIdentity(`متجر ${hostSub}`);
+      }
+    }
+  }, []);
 
   // Automatic OAuth Token & PKCE Code Listener via Supabase SDK
   useEffect(() => {

@@ -9,6 +9,7 @@ import {
 } from '../components/storefront/StoreTemplates';
 import { getRegisteredStore, type RegisteredStoreData } from '../utils/storeRegistry';
 import { ExternalLink, ArrowRight } from 'lucide-react';
+import { setStoreDocumentIdentity, restoreDefaultDocumentIdentity } from '../utils/storeIdentityHelper';
 
 export function StandaloneStorePage() {
   const [match, params] = useRoute('/view-store/:subdomain');
@@ -38,6 +39,15 @@ export function StandaloneStorePage() {
   const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
   const [templateId, setTemplateId] = useState<TemplateId>('store-nova');
   const [storeData, setStoreData] = useState<RegisteredStoreData | null>(null);
+
+  useEffect(() => {
+    if (storeName) {
+      setStoreDocumentIdentity(storeName, storeData?.logoUrl);
+    }
+    return () => {
+      restoreDefaultDocumentIdentity();
+    };
+  }, [storeName, storeData?.logoUrl]);
 
   useEffect(() => {
     // 1. If cleanSub directly names a template or alias (nova, classic, aurit, brick, etc.)

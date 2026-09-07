@@ -16,6 +16,7 @@ import { addStoredOrder } from "../data/storeState";
 import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, PauseCircle, Power } from "lucide-react";
 import { StandaloneStorePage } from "./StandaloneStore";
 import { isTemplatePreview } from "../components/storefront/StoreTemplates";
+import { setStoreDocumentIdentity, restoreDefaultDocumentIdentity } from "../utils/storeIdentityHelper";
 
 export function DynamicStoreLanding() {
   const [matchView, paramsView] = useRoute("/view-store/:subdomain");
@@ -179,6 +180,16 @@ export function DynamicStoreLanding() {
   });
 
   const [loading, setLoading] = useState<boolean>(!isInitiallyKnown);
+
+  // تحديث عنوان التبويب (Tab Title) وأيقونة المتجر (Favicon) لحظياً مع اسم وشعار المتجر
+  useEffect(() => {
+    if (store?.name) {
+      setStoreDocumentIdentity(store.name, store.logoUrl || product?.imageUrl);
+    }
+    return () => {
+      restoreDefaultDocumentIdentity();
+    };
+  }, [store?.name, store?.logoUrl, product?.imageUrl]);
 
   // جلب ومزامنة بيانات المتجر لحظياً
   useEffect(() => {
@@ -347,6 +358,8 @@ export function DynamicStoreLanding() {
             logoUrl: cloudStore.logo_url || prev.logoUrl,
             bannerUrl: cloudStore.banner_url || prev.bannerUrl,
           }));
+
+          setStoreDocumentIdentity(cloudStore.name, cloudStore.logo_url);
 
           // استخراج كتالوج كافة المنتجات (القديمة والجديدة) المعروضة في المتجر
           const cloudCatalog = Array.isArray(cloudStore.products) && cloudStore.products.length > 0
