@@ -516,8 +516,8 @@ export function SettingsPage() {
                 className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-teal-600"
               >
                 {IRAQ_GOVERNORATES.map((gov) => (
-                  <option key={gov.id} value={gov.name}>
-                    {gov.name}
+                  <option key={gov} value={gov}>
+                    {gov}
                   </option>
                 ))}
               </select>

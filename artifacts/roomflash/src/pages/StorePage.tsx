@@ -4,10 +4,10 @@ import {
   Layers, Eye, RefreshCw, Zap, CheckCircle2, Palette, Save, ArrowLeft,
   ArrowUpRight, ShieldCheck, Box, Truck, Package, Plus, Trash2, Edit2,
   Smartphone, Monitor, CreditCard, DollarSign, Wallet, CheckSquare,
-  Type, Lock, Crown, Tag
+  Type, Lock, Crown, Tag, X
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
-import { StoreTemplates, type TemplateId, TEMPLATES_MAP } from '../components/storefront/StoreTemplates';
+import { StoreTemplates, type TemplateId, TEMPLATES_MAP, isMerchantPro } from '../components/storefront/StoreTemplates';
 import { getStoredOrders, getStoredProducts } from '../data/storeState';
 import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus } from '../utils/storeRegistry';
 import { updateCloudStoreFullSettings, fetchCloudStore } from '../utils/cloudDb';
@@ -19,91 +19,91 @@ export interface ExtendedTemplateConfig {
   nameEn: string;
   niche: string;
   badge: string;
+  image: string;
   isPro: boolean;
   colorDot: string;
 }
 
 export const ALL_STORE_TEMPLATES: Record<string, ExtendedTemplateConfig> = {
-  'shoppingcart.1.2.7': {
-    id: 'shoppingcart.1.2.7' as TemplateId,
-    name: 'سلة التسوق الشاملة',
-    nameEn: 'Shopping Cart v1.2.7',
-    niche: 'الافتراضي الشامل • سلة تسوق مرنة لكافة المنتجات',
-    badge: 'القالب الافتراضي',
+  'store-classic': {
+    id: 'store-classic' as TemplateId,
+    name: 'كلاسيك الفاخر',
+    nameEn: 'Store Classic',
+    niche: 'عطور ومقتنيات فاخرة وتراثية',
+    badge: 'ثيم كلاسيكي عربي',
+    image: '/templates/store-classic.jpg',
+    isPro: false,
+    colorDot: 'bg-amber-500'
+  },
+  'store-aurit': {
+    id: 'store-aurit' as TemplateId,
+    name: 'أوريت بوتيك',
+    nameEn: 'Store Aurit',
+    niche: 'أزياء عصرية ومستلزمات حياة يومية',
+    badge: 'بوتيك عصري',
+    image: '/templates/store-aurit.jpg',
     isPro: false,
     colorDot: 'bg-teal-400'
   },
-  'volt': {
-    id: 'volt' as TemplateId,
-    name: 'فولت إكسبريس',
-    nameEn: 'Volt Tech',
-    niche: 'إلكترونيات وتقنية وأجهزة ذكية',
-    badge: 'داكن عصري • نيون',
+  'store-nova': {
+    id: 'store-nova' as TemplateId,
+    name: 'نوفا الملكي',
+    nameEn: 'Store Nova',
+    niche: 'مستحضرات تجميل وأزياء نسائية راقية',
+    badge: 'تصميم أوروبي فاخر',
+    image: '/templates/store-nova.jpg',
     isPro: false,
-    colorDot: 'bg-emerald-400'
+    colorDot: 'bg-purple-400'
   },
-  'rose': {
-    id: 'rose' as TemplateId,
-    name: 'روز أتيليه',
-    nameEn: 'Rose Atelier',
-    niche: 'أزياء، عبايات، تجميل ومكياج',
-    badge: 'كلاسيك راقي • بيج ووردي',
-    isPro: false,
-    colorDot: 'bg-rose-400'
-  },
-  'nitro': {
-    id: 'nitro' as TemplateId,
-    name: 'نيترو سبورت',
-    nameEn: 'Nitro Sports',
-    niche: 'رياضة ولياقة وملابس شارع شبابية',
-    badge: 'رياضي داكن • أحمر نيون',
-    isPro: false,
-    colorDot: 'bg-red-500'
-  },
-  'sepia': {
-    id: 'sepia' as TemplateId,
-    name: 'هاير الملكي',
-    nameEn: 'Royal Sepia',
-    niche: 'ساعات، عطور ملكية وجلديات فاخرة',
-    badge: 'فخامة مطلقة • ذهبي داكن',
+  'store-brick': {
+    id: 'store-brick' as TemplateId,
+    name: 'بريك إندستريال',
+    nameEn: 'Store Brick',
+    niche: 'معدات وأدوات قوية وإلكترونيات صناعية',
+    badge: 'قوة وتحمل عالي',
+    image: '/templates/store-brick.jpg',
     isPro: true,
-    colorDot: 'bg-amber-400'
+    colorDot: 'bg-orange-500'
   },
-  'oret': {
-    id: 'oret' as TemplateId,
-    name: 'أوريت إكسبريس',
-    nameEn: 'Oret Express',
-    niche: 'متجر عصري للشراء السريع ومستلزمات المنزل',
-    badge: 'أزرق عصري • عروض',
+  'store-novatrend': {
+    id: 'store-novatrend' as TemplateId,
+    name: 'نوفا تريند',
+    nameEn: 'Store NovaTrend',
+    niche: 'تريندات شبابية وموضة الشارع العصرية',
+    badge: 'تريند شبابي',
+    image: '/templates/store-novatrend.png',
+    isPro: true,
+    colorDot: 'bg-pink-500'
+  },
+  'store-gizmo': {
+    id: 'store-gizmo' as TemplateId,
+    name: 'جيزمو سايبر تك',
+    nameEn: 'Store Gizmo',
+    niche: 'إلكترونيات وأجهزة ذكية وملحقات تقنية',
+    badge: 'سايبر تك متطور',
+    image: '/templates/store-gizmo.png',
     isPro: true,
     colorDot: 'bg-cyan-400'
   },
-  'easyorders-flash': {
-    id: 'shoppingcart.1.2.7' as TemplateId,
-    name: 'فلاش لاندينج',
-    nameEn: 'EasyOrders Flash',
-    niche: 'صفحة شراء فورية عالية التحويل بنموذج واحد',
-    badge: 'الأعلى تحويلاً للمبيعات',
+  'store-sneak': {
+    id: 'store-sneak' as TemplateId,
+    name: 'سنيك سبورت',
+    nameEn: 'Store Sneak',
+    niche: 'سنيكرز وملابس رياضية حيوية',
+    badge: 'رياضة وحيوية',
+    image: '/templates/store-sneak.png',
     isPro: true,
-    colorDot: 'bg-amber-500'
+    colorDot: 'bg-red-500'
   },
-  'nova': {
-    id: 'rose' as TemplateId,
-    name: 'نوفا الملكي',
-    nameEn: 'Nova Royal',
-    niche: 'أزياء راقية ومجوهرات وإكسسوارات',
-    badge: 'تصميم أوروبي فاخر',
+  'store-nexora': {
+    id: 'store-nexora' as TemplateId,
+    name: 'نيكسورا الملكي',
+    nameEn: 'Store Nexora',
+    niche: 'فخامة مطلقة وأجهزة ذكية وإكسسوارات VIP',
+    badge: 'فخامة VIP',
+    image: '/templates/store-nexora.png',
     isPro: true,
-    colorDot: 'bg-purple-400'
-  },
-  'classic': {
-    id: 'sepia' as TemplateId,
-    name: 'كلاسيك الفاخر',
-    nameEn: 'Classic Luxury',
-    niche: 'عطور شرقية وبخور ومقتنيات قيمة',
-    badge: 'طابع كلاسيكي عربي',
-    isPro: true,
-    colorDot: 'bg-yellow-500'
+    colorDot: 'bg-indigo-500'
   }
 };
 
@@ -133,8 +133,10 @@ export function StorePage() {
   const [subdomainInput, setSubdomainInput] = useState('alzaeem');
   const [subdomain, setSubdomain] = useState('alzaeem');
   const [isStoreActive, setIsStoreActive] = useState<boolean>(true);
-  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('shoppingcart.1.2.7');
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('store-classic');
   const [templateFilter, setTemplateFilter] = useState<'all' | 'free' | 'pro'>('all');
+  const [showProUpgradeModal, setShowProUpgradeModal] = useState(false);
+  const [attemptedProTheme, setAttemptedProTheme] = useState<ExtendedTemplateConfig | null>(null);
 
   // 2. Store Font & Typography
   const [storeFont, setStoreFont] = useState<string>('Tajawal');
@@ -587,66 +589,149 @@ export function StorePage() {
           </div>
 
           {/* Templates Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {templateEntries.map(([key, tpl]) => {
               const isSelected = activeTemplate === tpl.id;
+
+              const onTryActivate = (e?: React.MouseEvent) => {
+                if (e) e.stopPropagation();
+                if (tpl.isPro && !isMerchantPro()) {
+                  setAttemptedProTheme(tpl);
+                  setShowProUpgradeModal(true);
+                  return;
+                }
+                setActiveTemplate(tpl.id);
+              };
 
               return (
                 <div
                   key={key}
-                  onClick={() => setActiveTemplate(tpl.id)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                  onClick={() => onTryActivate()}
+                  className={`p-4 rounded-3xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between group ${
                     isSelected
-                      ? 'bg-teal-50/70 dark:bg-teal-950/50 border-teal-500 shadow-md ring-2 ring-teal-500/30'
-                      : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                      ? 'bg-teal-50/70 dark:bg-teal-950/50 border-teal-500 shadow-lg ring-2 ring-teal-500/30'
+                      : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md'
                   }`}
                 >
-                  {/* Pro / Free Badge */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`size-3 rounded-full ${tpl.colorDot}`} />
-                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                        {tpl.name}
-                      </h4>
-                    </div>
+                  {/* Theme Thumbnail Preview */}
+                  <div className="h-40 rounded-2xl overflow-hidden mb-3 bg-slate-900 relative border border-slate-200/50 dark:border-slate-800">
+                    <img
+                      src={tpl.image}
+                      alt={tpl.name}
+                      className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-                    {tpl.isPro ? (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 flex items-center gap-1 shadow-sm">
-                        <Crown className="size-3" /> مدفوع (PRO)
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                        ثيم مجاني
-                      </span>
-                    )}
+                    {/* Pro / Free Badge overlay */}
+                    <div className="absolute top-2.5 right-2.5">
+                      {tpl.isPro ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 flex items-center gap-1 shadow-lg">
+                          <Crown className="size-3" /> مدفوع (PRO)
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white shadow-lg">
+                          ثيم مجاني
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <p className="text-xs font-bold text-slate-400 font-mono">{tpl.nameEn}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
-                    {tpl.niche}
-                  </p>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`size-2.5 rounded-full ${tpl.colorDot}`} />
+                        <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          {tpl.name}
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 font-bold">{tpl.nameEn}</span>
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
+                      {tpl.niche}
+                    </p>
+                  </div>
 
                   <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                     <span className="text-[10px] text-slate-400">{tpl.badge}</span>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveTemplate(tpl.id);
-                      }}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      onClick={onTryActivate}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
                         isSelected
-                          ? 'bg-teal-700 text-white font-black'
+                          ? 'bg-teal-700 text-white font-black shadow-sm'
+                          : tpl.isPro && !isMerchantPro()
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-slate-950'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
                       }`}
                     >
-                      {isSelected ? 'المفعل حالياً ✓' : 'تفعيل هذا الثيم'}
+                      {isSelected ? (
+                        <>
+                          <Check className="size-3.5" />
+                          <span>المفعل حالياً</span>
+                        </>
+                      ) : tpl.isPro && !isMerchantPro() ? (
+                        <>
+                          <Crown className="size-3.5" />
+                          <span>تفعيل (PRO)</span>
+                        </>
+                      ) : (
+                        'تفعيل هذا الثيم'
+                      )}
                     </button>
                   </div>
                 </div>
               );
             })}
           </div>
+
+          {/* PRO Upgrade Modal inside StorePage */}
+          {showProUpgradeModal && attemptedProTheme && (
+            <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="max-w-md w-full rounded-3xl border border-amber-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95 relative">
+                <button
+                  onClick={() => setShowProUpgradeModal(false)}
+                  className="absolute top-4 left-4 text-slate-400 hover:text-white"
+                >
+                  <X className="size-5" />
+                </button>
+
+                <div className="size-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 grid place-items-center mx-auto shadow-lg">
+                  <Crown className="size-8" />
+                </div>
+
+                <div className="space-y-1">
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-950 border border-amber-700 text-amber-300 inline-block">
+                    ثيم مدفوع باشتراك PRO
+                  </span>
+                  <h3 className="font-extrabold text-xl text-white pt-2">
+                    قالب {attemptedProTheme.name}
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    هذا الثيم متاح حصرياً للمتاجر المشتركة في باقة PRO. قم بترقية اشتراكك للاستفادة من التصاميم المتقدمة ونسب التحويل العالية.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <a
+                    href="#/subscriptions"
+                    onClick={() => setShowProUpgradeModal(false)}
+                    className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105"
+                  >
+                    <Crown className="size-4" />
+                    <span>ترقية الباقة إلى PRO الآن</span>
+                  </a>
+
+                  <button
+                    onClick={() => setShowProUpgradeModal(false)}
+                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ========================================================================= */}

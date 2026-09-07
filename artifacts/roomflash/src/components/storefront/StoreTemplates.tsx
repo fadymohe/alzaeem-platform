@@ -1,12 +1,38 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShoppingBag, Search, Check, Star, ArrowLeft, Truck, ShieldCheck,
-  Sparkles, ExternalLink, Heart, Clock, Phone, MapPin, X, CheckCircle2
+  Sparkles, ExternalLink, Heart, Clock, Phone, MapPin, X, CheckCircle2,
+  Crown, Lock, AlertCircle, Zap
 } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../../data/iraqData';
 import { getStoredProducts, addStoredOrder, type StoreProduct } from '../../data/storeState';
 
-export type TemplateId = 'shoppingcart.1.2.7' | 'volt' | 'rose' | 'nitro' | 'sepia' | 'oret';
+// Import 8 theme components
+import { StoreClassicTheme } from './store-classic';
+import { StoreAuritTheme } from './store-aurit';
+import { StoreNovaTheme } from './store-nova';
+import { StoreBrickTheme } from './store-brick';
+import { StoreNovatrendTheme } from './store-novatrend';
+import { StoreGizmoTheme } from './store-gizmo';
+import { StoreSneakTheme } from './store-sneak';
+import { StoreNexoraTheme } from './store-nexora';
+
+export type TemplateId =
+  | 'store-classic'
+  | 'store-aurit'
+  | 'store-nova'
+  | 'store-brick'
+  | 'store-novatrend'
+  | 'store-gizmo'
+  | 'store-sneak'
+  | 'store-nexora'
+  // Legacy backward-compatible aliases
+  | 'shoppingcart.1.2.7'
+  | 'volt'
+  | 'rose'
+  | 'nitro'
+  | 'sepia'
+  | 'oret';
 
 export interface TemplateConfig {
   id: TemplateId;
@@ -14,117 +40,155 @@ export interface TemplateConfig {
   nameEn: string;
   niche: string;
   badge: string;
-  bgClass: string;
-  cardClass: string;
-  headerClass: string;
-  accentBtnClass: string;
-  accentTextClass: string;
-  badgeClass: string;
-  heroBannerTitle: string;
-  heroBannerSubtitle: string;
-  heroImage: string;
+  isPro: boolean;
+  image: string;
+  colorDot: string;
+  bgClass?: string;
+  cardClass?: string;
+  headerClass?: string;
+  accentBtnClass?: string;
+  accentTextClass?: string;
+  badgeClass?: string;
+  heroBannerTitle?: string;
+  heroBannerSubtitle?: string;
+  heroImage?: string;
 }
 
-export const TEMPLATES_MAP: Record<TemplateId, TemplateConfig> = {
-  'shoppingcart.1.2.7': {
-    id: 'shoppingcart.1.2.7',
-    name: 'shoppingcart.1.2.7',
-    nameEn: 'Shopping Cart v1.2.7 (Default)',
-    niche: 'الافتراضي الشامل • سلة التسوق',
-    badge: 'القالب الافتراضي • shoppingcart.1.2.7',
-    bgClass: 'bg-[#090d16] text-white font-sans',
-    cardClass: 'bg-[#0d1322] border-teal-500/40 text-white shadow-xl',
-    headerClass: 'bg-[#0d1322]/90 border-teal-500/40 backdrop-blur-md',
-    accentBtnClass: 'bg-teal-500 hover:bg-teal-400 text-slate-950 font-black',
-    accentTextClass: 'text-teal-400',
-    badgeClass: 'bg-teal-950 border-teal-800 text-teal-300',
-    heroBannerTitle: 'قالب shoppingcart.1.2.7 الافتراضي الشامل',
-    heroBannerSubtitle: 'مربوط تلقائياً بالنطاق الفرعي والدفع عند الاستلام مع خدمات الشحن السريع في جميع المحافظات',
-    heroImage: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&auto=format&fit=crop&q=80'
+// 8 Theme Definitions (3 Free, 5 PRO)
+export const TEMPLATES_MAP: Record<string, TemplateConfig> = {
+  'store-classic': {
+    id: 'store-classic',
+    name: 'كلاسيك الفاخر',
+    nameEn: 'Store Classic',
+    niche: 'عطور ومقتنيات فاخرة وتراثية',
+    badge: 'ثيم كلاسيكي عربي',
+    isPro: false,
+    image: '/templates/store-classic.jpg',
+    colorDot: 'bg-amber-500'
   },
-  volt: {
-    id: 'volt',
-    name: 'فولت',
-    nameEn: 'Volt Tech',
-    niche: 'إلكترونيات وتقنية',
-    badge: 'داكن عصري • نيون',
-    bgClass: 'bg-[#090d16] text-white font-sans',
-    cardClass: 'bg-[#0d1322] border-slate-800 text-white',
-    headerClass: 'bg-[#0d1322]/90 border-slate-800 backdrop-blur-md',
-    accentBtnClass: 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black',
-    accentTextClass: 'text-emerald-400',
-    badgeClass: 'bg-emerald-950 border-emerald-800 text-emerald-300',
-    heroBannerTitle: 'جيل جديد من التقنية بين يديك',
-    heroBannerSubtitle: 'سماعات، ساعات ذكية وإلكترونيات فاخرة بتوصيل سريع لجميع المحافظات',
-    heroImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80'
+  'store-aurit': {
+    id: 'store-aurit',
+    name: 'أوريت بوتيك',
+    nameEn: 'Store Aurit',
+    niche: 'أزياء عصرية ومستلزمات حياة يومية',
+    badge: 'بوتيك عصري',
+    isPro: false,
+    image: '/templates/store-aurit.jpg',
+    colorDot: 'bg-teal-400'
   },
-  rose: {
-    id: 'rose',
-    name: 'روز أتيليه',
-    nameEn: 'Rose Atelier',
-    niche: 'أزياء وعبايات وتجميل',
-    badge: 'كلاسيك فاخر • بيج ووردي',
-    bgClass: 'bg-[#faf6f3] text-slate-900 font-sans',
-    cardClass: 'bg-white border-rose-100 text-slate-900 shadow-sm',
-    headerClass: 'bg-white/90 border-rose-100 backdrop-blur-md',
-    accentBtnClass: 'bg-rose-700 hover:bg-rose-800 text-white font-bold',
-    accentTextClass: 'text-rose-700',
-    badgeClass: 'bg-rose-50 border-rose-200 text-rose-800',
-    heroBannerTitle: 'أناقتكِ هي عنوان تميزكِ',
-    heroBannerSubtitle: 'أحدث تشكيلة من الأزياء والعبايات والعطور الملكية المميزة',
-    heroImage: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800&auto=format&fit=crop&q=80'
+  'store-nova': {
+    id: 'store-nova',
+    name: 'نوفا الملكي',
+    nameEn: 'Store Nova',
+    niche: 'مستحضرات تجميل وأزياء نسائية راقية',
+    badge: 'تصميم أوروبي فاخر',
+    isPro: false,
+    image: '/templates/store-nova.jpg',
+    colorDot: 'bg-purple-400'
   },
-  nitro: {
-    id: 'nitro',
-    name: 'نيترو',
-    nameEn: 'Nitro Sports',
-    niche: 'رياضة وفتنس وملابس شارع',
-    badge: 'رياضي داكن • أحمر نيون',
-    bgClass: 'bg-[#0c0808] text-white font-sans',
-    cardClass: 'bg-[#140c0c] border-red-950 text-white',
-    headerClass: 'bg-[#140c0c]/90 border-red-950 backdrop-blur-md',
-    accentBtnClass: 'bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-wider',
-    accentTextClass: 'text-red-500',
-    badgeClass: 'bg-red-950 border-red-800 text-red-300',
-    heroBannerTitle: 'تجاوز حدودك مع نترو الرياضي',
-    heroBannerSubtitle: 'معدات لياقة بدنية وملابس رياضية حادة الأداء أعلى جودة',
-    heroImage: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80'
+  'store-brick': {
+    id: 'store-brick',
+    name: 'بريك إندستريال',
+    nameEn: 'Store Brick',
+    niche: 'معدات وأدوات قوية وإلكترونيات صناعية',
+    badge: 'قوة وتحمل عالي',
+    isPro: true,
+    image: '/templates/store-brick.jpg',
+    colorDot: 'bg-orange-500'
   },
-  sepia: {
-    id: 'sepia',
-    name: 'هاير سيبيا',
-    nameEn: 'Higher Sepia',
-    niche: 'ساعات وعطور وجلديات',
-    badge: 'تراثي راقي • ذهبي وسيبيا',
-    bgClass: 'bg-[#17120c] text-amber-50 font-sans',
-    cardClass: 'bg-[#211a12] border-amber-900/40 text-amber-100',
-    headerClass: 'bg-[#211a12]/90 border-amber-900/40 backdrop-blur-md',
-    accentBtnClass: 'bg-amber-600 hover:bg-amber-500 text-slate-950 font-black',
-    accentTextClass: 'text-amber-400',
-    badgeClass: 'bg-amber-950 border-amber-800 text-amber-300',
-    heroBannerTitle: 'أصالة التراث وفخامة المقتنيات',
-    heroBannerSubtitle: 'ساعات أوتوماتيكية، عود ملكي وحقائب جلد طبيعي فاخرة',
-    heroImage: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80'
+  'store-novatrend': {
+    id: 'store-novatrend',
+    name: 'نوفا تريند',
+    nameEn: 'Store NovaTrend',
+    niche: 'تريندات شبابية وموضة الشارع العصرية',
+    badge: 'تريند شبابي',
+    isPro: true,
+    image: '/templates/store-novatrend.png',
+    colorDot: 'bg-pink-500'
   },
-  oret: {
-    id: 'oret',
-    name: 'أوريت إكسبريس',
-    nameEn: 'Oret Express',
-    niche: 'متجر عام وهدايا سرعة',
-    badge: 'عصري ملون • سايبر',
-    bgClass: 'bg-[#0f172a] text-white font-sans',
-    cardClass: 'bg-[#1e293b] border-slate-700 text-white',
-    headerClass: 'bg-[#1e293b]/90 border-slate-700 backdrop-blur-md',
-    accentBtnClass: 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black',
-    accentTextClass: 'text-cyan-400',
-    badgeClass: 'bg-cyan-950 border-cyan-800 text-cyan-300',
-    heroBannerTitle: 'كل ما تحتاجه في مكان واحد',
-    heroBannerSubtitle: 'عروض سريعة وشحن مباشر لجميع المحافظات والدفع عند الاستلام',
-    heroImage: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&auto=format&fit=crop&q=80'
-  }
+  'store-gizmo': {
+    id: 'store-gizmo',
+    name: 'جيزمو سايبر تك',
+    nameEn: 'Store Gizmo',
+    niche: 'إلكترونيات وأجهزة ذكية وملحقات تقنية',
+    badge: 'سايبر تك متطور',
+    isPro: true,
+    image: '/templates/store-gizmo.png',
+    colorDot: 'bg-cyan-400'
+  },
+  'store-sneak': {
+    id: 'store-sneak',
+    name: 'سنيك سبورت',
+    nameEn: 'Store Sneak',
+    niche: 'سنيكرز وملابس رياضية حيوية',
+    badge: 'رياضة وحيوية',
+    isPro: true,
+    image: '/templates/store-sneak.png',
+    colorDot: 'bg-red-500'
+  },
+  'store-nexora': {
+    id: 'store-nexora',
+    name: 'نيكسورا الملكي',
+    nameEn: 'Store Nexora',
+    niche: 'فخامة مطلقة وأجهزة ذكية وإكسسوارات VIP',
+    badge: 'فخامة VIP',
+    isPro: true,
+    image: '/templates/store-nexora.png',
+    colorDot: 'bg-indigo-500'
+  },
 };
 
-interface StoreTemplatesProps {
+// Helper: Normalize legacy or unknown template IDs to 8 primary IDs
+export function normalizeTemplateId(id?: string): TemplateId {
+  if (!id) return 'store-classic';
+  const clean = id.toLowerCase().trim();
+
+  if (TEMPLATES_MAP[clean]) {
+    return clean as TemplateId;
+  }
+
+  // Backward-compatibility mapping
+  switch (clean) {
+    case 'shoppingcart.1.2.7':
+      return 'store-classic';
+    case 'volt':
+      return 'store-gizmo';
+    case 'rose':
+    case 'nova':
+      return 'store-nova';
+    case 'nitro':
+      return 'store-sneak';
+    case 'sepia':
+    case 'classic':
+      return 'store-classic';
+    case 'oret':
+      return 'store-aurit';
+    default:
+      return 'store-classic';
+  }
+}
+
+// Check if merchant has an active PRO subscription
+export function isMerchantPro(): boolean {
+  try {
+    const rawUser = localStorage.getItem('zaeem_user');
+    const user = rawUser ? JSON.parse(rawUser) : null;
+    const plan = (
+      user?.plan ||
+      user?.subscription ||
+      user?.tier ||
+      localStorage.getItem('zaeem_plan') ||
+      localStorage.getItem('zaeem_subscription') ||
+      'free'
+    ).toLowerCase();
+
+    return plan === 'pro' || plan === 'enterprise' || plan === 'vip' || plan === 'premium';
+  } catch {
+    return false;
+  }
+}
+
+export interface StoreTemplatesProps {
   storeName?: string;
   subdomain?: string;
   activeTemplateId?: TemplateId;
@@ -149,7 +213,7 @@ interface StoreTemplatesProps {
 export function StoreTemplates({
   storeName = 'متجر الزعيم الذهبي',
   subdomain = 'fady',
-  activeTemplateId = 'shoppingcart.1.2.7',
+  activeTemplateId = 'store-classic',
   standalone = false,
   onTemplateChange,
   customProduct,
@@ -157,17 +221,21 @@ export function StoreTemplates({
   storeCode,
   logoUrl
 }: StoreTemplatesProps) {
-  const [currentThemeId, setCurrentThemeId] = useState<TemplateId>(activeTemplateId);
+  const [currentThemeId, setCurrentThemeId] = useState<TemplateId>(() => normalizeTemplateId(activeTemplateId));
   const [cartCount, setCartCount] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProductModal, setSelectedProductModal] = useState<StoreProduct | null>(null);
   const [orderSuccessModal, setOrderSuccessModal] = useState(false);
 
+  // Pro Upgrade Warning Modal
+  const [showProModal, setShowProModal] = useState(false);
+  const [selectedProTheme, setSelectedProTheme] = useState<TemplateConfig | null>(null);
+
   // Sync activeTemplateId prop changes
   useEffect(() => {
-    if (activeTemplateId && TEMPLATES_MAP[activeTemplateId]) {
-      setCurrentThemeId(activeTemplateId);
+    if (activeTemplateId) {
+      setCurrentThemeId(normalizeTemplateId(activeTemplateId));
     }
   }, [activeTemplateId]);
 
@@ -201,7 +269,6 @@ export function StoreTemplates({
   let productsList: StoreProduct[] = [];
   if (incomingList.length > 0) {
     productsList = [...incomingList];
-    // If customProduct is provided and not yet in incomingList, prepend it
     if (customProduct && (customProduct.title || customProduct.name)) {
       const cName = (customProduct.title || customProduct.name || '').trim();
       if (!productsList.some(p => p.name === cName)) {
@@ -256,19 +323,39 @@ export function StoreTemplates({
     }];
   }
 
-  const theme = TEMPLATES_MAP[currentThemeId] || TEMPLATES_MAP.volt;
   const fullDomain = `${subdomain}.za3em.shop`;
 
+  // Theme Activation logic with PRO verification
   const handleSelectTheme = (id: TemplateId) => {
-    setCurrentThemeId(id);
-    if (onTemplateChange) onTemplateChange(id);
+    const normId = normalizeTemplateId(id);
+    const themeConfig = TEMPLATES_MAP[normId];
+
+    if (themeConfig?.isPro && !isMerchantPro()) {
+      setSelectedProTheme(themeConfig);
+      setShowProModal(true);
+      return;
+    }
+
+    setCurrentThemeId(normId);
+    try {
+      const raw = localStorage.getItem('zaeem_store_data') || '{}';
+      const parsed = JSON.parse(raw);
+      parsed.selectedTheme = normId;
+      parsed.templateId = normId;
+      localStorage.setItem('zaeem_store_data', JSON.stringify(parsed));
+      window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+    } catch {}
+
+    if (onTemplateChange) {
+      onTemplateChange(normId);
+    }
   };
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
     if (!custName || !custPhone || !selectedProductModal) return;
 
-    // Save order to merchant dashboard with sequential order0001, order0002... and auto-dispatch to Al-Zaeem Logistics
+    // Save order to merchant dashboard with sequential order0001, order0002... and auto-dispatch
     const stored = addStoredOrder({
       customerName: custName.trim(),
       customerPhone: custPhone.trim(),
@@ -301,202 +388,181 @@ export function StoreTemplates({
     return matchSearch && matchCat;
   });
 
+  const themeProps = {
+    storeName,
+    subdomain,
+    fullDomain,
+    products: productsList,
+    filteredProducts,
+    cartCount,
+    selectedCategory,
+    onSelectCategory: setSelectedCategory,
+    searchQuery,
+    onSearchChange: setSearchQuery,
+    onQuickBuy: (p: StoreProduct) => setSelectedProductModal(p),
+    onAddToCart: (p: StoreProduct) => setCartCount(c => c + 1),
+    logoUrl,
+    storeCode
+  };
+
+  // Render matching theme component
+  const renderThemeComponent = () => {
+    switch (currentThemeId) {
+      case 'store-classic':
+      case 'shoppingcart.1.2.7':
+        return <StoreClassicTheme {...themeProps} />;
+
+      case 'store-aurit':
+      case 'oret':
+        return <StoreAuritTheme {...themeProps} />;
+
+      case 'store-nova':
+      case 'rose':
+        return <StoreNovaTheme {...themeProps} />;
+
+      case 'store-brick':
+      case 'sepia':
+        return <StoreBrickTheme {...themeProps} />;
+
+      case 'store-novatrend':
+        return <StoreNovatrendTheme {...themeProps} />;
+
+      case 'store-gizmo':
+      case 'volt':
+        return <StoreGizmoTheme {...themeProps} />;
+
+      case 'store-sneak':
+      case 'nitro':
+        return <StoreSneakTheme {...themeProps} />;
+
+      case 'store-nexora':
+        return <StoreNexoraTheme {...themeProps} />;
+
+      default:
+        return <StoreClassicTheme {...themeProps} />;
+    }
+  };
+
   return (
-    <div className={`min-h-[100dvh] ${theme.bgClass} transition-colors duration-300 select-none pb-16 relative`}>
+    <div className="relative min-h-[100dvh]">
       {/* ========================================================================= */}
       {/* TOP LIVE TEMPLATE SWITCHER BAR (Merchant Control) */}
       {/* ========================================================================= */}
       {!standalone && (
-        <div className="bg-slate-950 text-white border-b border-slate-800 px-4 py-3 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+        <div className="bg-slate-950 text-white border-b border-slate-800 px-4 py-2.5 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 shadow-xl">
           <div className="flex items-center gap-3">
             <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className="text-xs font-black text-slate-200">اختر القالب للتطبيق فوراً على ({fullDomain}):</span>
+            <span className="text-xs font-black text-slate-200">
+              اختر القالب للتطبيق فوراً على ({fullDomain}):
+            </span>
           </div>
 
-        {/* 5 Theme Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {(Object.keys(TEMPLATES_MAP) as TemplateId[]).map((tId) => {
-            const t = TEMPLATES_MAP[tId];
-            const isSel = currentThemeId === tId;
-            return (
-              <button
-                key={tId}
-                type="button"
-                onClick={() => handleSelectTheme(tId)}
-                className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all border shrink-0 flex items-center gap-1.5 ${
-                  isSel
-                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-md scale-105'
-                    : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-600'
-                }`}
-              >
-                <span>{t.name}</span>
-                <span className="text-[10px] opacity-70">({t.niche})</span>
-              </button>
-            );
-          })}
+          {/* 8 Theme Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+            {(Object.keys(TEMPLATES_MAP) as TemplateId[]).map((tId) => {
+              const t = TEMPLATES_MAP[tId];
+              const isSel = currentThemeId === tId;
+              return (
+                <button
+                  key={tId}
+                  type="button"
+                  onClick={() => handleSelectTheme(tId)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all border shrink-0 flex items-center gap-1.5 ${
+                    isSel
+                      ? 'bg-emerald-600 text-white border-emerald-400 shadow-md scale-105'
+                      : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-600'
+                  }`}
+                >
+                  <img src={t.image} alt={t.name} className="size-4 rounded-full object-cover" />
+                  <span>{t.name}</span>
+                  {t.isPro ? (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-500 text-slate-950 flex items-center gap-0.5">
+                      <Crown className="size-2.5" /> PRO
+                    </span>
+                  ) : (
+                    <span className="text-[10px] opacity-70">(مجاني)</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* STORE HEADER */}
-      {/* ========================================================================= */}
-      <header className={`border-b ${theme.headerClass} px-4 md:px-8 py-4 sticky top-14 z-40`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          {/* Logo & Domain Tag */}
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-2xl bg-emerald-600 text-white font-black grid place-items-center text-lg shadow-md">
-              {storeName.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h1 className="font-extrabold text-base leading-none">{storeName}</h1>
-              <span className="text-[11px] font-mono font-bold opacity-75 dir-ltr block mt-1">
-                https://{fullDomain}
-              </span>
-            </div>
-          </div>
+      {/* RENDER THE SELECTED THEME VIEW */}
+      {renderThemeComponent()}
 
-          {/* Search & Cart */}
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block w-64">
-              <Search className="absolute right-3 top-2.5 size-4 opacity-50" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن منتج..."
-                className="w-full h-9 pr-9 pl-3 rounded-full border border-slate-700/50 bg-slate-900/30 text-xs focus:outline-none"
-              />
-            </div>
-
+      {/* ========================================================================= */}
+      {/* PRO UPGRADE MODAL */}
+      {/* ========================================================================= */}
+      {showProModal && selectedProTheme && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="max-w-md w-full rounded-3xl border border-amber-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95 relative">
             <button
-              type="button"
-              className={`flex items-center gap-2 px-4 py-2 rounded-full ${theme.accentBtnClass} shadow-md`}
+              onClick={() => setShowProModal(false)}
+              className="absolute top-4 left-4 text-slate-400 hover:text-white"
             >
-              <ShoppingBag className="size-4" />
-              <span className="text-xs">السلة ({cartCount})</span>
+              <X className="size-5" />
             </button>
-          </div>
-        </div>
-      </header>
 
-      {/* ========================================================================= */}
-      {/* HERO BANNER SECTION */}
-      {/* ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-        <div className={`relative rounded-3xl overflow-hidden ${theme.cardClass} p-8 md:p-12 min-h-[300px] flex items-center border shadow-xl`}>
-          <img
-            src={theme.heroImage}
-            alt={theme.name}
-            className="absolute inset-0 size-full object-cover opacity-20"
-          />
-          <div className="relative z-10 max-w-xl space-y-4 text-right">
-            <span className={`inline-block px-3.5 py-1 rounded-full text-xs font-bold border ${theme.badgeClass}`}>
-              ● متجر مباشر على النطاق الحقيقي {fullDomain}
-            </span>
-            <h2 className="text-3xl md:text-5xl font-black leading-tight">
-              {theme.heroBannerTitle}
-            </h2>
-            <p className="text-xs md:text-sm opacity-80 leading-relaxed">
-              {theme.heroBannerSubtitle}
-            </p>
-            <div className="pt-2 flex items-center gap-3">
-              <button
-                type="button"
-                className={`px-6 py-3 rounded-2xl text-xs font-black ${theme.accentBtnClass} shadow-lg`}
+            <div className="size-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 grid place-items-center mx-auto shadow-lg">
+              <Crown className="size-8" />
+            </div>
+
+            <div className="space-y-1">
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-950 border border-amber-700 text-amber-300 inline-block">
+                ثيم خاص باشتراك PRO
+              </span>
+              <h3 className="font-extrabold text-xl text-white pt-2">
+                قالب {selectedProTheme.name}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                هذا الثيم مخصص للمشتركين في باقة الزعيم PRO. يرجى ترقية باقتك للاستفادة من كامل الميزات الاحترافية والتصاميم الحصرية.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-right space-y-2">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                <Check className="size-4" />
+                <span>تصاميم احترافية حصرية بنسبة تحويل مبيعات أعلى</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                <Check className="size-4" />
+                <span>دومين مخصص وسرعة فائقة في معالجة الطلبات</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                <Check className="size-4" />
+                <span>ربط لوجستي مباشر مع خصومات شحن حصرية</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <a
+                href="#/subscriptions"
+                onClick={() => setShowProModal(false)}
+                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105"
               >
-                تسوق التشكيلة الآن ←
+                <Crown className="size-4" />
+                <span>ترقية الحساب إلى باقة PRO الآن</span>
+              </a>
+
+              <button
+                onClick={() => setShowProModal(false)}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all"
+              >
+                إلغاء والتراجع
               </button>
-              <span className="text-xs font-bold opacity-75 flex items-center gap-1">
-                <Truck className="size-4 text-emerald-400" /> توصيل لجميع المحافظات (IQD)
-              </span>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* CATEGORIES CAROUSEL */}
-      {/* ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-8">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          {['الكل', 'أزياء رجالي', 'عطور وتجميل', 'إكسسوارات وساعات', 'إلكترونيات', 'حقائب ومستلزمات'].map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all border shrink-0 ${
-                selectedCategory === cat
-                  ? `${theme.accentBtnClass} border-transparent`
-                  : 'bg-slate-900/40 border-slate-700/50 hover:border-slate-500 opacity-80'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* PRODUCTS GRID */}
-      {/* ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-extrabold text-lg">المنتجات المعروضة في المتجر</h3>
-          <span className="text-xs font-mono opacity-70">{filteredProducts.length} منتج متاح</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((p) => (
-            <div
-              key={p.id}
-              className={`rounded-3xl border ${theme.cardClass} overflow-hidden shadow-lg flex flex-col justify-between group transition-all hover:scale-[1.01]`}
-            >
-              <div>
-                <div className="h-60 bg-slate-800 relative overflow-hidden">
-                  <img src={p.imageUrl} alt={p.name} className="size-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <span className="absolute top-3 right-3 text-[10px] font-black bg-slate-950/80 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/20">
-                    {p.category}
-                  </span>
-                  <span className="absolute top-3 left-3 text-[10px] font-black bg-emerald-600 text-white px-2.5 py-1 rounded-full">
-                    شحن لجميع المحافظات
-                  </span>
-                </div>
-
-                <div className="p-5 text-right space-y-2">
-                  <h4 className="font-black text-base line-clamp-1">{p.name}</h4>
-                  <p className="text-xs opacity-75 line-clamp-2 leading-relaxed">{p.description}</p>
-                </div>
-              </div>
-
-              <div className="p-5 border-t border-slate-800/50 flex items-center justify-between">
-                <div>
-                  <span className="text-base font-black font-mono block">{formatIQD(p.price)}</span>
-                  {p.compareAtPrice && (
-                    <span className="text-xs opacity-50 line-through font-mono">{formatIQD(p.compareAtPrice)}</span>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedProductModal(p)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-black ${theme.accentBtnClass} shadow-md flex items-center gap-1.5`}
-                >
-                  <span>شراء فوري</span>
-                  <ArrowLeft className="size-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      )}
 
       {/* ========================================================================= */}
       {/* ORDER/CHECKOUT MODAL */}
       {/* ========================================================================= */}
       {selectedProductModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className={`max-w-md w-full rounded-3xl border ${theme.cardClass} p-6 text-right space-y-4 shadow-2xl relative`}>
+          <div className="max-w-md w-full rounded-3xl border border-slate-800 bg-slate-900 p-6 text-right space-y-4 shadow-2xl relative">
             <button
               onClick={() => setSelectedProductModal(null)}
               className="absolute top-4 left-4 text-slate-400 hover:text-white"
@@ -505,7 +571,7 @@ export function StoreTemplates({
             </button>
 
             <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-              <img src={selectedProductModal.imageUrl} className="size-12 rounded-xl object-cover" />
+              <img src={selectedProductModal.imageUrl || '/templates/store-classic.jpg'} className="size-12 rounded-xl object-cover" />
               <div>
                 <h4 className="font-extrabold text-sm text-white">{selectedProductModal.name}</h4>
                 <p className="text-xs font-mono font-black text-emerald-400">{formatIQD(selectedProductModal.price)}</p>
@@ -571,7 +637,7 @@ export function StoreTemplates({
 
               <button
                 type="submit"
-                className={`w-full py-3.5 rounded-2xl text-xs font-black ${theme.accentBtnClass} shadow-lg`}
+                className="w-full py-3.5 rounded-2xl text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg"
               >
                 تأكيد طلب الشراء والدفع عند الاستلام
               </button>
@@ -637,3 +703,5 @@ export function StoreTemplates({
     </div>
   );
 }
+
+export default StoreTemplates;

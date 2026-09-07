@@ -703,9 +703,11 @@ export function updateStoredOrderStatus(id: number, nextStatus: StoreOrder['stat
     else if (nextStatus === 'delivered') cloudStatus = 'تم التسليم';
     else if (nextStatus === 'cancelled') cloudStatus = 'مرتجعة';
 
-    import('../utils/cloudDb').then(({ executeSql }) => {
-      const q = `UPDATE za3em_shipments SET status = '${cloudStatus}' WHERE tracking_number = '${orders[idx].trackingNumber?.replace(/'/g, "''")}';`;
-      executeSql(q).catch(() => {});
+    import('../utils/cloudDb').then((mod: any) => {
+      if (typeof mod?.executeSql === 'function') {
+        const q = `UPDATE za3em_shipments SET status = '${cloudStatus}' WHERE tracking_number = '${orders[idx].trackingNumber?.replace(/'/g, "''")}';`;
+        mod.executeSql(q).catch(() => {});
+      }
     });
   }
 

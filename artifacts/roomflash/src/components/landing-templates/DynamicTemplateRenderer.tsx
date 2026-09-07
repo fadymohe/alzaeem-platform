@@ -5,7 +5,7 @@ import {
   TemplateStore,
 } from "./EasyOrdersFlashTemplate";
 import { MinimalLuxuryTemplate } from "./MinimalLuxuryTemplate";
-import { StoreTemplates, type TemplateId } from "../storefront/StoreTemplates";
+import { StoreTemplates, type TemplateId, normalizeTemplateId } from "../storefront/StoreTemplates";
 
 interface DynamicTemplateRendererProps {
   templateId?: string;
@@ -16,7 +16,7 @@ interface DynamicTemplateRendererProps {
 }
 
 export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = ({
-  templateId = "shoppingcart.1.2.7",
+  templateId = "store-classic",
   store,
   product,
   products,
@@ -43,21 +43,8 @@ export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = (
         />
       );
 
-    case "shoppingcart.1.2.7":
-    case "volt":
-    case "rose":
-    case "nitro":
-    case "sepia":
-    case "oret":
     default: {
-      const validTemplateId: TemplateId =
-        cleanTemplateId === "volt" ||
-        cleanTemplateId === "rose" ||
-        cleanTemplateId === "nitro" ||
-        cleanTemplateId === "sepia" ||
-        cleanTemplateId === "oret"
-          ? (cleanTemplateId as TemplateId)
-          : "shoppingcart.1.2.7";
+      const validTemplateId: TemplateId = normalizeTemplateId(cleanTemplateId);
 
       return (
         <StoreTemplates

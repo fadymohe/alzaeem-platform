@@ -1,0 +1,98 @@
+= 1.0.19 - 13 August 2026 =
+*[Fixed]: More than one text-domain issue.
+*[Updated]: Language POT file.
+
+= 1.0.18 - 13 August 2026 =
+*[Updated]: WooCommerce 11.0.0 templates.
+
+= 1.0.17 - 18 July 2026 =
+* [New]: Added checks to prevent collisions between individual and bulk plugin actions.
+* [New]: Implemented bulk install and activation logic for recommended plugins.
+* [New]: Introduced new utility functions to handle non-installed plugins.
+* [Updated]: Admin notice to provide feedback on plugin installation and activation status.
+* [Improved]: User interface for bulk actions with loading indicators and action buttons.
+* [Improved]: Refactored JavaScript to streamline plugin action handling and improve performance.
+
+= 1.0.16 - 10 July 2026 =
+* [Updated]: Changed display property of menu item icons in header-category to none.
+* [Updated]: Adjusted image size and fit for menu item icons in header-category.
+* [Improved]: Product share button template for better accessibility.
+* [Enhanced]: Enhanced search modal template with sanitized input fields.
+* [Updated]: Updated search categories template to sanitize input and improve rendering.
+* [Adjusted]: Adjusted RTL styles for WooCommerce to improve layout and spacing.
+* [Enhanced]: Enhanced empty cart template to conditionally display sign-in button for non-logged-in users.
+* [Updated]: Updated WPML configuration for better compatibility with custom fields and admin texts.
+
+= 1.0.15 - 30 May 2026 =
+* [Improved]: Updated legacy customizer settings such as Tags to use IDs instead of slugs for improved consistency and reliability.
+* [New]: Select customizer control such as Tags are now uses Ajax loading for better UX.
+* [Updated]: WooCommerce cart template.
+
+= 1.0.14 - 24 April 2026 =
+* [Fixed]: Sponsor 'swiper' infinite loop issue fixed.
+
+= 1.0.13 - 11 April 2026 =
+* [New]: Included a new helper script to handle dismissing notices via AJAX.
+* [New]: Introduced a new section in the customizer settings for the Hester Core plugin notice.
+* [Updated]: WooCommerce variation add-to-cart button version to 10.5.2.
+
+= 1.0.12 - 09 February 2026  =
+* [Fixed]: Security vulnerability in AJAX product attributes endpoint 'shopwell_wc_product_attributes'.
+* [Updated]: WooCommerce 10.5.0 templates.
+
+= 1.0.11 - 06 December 2025  =
+* [Updated]: WordPress 6.9 compaibility check.
+
+= 1.0.10 - 30 October 2025  =
+* [Updated]: WooCommerce 10.2.0 templates
+* [New]: Addedd checkmark-list and arrow-list style on core/list block.
+
+= 1.0.9 - 17 September 2025  =
+* [Fixed]: Styling issues with block style.
+* [Fixed]: Styling issues with the WooCommerce checkout coupon form.
+* [Fixed]: Product images not displaying correctly on the WooCommerce checkout page.
+
+= 1.0.8 - 01 September 2025  =
+* [Fixed]: Mobile navigation icon style
+* [Fixed]: JS error in search box (instanceSearch function)
+* [Fixed]: Wishlist & Compare warning
+
+= 1.0.7 - 25 August 2025  =
+* [Updated]: WooCommerce 10.1 templates
+* [Enhanced]: Auto-focus added to mobile search field
+* [Enhanced]: Faster performance for AJAX search
+* [Fixed]: Quick-view not working with Product Card v3
+* [Fixed]: JS error in single-product.js (shopwell_countdown function)
+* [Fixed]: Hamburger menu title still redirected despite setting disabled
+
+= 1.0.6 - 28 July 2025  =
+* [Fixed]: WooCommerce-10.0.0 templates udpates.
+
+= 1.0.5 - 13 Jun 2025  =
+* [Fixed]: Product card layout 1 mobile screen add to card button style.
+* [Fixed]: Mega Menu Widget Image/Banner Hover Style.
+* [Fixed]: Button text for WC Boost Wishlist and Compare can now be customized via the WordPress Customizer.
+* [Fixed]: Top categories issue on shop page.
+* [Fixed]: WooCommerce-9.9.0 templates udpates.
+
+= 1.0.4 =
+* [New]: Allow users to select a prebuilt header for mobile screen from Customizing ▸ Mobile ▸ Header Layout ▸ Prebuilt Heade.
+* [New]: Show wishlist and compare Ajax counter in header.
+* [Fixed]: Product preview in Elementor editor mode.
+
+= 1.0.3 =
+* [Fixed]: Theme URI added.
+* [New]: Upsell button added in customizer.
+
+= 1.0.2 =
+* [Fixed]: More than one text domain.
+
+= 1.0.1 =
+* [Fixed]: Accessibility issues.
+* [Fixed]: Skip content link not exists.
+* [Fixed]: Invalid theme tags.
+* [udpate]: Screenshot.
+
+= 1.0.0 =
+* Initial release 🚀
+

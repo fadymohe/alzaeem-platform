@@ -830,8 +830,8 @@ export async function saveCloudCoupon(coupon: Omit<CloudCoupon, 'id' | 'usesCoun
       };
 
       // Update local storage
-      const current = await fetchCloudCoupons().catch(() => []);
-      const updated = [saved, ...current.filter((c) => c.code !== saved.code)];
+      const current = (await fetchCloudCoupons().catch(() => [])) as any[];
+      const updated = [saved, ...current.filter((c: any) => c.code !== saved.code)];
       localStorage.setItem(LOCAL_COUPONS_KEY, JSON.stringify(updated));
       window.dispatchEvent(new CustomEvent('zaeem_coupons_updated', { detail: updated }));
 
