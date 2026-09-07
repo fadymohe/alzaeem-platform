@@ -152,7 +152,7 @@ export function StoreNovatrendTheme({
               <div>
                 <div className="h-64 bg-[#0f0c1b] relative overflow-hidden">
                   <img
-                    src={p.imageUrl || '/templates/store-novatrend.png'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

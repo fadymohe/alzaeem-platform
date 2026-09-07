@@ -152,7 +152,7 @@ export function StoreSneakTheme({
               <div>
                 <div className="h-64 bg-[#0d0707] relative overflow-hidden">
                   <img
-                    src={p.imageUrl || '/templates/store-sneak.png'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

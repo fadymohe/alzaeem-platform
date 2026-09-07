@@ -199,9 +199,9 @@ export function StoreAuritTheme({
               {/* Background Product Image */}
               <div className="hidden sm:block absolute left-4 bottom-0 top-0 w-1/2 overflow-hidden pointer-events-none">
                 <img
-                  src="/templates/store-aurit.jpg"
-                  alt="ShopWell Showcase"
-                  className="size-full object-cover object-center mix-blend-multiply opacity-85"
+                  src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80"
+                  alt="Showcase"
+                  className="size-full object-cover object-center opacity-85"
                 />
               </div>
             </div>
@@ -300,7 +300,7 @@ export function StoreAuritTheme({
               <div>
                 <div className="h-60 bg-slate-100 relative overflow-hidden flex items-center justify-center p-3">
                   <img
-                    src={p.imageUrl || '/templates/store-aurit.jpg'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-contain group-hover:scale-105 transition-transform duration-500"
                   />

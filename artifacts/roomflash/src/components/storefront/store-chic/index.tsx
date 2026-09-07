@@ -15,11 +15,16 @@ export function StoreChicTheme({
   products,
   filteredProducts,
   cartCount,
+  onOpenCart,
+  onOpenProductDetail,
+  onOpenCustomerAuth,
+  currentCustomer,
   selectedCategory,
   onSelectCategory,
   searchQuery,
   onSearchChange,
   onQuickBuy,
+  onAddToCart,
   logoUrl,
   customization
 }: ThemeComponentProps) {
@@ -32,10 +37,10 @@ export function StoreChicTheme({
   const isSticky = customization?.isHeaderSticky !== false;
   const showTrust = customization?.showTrustFeatures !== false;
   const showBanner = customization?.showHeroBanner !== false;
-  const announcement = customization?.announcementText || 'CHIC BOUTIQUE — إطلالات صيفية راقية • شحن مجاني للطلبات فوق 50,000 د.ع';
-  const heroTitle = customization?.heroTitle || (isEn ? 'Everyday Luxury & Refined Style' : 'فخامة كل يوم');
-  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Curated magazine-style boutique collections crafted in delicate silks and tailored cottons' : 'واجهة بوتيك مستوحاة من كبريات مجلات الموضة مع أقمشة قطنية وحريرية منتقاة بعناية.');
-  const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Collection' : 'تسوقي الآن');
+  const announcement = customization?.announcementText || 'إطلالات راقية ومختارة بعناية • شحن مجاني لكافة محافظات العراق والدفع عند الاستلام بعد المعاينة';
+  const heroTitle = customization?.heroTitle || (isEn ? 'Effortless Summer Sophistication' : 'أناقة عصرية صيفية راقية');
+  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Clean lines, flowy breathable fabrics and timeless boutique curation with Iraqi COD' : 'قصات نظيفة وأقمشة انسيابية مريحة مع ميزة فحص الشحنة وتجربتها قبل الدفع.');
+  const heroBtnText = customization?.heroButtonText || (isEn ? 'Explore Collection' : 'استكشفي التشكيلة');
   const gridCols = customization?.productGridCols || 4;
   const showDiscount = customization?.showDiscountBadge !== false;
   const showStock = customization?.showStockStatus !== false;
@@ -58,62 +63,68 @@ export function StoreChicTheme({
 
   return (
     <div
-      className="min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-[#540b0e] selection:text-white"
+      className="min-h-screen bg-[#fffafa] text-[#1a1a1a] font-sans antialiased selection:bg-[#540b0e] selection:text-white"
       dir={isEn ? 'ltr' : 'rtl'}
     >
       
-      {/* 1. Top Chic Announcement Bar */}
+      {/* 1. Top Ticker Bar */}
       {customization?.showAnnouncement !== false && (
-        <div className="bg-[#540b0e] text-white text-[11px] font-bold py-2 px-4 md:px-8 text-center shadow-sm">
+        <div className="bg-[#540b0e] text-white text-xs font-bold py-2 px-4 md:px-8 shadow-sm">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-            <span className="mx-auto sm:mx-0 tracking-wider">
-              {announcement}
-            </span>
-            <div className="hidden sm:flex items-center gap-4 text-xs font-semibold text-pink-200">
-              <span>{isEn ? 'COD Available' : 'دفع عند الاستلام مع فحص القياس'}</span>
-              <span>|</span>
-              <span>{isEn ? 'Boutique Guarantee' : 'ضمان جودة الأقمشة'}</span>
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-3.5 text-pink-200" />
+              <span>{announcement}</span>
+            </div>
+            <div className="flex items-center gap-4 text-[11px]">
+              <a href="tel:+9647700000000" className="hover:text-pink-200">
+                📞 +964 770 000 0000
+              </a>
+              <span className="hidden sm:inline">|</span>
+              <span className="font-mono text-pink-200">https://{fullDomain}</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. Header (Matching Screenshot 3 Chic: Elegant Minimalist Serif Logo) */}
+      {/* 2. Header */}
       <header className={`bg-white border-b border-slate-200 ${isSticky ? 'sticky top-0' : 'relative'} z-40 shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
           
           <div className="flex items-center gap-3">
             {logoUrl ? (
-              <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[140px] object-contain" />
+              <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[150px] object-contain" />
             ) : (
-              <div className="flex items-center gap-2">
+              <div>
                 <h1 className="font-serif font-black text-2xl tracking-tight text-black italic">
-                  {storeName === 'متجر الزعيم' ? 'Chic' : storeName}
+                  {storeName}
                 </h1>
                 <span className="text-[10px] font-mono text-slate-400 dir-ltr block mt-0.5">{fullDomain}</span>
               </div>
             )}
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-7 text-xs font-bold uppercase tracking-wider text-slate-700">
-            {['الرئيسية', 'تسوقي', 'Celeste Charm', 'Top', 'activewear', 'croptop', 'التخفيضات'].map((item) => (
+          {/* Dynamic Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-slate-700">
+            {categories.slice(0, 6).map((cat) => (
               <button
-                key={item}
+                key={cat}
                 type="button"
-                onClick={() => setActiveTab(item)}
+                onClick={() => {
+                  onSelectCategory(cat);
+                  setActiveTab(cat);
+                }}
                 className={`py-1 transition-colors hover:text-black ${
-                  activeTab === item ? 'text-black font-black border-b-2 border-black' : ''
+                  selectedCategory === cat ? 'text-black font-black border-b-2 border-black' : ''
                 }`}
               >
-                {item}
+                {cat}
               </button>
             ))}
           </nav>
 
           {/* Search & Actions */}
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block w-56">
+          <div className="flex items-center gap-2.5">
+            <div className="relative hidden sm:block w-48 lg:w-56">
               <Search className={`absolute ${isEn ? 'left-3' : 'right-3'} top-2.5 size-3.5 text-slate-400`} />
               <input
                 type="text"
@@ -124,13 +135,24 @@ export function StoreChicTheme({
               />
             </div>
 
+            {/* Customer Account */}
             <button
               type="button"
-              onClick={() => {
-                const el = document.getElementById('chic-grid');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-black text-xs shadow-sm transition-all hover:scale-105"
+              onClick={() => onOpenCustomerAuth?.()}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 text-xs font-bold hover:bg-slate-100 transition-colors"
+              title="تسجيل الدخول / حسابي"
+            >
+              <User className="size-3.5" />
+              <span className="hidden sm:inline">
+                {currentCustomer ? currentCustomer.name : 'دخول'}
+              </span>
+            </button>
+
+            {/* Cart Button */}
+            <button
+              type="button"
+              onClick={() => onOpenCart?.()}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-white font-black text-xs shadow-sm transition-all hover:scale-105"
               style={{ backgroundColor: brandColor }}
             >
               <ShoppingBag className="size-3.5" />
@@ -210,10 +232,13 @@ export function StoreChicTheme({
               key={p.id}
               className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col justify-between group hover:border-black"
             >
-              <div>
+              <div 
+                className="cursor-pointer"
+                onClick={() => onOpenProductDetail ? onOpenProductDetail(p) : onQuickBuy(p)}
+              >
                 <div className="h-72 bg-slate-100 relative overflow-hidden">
                   <img
-                    src={p.imageUrl || '/templates/store-nova.jpg'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -249,7 +274,7 @@ export function StoreChicTheme({
                 </div>
               </div>
 
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
                 <div>
                   <span className="text-sm font-black font-mono text-black block">
                     {formatIQD(p.price)}
@@ -261,17 +286,39 @@ export function StoreChicTheme({
                   )}
                 </div>
 
-                {enableQuick && (
-                  <button
-                    type="button"
-                    onClick={() => onQuickBuy(p)}
-                    className="px-4 py-2 rounded-xl text-xs font-black text-white shadow-sm flex items-center gap-1 transition-all hover:scale-105"
-                    style={{ backgroundColor: brandColor }}
-                  >
-                    <span>{isEn ? 'Quick Buy' : 'شراء فوري'}</span>
-                    <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
-                  </button>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {onAddToCart && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddToCart(p);
+                      }}
+                      className="p-2 rounded-xl border border-slate-200 bg-white text-slate-800 hover:bg-slate-100 transition-colors shadow-sm"
+                      title={isEn ? 'Add to cart' : 'أضف للسلة'}
+                    >
+                      <ShoppingBag className="size-3.5" />
+                    </button>
+                  )}
+                  {enableQuick && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onOpenProductDetail) {
+                          onOpenProductDetail(p);
+                        } else {
+                          onQuickBuy(p);
+                        }
+                      }}
+                      className="px-3.5 py-2 rounded-xl text-xs font-black text-white shadow-sm flex items-center gap-1 transition-all hover:scale-105"
+                      style={{ backgroundColor: brandColor }}
+                    >
+                      <span>{isEn ? 'Order Now' : 'اطلب الآن'}</span>
+                      <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

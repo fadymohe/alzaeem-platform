@@ -15,11 +15,16 @@ export function StoreSproutTheme({
   products,
   filteredProducts,
   cartCount,
+  onOpenCart,
+  onOpenProductDetail,
+  onOpenCustomerAuth,
+  currentCustomer,
   selectedCategory,
   onSelectCategory,
   searchQuery,
   onSearchChange,
   onQuickBuy,
+  onAddToCart,
   logoUrl,
   customization
 }: ThemeComponentProps) {
@@ -32,10 +37,10 @@ export function StoreSproutTheme({
   const isSticky = customization?.isHeaderSticky !== false;
   const showTrust = customization?.showTrustFeatures !== false;
   const showBanner = customization?.showHeroBanner !== false;
-  const announcement = customization?.announcementText || 'أزياء ومستلزمات أطفال طبيعية 100% بروح الطبيعة والحديقة • قطن عضوي آمن';
-  const heroTitle = customization?.heroTitle || (isEn ? 'Pure Garden Softness for Little Ones' : 'أناقة ناعمة وراحة تدوم لطفلك الصغير');
-  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Organic cotton fabrics and playful designs with safe inspection before payment' : 'خامات قطنية فائقة النعومة وتصاميم بروح البهجة، نوفرها لك مع ميزة فحص الشحنة قبل الاستلام.');
-  const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Sprout' : 'تسوق التشكيلة الآن');
+  const announcement = customization?.announcementText || 'أزياء ومستلزمات أطفال طبيعية 100% • قطن عضوي آمن وتوصيل لكافة محافظات العراق';
+  const heroTitle = customization?.heroTitle || (isEn ? 'Pure Softness for Little Ones' : 'أناقة ناعمة وراحة تدوم لطفلك الصغير');
+  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Organic fabrics and playful designs with safe inspection before payment' : 'خامات قطنية فائقة النعومة وتصاميم بروح البهجة، نوفرها لك مع ميزة فحص الشحنة قبل الاستلام.');
+  const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Collection' : 'تسوق التشكيلة الآن');
   const gridCols = customization?.productGridCols || 4;
   const showDiscount = customization?.showDiscountBadge !== false;
   const showStock = customization?.showStockStatus !== false;
@@ -73,21 +78,24 @@ export function StoreSproutTheme({
               </span>
             </div>
             <div className="flex items-center gap-4 text-[11px] font-semibold text-[#fefae0]">
-              <span>{isEn ? '🌿 100% Organic Cotton' : '🌿 قطن عضوي آمن لبشرة طفلك'}</span>
+              <span>{isEn ? '🌿 100% Organic Quality' : '🌿 خامات طبيعية آمنة للبشرة'}</span>
               <span className="hidden sm:inline">|</span>
-              <span>{isEn ? '🚚 Express Delivery' : '🚚 توصيل سريع لكافة محافظات العراق'}</span>
+              <a href="tel:+9647700000000" className="hover:underline flex items-center gap-1">
+                <PhoneCall className="size-3 text-[#ccd5ae]" />
+                <span>+964 770 000 0000</span>
+              </a>
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. Main Header (Matching Screenshot 3 Sprout) */}
+      {/* 2. Main Header */}
       <header className={`bg-white/95 backdrop-blur-md border-b border-[#e0ddcf] ${isSticky ? 'sticky top-0' : 'relative'} z-40 shadow-sm`}>
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
           
           <div className="flex items-center gap-3">
             {logoUrl ? (
-              <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[140px] object-contain rounded-xl border border-[#ccd5ae]" />
+              <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[150px] object-contain rounded-xl border border-[#ccd5ae]" />
             ) : (
               <div className="flex items-center gap-2.5">
                 <div
@@ -97,10 +105,7 @@ export function StoreSproutTheme({
                   <Baby className="size-6" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-xl text-[#344e41] tracking-tight">{storeName}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#588157] text-white">SPROUT</span>
-                  </div>
+                  <span className="font-extrabold text-xl text-[#344e41] tracking-tight">{storeName}</span>
                   <span className="text-[10px] font-mono text-[#588157] dir-ltr block mt-0.5">
                     {fullDomain}
                   </span>
@@ -109,19 +114,22 @@ export function StoreSproutTheme({
             )}
           </div>
 
-          {/* Navigation Links (Paw Paradise, toys, pet, tiny outfits, Kid Toy, المتجر, الرئيسية) */}
-          <nav className="hidden lg:flex items-center gap-5 text-xs font-black text-[#3a5a40]">
-            {['الرئيسية', 'المتجر', 'Kid Toy', 'tiny outfits', 'pet', 'toys', 'Paw Paradise', 'التخفيضات'].map((item) => (
+          {/* Dynamic Navigation Links strictly from real categories */}
+          <nav className="hidden lg:flex items-center gap-4 text-xs font-black text-[#3a5a40]">
+            {categories.slice(0, 6).map((cat) => (
               <button
-                key={item}
+                key={cat}
                 type="button"
-                onClick={() => setActiveTab(item)}
+                onClick={() => {
+                  onSelectCategory(cat);
+                  setActiveTab(cat);
+                }}
                 className={`py-1 transition-all hover:text-[#588157] relative ${
-                  activeTab === item ? 'text-[#588157] font-black' : ''
+                  selectedCategory === cat ? 'text-[#588157] font-black' : ''
                 }`}
               >
-                {item}
-                {activeTab === item && (
+                {cat}
+                {selectedCategory === cat && (
                   <span className="absolute -bottom-2 right-0 left-0 h-0.5 bg-[#588157] rounded-full" />
                 )}
               </button>
@@ -129,25 +137,36 @@ export function StoreSproutTheme({
           </nav>
 
           {/* Search & Actions */}
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block w-56">
+          <div className="flex items-center gap-2.5">
+            <div className="relative hidden sm:block w-48 lg:w-56">
               <Search className={`absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-2.5 size-4 text-[#8b9b77]`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder={isEn ? 'Search tiny outfits...' : 'ابحث عن ملابس، دمى...'}
+                placeholder={isEn ? 'Search products...' : 'ابحث في المتجر...'}
                 className={`w-full h-9 ${isEn ? 'pl-10 pr-4' : 'pr-10 pl-4'} rounded-full border border-[#ccd5ae] bg-[#f7f6f2] text-xs text-[#344e41] placeholder:text-[#99a888] focus:outline-none focus:border-[#588157] focus:bg-white`}
               />
             </div>
 
+            {/* Customer Auth / Account Button */}
             <button
               type="button"
-              onClick={() => {
-                const el = document.getElementById('sprout-grid');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-full text-white font-extrabold text-xs shadow-md transition-all hover:scale-105"
+              onClick={() => onOpenCustomerAuth?.()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#ccd5ae] bg-white text-[#344e41] font-bold text-xs shadow-sm hover:bg-[#f1f3ec] transition-all"
+              title="حسابي / تسجيل الدخول"
+            >
+              <User className="size-4" />
+              <span className="hidden sm:inline">
+                {currentCustomer ? currentCustomer.name : (isEn ? 'Sign In' : 'دخول')}
+              </span>
+            </button>
+
+            {/* Cart Button */}
+            <button
+              type="button"
+              onClick={() => onOpenCart?.()}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-white font-extrabold text-xs shadow-md transition-all hover:scale-105"
               style={{ backgroundColor: brandColor }}
             >
               <ShoppingBag className="size-4" />
@@ -224,9 +243,12 @@ export function StoreSproutTheme({
               className="bg-white border border-[#e0ddcf] rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#588157] transition-all duration-300 flex flex-col justify-between group"
             >
               <div>
-                <div className="h-64 bg-[#f8f9f6] relative overflow-hidden flex items-center justify-center p-4">
+                <div
+                  onClick={() => onOpenProductDetail?.(p)}
+                  className="h-64 bg-[#f8f9f6] relative overflow-hidden flex items-center justify-center p-4 cursor-pointer"
+                >
                   <img
-                    src={p.imageUrl || '/templates/store-classic.jpg'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1559454403-b8fb88521f11?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-contain group-hover:scale-105 transition-transform duration-500"
                   />
@@ -237,7 +259,7 @@ export function StoreSproutTheme({
                   )}
                   {showStock && (
                     <span className="absolute bottom-3 left-3 text-[9px] font-black bg-white/90 text-[#344e41] px-2.5 py-0.5 rounded-full shadow-sm">
-                      {isEn ? 'Organic Cotton' : 'قطن طبيعي'}
+                      {isEn ? 'Organic Quality' : 'جودة مضمونة'}
                     </span>
                   )}
                   <span className="absolute bottom-3 right-3 text-[10px] font-bold bg-[#344e41]/80 text-white px-2.5 py-0.5 rounded-full">
@@ -246,7 +268,10 @@ export function StoreSproutTheme({
                 </div>
 
                 <div className="p-5 text-right space-y-1.5">
-                  <h4 className="font-extrabold text-sm text-[#344e41] line-clamp-1 group-hover:text-[#588157] transition-colors">
+                  <h4
+                    onClick={() => onOpenProductDetail?.(p)}
+                    className="font-extrabold text-sm text-[#344e41] line-clamp-1 group-hover:text-[#588157] transition-colors cursor-pointer"
+                  >
                     {p.name}
                   </h4>
                   <p className="text-xs text-[#606c38] line-clamp-2 leading-relaxed">
@@ -262,7 +287,7 @@ export function StoreSproutTheme({
                 </div>
               </div>
 
-              <div className="p-5 border-t border-[#f0eee6] bg-[#faf9f6] flex items-center justify-between">
+              <div className="p-5 border-t border-[#f0eee6] bg-[#faf9f6] flex items-center justify-between gap-2">
                 <div>
                   <span className="text-base font-black font-mono text-[#344e41] block">
                     {formatIQD(p.price)}
@@ -274,17 +299,31 @@ export function StoreSproutTheme({
                   )}
                 </div>
 
-                {enableQuick && (
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => onQuickBuy(p)}
-                    className="px-4 py-2 rounded-full text-xs font-black text-white shadow-sm flex items-center gap-1 transition-all hover:scale-105"
-                    style={{ backgroundColor: brandColor }}
+                    onClick={() => {
+                      if (onAddToCart) onAddToCart(p);
+                      else onQuickBuy(p);
+                    }}
+                    className="p-2 rounded-full border border-[#ccd5ae] text-[#344e41] hover:bg-[#f1f3ec] transition-colors"
+                    title="أضف إلى السلة"
                   >
-                    <span>{isEn ? 'Buy' : 'طلب'}</span>
-                    <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
+                    <ShoppingBag className="size-3.5" />
                   </button>
-                )}
+
+                  {enableQuick && (
+                    <button
+                      type="button"
+                      onClick={() => onQuickBuy(p)}
+                      className="px-3.5 py-2 rounded-full text-xs font-black text-white shadow-sm flex items-center gap-1 transition-all hover:scale-105"
+                      style={{ backgroundColor: brandColor }}
+                    >
+                      <span>{isEn ? 'Buy' : 'طلب'}</span>
+                      <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

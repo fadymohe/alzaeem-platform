@@ -99,48 +99,63 @@ export function StoreLoftoraTheme({
             )}
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-bold text-[#5c544d]">
-            {['الرئيسية', 'كراسي وطاولات', 'إضاءة خشبية', 'أحواض ونباتات', 'مرايا وجداريات', 'تخفيضات'].map((item) => (
+          {/* Navigation Categories */}
+          <nav className="hidden lg:flex items-center gap-4 text-xs font-bold text-[#5c544d]">
+            {categories.slice(0, 6).map((cat) => (
               <button
-                key={item}
+                key={cat}
                 type="button"
-                onClick={() => setActiveTab(item)}
-                className={`py-1 transition-all hover:text-[#8b5a2b] relative ${
-                  activeTab === item ? 'text-[#8b5a2b] font-black' : ''
+                onClick={() => onSelectCategory(cat === 'الكل' ? 'all' : cat)}
+                className={`py-1 px-3 rounded-full transition-all hover:text-[#8b5a2b] relative ${
+                  (selectedCategory === cat || (cat === 'الكل' && (!selectedCategory || selectedCategory === 'all'))) ? 'bg-[#8b5a2b]/10 text-[#8b5a2b] font-black' : ''
                 }`}
               >
-                {item}
-                {activeTab === item && (
-                  <span className="absolute -bottom-2 right-0 left-0 h-0.5 bg-[#8b5a2b] rounded-full" />
-                )}
+                {cat}
               </button>
             ))}
           </nav>
 
           {/* Search & Actions */}
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block w-56">
-              <Search className={`absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-2.5 size-4 text-[#a39485]`} />
+          <div className="flex items-center gap-2.5">
+            <div className="relative hidden sm:block w-48">
+              <Search className={`absolute ${isEn ? 'left-3' : 'right-3'} top-2.5 size-3.5 text-[#a39485]`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder={isEn ? 'Search decor...' : 'ابحث عن قطعة أثاث...'}
-                className={`w-full h-9 ${isEn ? 'pl-10 pr-4' : 'pr-10 pl-4'} rounded-xl border border-[#ebdcd0] bg-[#faf8f5] text-xs text-[#2b2927] placeholder:text-[#a39485] focus:outline-none focus:border-[#8b5a2b]`}
+                placeholder={isEn ? 'Search...' : 'ابحث عن أثاث أو ديكور...'}
+                className={`w-full h-8 ${isEn ? 'pl-9 pr-3' : 'pr-9 pl-3'} rounded-xl border border-[#ebdcd0] bg-[#faf8f5] text-xs text-[#2b2927] placeholder:text-[#a39485] focus:outline-none focus:border-[#8b5a2b]`}
               />
             </div>
 
+            {/* Customer Account Button */}
+            {onOpenCustomerAuth && (
+              <button
+                type="button"
+                onClick={onOpenCustomerAuth}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#ebdcd0] text-[#2b2927] font-bold text-xs hover:bg-[#faf8f5] transition-all"
+                title={isEn ? 'Account' : 'حسابي / طلباتي'}
+              >
+                <User className="size-3.5 text-[#8b5a2b]" />
+                <span className="hidden md:inline">{isEn ? 'Account' : 'حسابي'}</span>
+              </button>
+            )}
+
+            {/* Cart Button */}
             <button
               type="button"
               onClick={() => {
-                const el = document.getElementById('loftora-grid');
-                el?.scrollIntoView({ behavior: 'smooth' });
+                if (onOpenCart) {
+                  onOpenCart();
+                } else {
+                  const el = document.getElementById('loftora-grid');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-black text-xs shadow-sm transition-all hover:scale-105"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-xl text-white font-black text-xs shadow-sm transition-all hover:scale-105"
               style={{ backgroundColor: brandColor }}
             >
-              <ShoppingBag className="size-4" />
+              <ShoppingBag className="size-3.5" />
               <span>{isEn ? 'Cart' : 'السلة'} ({cartCount})</span>
             </button>
           </div>
@@ -213,12 +228,15 @@ export function StoreLoftoraTheme({
               key={p.id}
               className="bg-white border border-[#ebdcd0] rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#8b5a2b] transition-all duration-300 flex flex-col justify-between group"
             >
-              <div>
+              <div
+                className="cursor-pointer"
+                onClick={() => onOpenProductDetail ? onOpenProductDetail(p) : onQuickBuy(p)}
+              >
                 <div className="h-64 bg-[#f8f5f0] relative overflow-hidden flex items-center justify-center p-4">
                   <img
-                    src={p.imageUrl || '/templates/store-classic.jpg'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
-                    className="size-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    className="size-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
                   />
                   {showDiscount && p.compareAtPrice && (
                     <span className="absolute top-3 right-3 text-[10px] font-black bg-[#8b5a2b] text-white px-2.5 py-1 rounded-lg shadow-sm">
@@ -252,7 +270,7 @@ export function StoreLoftoraTheme({
                 </div>
               </div>
 
-              <div className="p-5 border-t border-[#f2ede6] bg-[#fcfbfa] flex items-center justify-between">
+              <div className="p-5 border-t border-[#f2ede6] bg-[#fcfbfa] flex items-center justify-between gap-2">
                 <div>
                   <span className="text-base font-black font-mono text-[#2b2927] block">
                     {formatIQD(p.price)}
@@ -264,17 +282,39 @@ export function StoreLoftoraTheme({
                   )}
                 </div>
 
-                {enableQuick && (
-                  <button
-                    type="button"
-                    onClick={() => onQuickBuy(p)}
-                    className="px-4 py-2 rounded-xl text-xs font-black text-white shadow-sm flex items-center gap-1 transition-all hover:scale-105"
-                    style={{ backgroundColor: brandColor }}
-                  >
-                    <span>{isEn ? 'Order' : 'طلب'}</span>
-                    <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {onAddToCart && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddToCart(p);
+                      }}
+                      className="p-2.5 rounded-xl border border-[#ebdcd0] bg-white text-[#2b2927] hover:bg-[#faf8f5] transition-colors shadow-sm"
+                      title={isEn ? 'Add to cart' : 'أضف للسلة'}
+                    >
+                      <ShoppingBag className="size-4" />
+                    </button>
+                  )}
+                  {enableQuick && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onOpenProductDetail) {
+                          onOpenProductDetail(p);
+                        } else {
+                          onQuickBuy(p);
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-xl text-xs font-black text-white shadow-sm flex items-center gap-1 transition-all hover:scale-105"
+                      style={{ backgroundColor: brandColor }}
+                    >
+                      <span>{isEn ? 'Order' : 'اطلب الآن'}</span>
+                      <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

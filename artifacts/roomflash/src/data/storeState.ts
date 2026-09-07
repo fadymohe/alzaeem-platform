@@ -431,10 +431,39 @@ export function getNextOrderNumber(existingOrders: StoreOrder[]): string {
   return `order${String(nextSeq).padStart(4, '0')}`;
 }
 
-// Order Methods
+// Helper to get active user ID or email
+export function getActiveMerchantIdentifier(): string {
+  try {
+    const rawUser = localStorage.getItem('zaeem_user');
+    if (rawUser) {
+      const u = JSON.parse(rawUser);
+      if (u.id) return String(u.id);
+      if (u.email) return u.email.toLowerCase().trim();
+      if (u.subdomain) return u.subdomain.toLowerCase().trim();
+    }
+    const rawStore = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
+    if (rawStore) {
+      const s = JSON.parse(rawStore);
+      if (s.ownerId) return String(s.ownerId);
+      if (s.userEmail) return s.userEmail.toLowerCase().trim();
+      if (s.subdomain) return s.subdomain.toLowerCase().trim();
+    }
+  } catch {}
+  return 'default';
+}
+
+// Order Methods - STRICTLY SCOPED PER MERCHANT TO PREVENT CROSS-ACCOUNT DATA LEAKAGE
 export function getStoredOrders(): StoreOrder[] {
   try {
-    const raw = localStorage.getItem(ORDERS_KEY);
+    const merchantId = getActiveMerchantIdentifier();
+    const scopedKey = `${ORDERS_KEY}_${merchantId}`;
+    
+    // Read from scoped key first, or migrate un-scoped if current merchant matches
+    let raw = localStorage.getItem(scopedKey);
+    if (!raw && merchantId === 'default') {
+      raw = localStorage.getItem(ORDERS_KEY);
+    }
+
     if (raw) {
       const parsed = JSON.parse(raw);
       // Clean out legacy fake seed orders (ORD-1001 to ORD-1005)
@@ -446,20 +475,7 @@ export function getStoredOrders(): StoreOrder[] {
         return !isOldDummy;
       });
 
-      // Normalize any existing real orders to follow the order0001 format if needed
-      let hasChange = cleaned.length !== parsed.length;
-      cleaned.forEach((ord, index) => {
-        if (!ord.number || !ord.number.toLowerCase().startsWith('order')) {
-          ord.number = `order${String(cleaned.length - index).padStart(4, '0')}`;
-          hasChange = true;
-        }
-      });
-
-      if (hasChange) {
-        saveStoredOrders(cleaned);
-      }
-
-      // Scope to active merchant subdomain if set
+      // Filter: only return orders that belong to this merchant or current subdomain
       let currentSub = '';
       try {
         const rawStore = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
@@ -468,19 +484,30 @@ export function getStoredOrders(): StoreOrder[] {
         }
       } catch {}
 
-      if (currentSub) {
-        return cleaned.filter((o) => !o.subdomain || o.subdomain === currentSub || o.subdomain === 'alzaeem');
-      }
+      const isolatedOrders = cleaned.filter((o: any) => {
+        // If order has an explicit merchant owner, it MUST match
+        if (o.merchantId && merchantId !== 'default' && o.merchantId !== merchantId) {
+          return false;
+        }
+        // If order has subdomain, it must match current store subdomain
+        if (o.subdomain && currentSub && o.subdomain !== currentSub) {
+          return false;
+        }
+        return true;
+      });
 
-      return cleaned;
+      return isolatedOrders;
     }
   } catch (e) {}
 
-  // Real stores start with 0 orders by default
+  // Clean fresh stores start with 0 orders
   return [];
 }
 
 export function saveStoredOrders(orders: StoreOrder[]): void {
+  const merchantId = getActiveMerchantIdentifier();
+  const scopedKey = `${ORDERS_KEY}_${merchantId}`;
+  localStorage.setItem(scopedKey, JSON.stringify(orders));
   localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
 }
 
@@ -523,6 +550,7 @@ export function addStoredOrder(order: Omit<StoreOrder, 'id' | 'number' | 'create
     trackingNumber,
     shippingCompany,
     subdomain: sub,
+    merchantId: getActiveMerchantIdentifier(),
     createdAt: new Date().toISOString()
   };
   const updated = [newOrder, ...orders];
@@ -854,9 +882,19 @@ export function clearMerchantSessionData(): void {
       'zaeem_notifications',
       'zaeem_user',
       'zaeem_active_subdomain',
-      'zaeem_onboarding_completed'
+      'zaeem_onboarding_completed',
+      'zaeem_theme_customization'
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    // Also remove any scoped orders keys
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith(`${ORDERS_KEY}_`) || key.startsWith(`${CUSTOMERS_KEY}_`))) {
+        localStorage.removeItem(key);
+      }
+    }
+
     window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
     window.dispatchEvent(new CustomEvent('zaeem_notifications_updated'));
   } catch (e) {

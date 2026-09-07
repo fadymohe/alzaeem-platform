@@ -227,8 +227,8 @@ export function StoreNovaTheme({
             {/* Banner Background Image */}
             <div className="hidden sm:block absolute left-4 bottom-0 top-0 w-1/2 overflow-hidden pointer-events-none">
               <img
-                src="/templates/store-nova.jpg"
-                alt="eShopkit Showcase"
+                src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80"
+                alt="Showcase"
                 className="size-full object-cover object-center opacity-85"
               />
             </div>
@@ -254,14 +254,14 @@ export function StoreNovaTheme({
                 </button>
               </div>
               <div className="size-24 rounded-xl overflow-hidden bg-white/60 p-1 shrink-0">
-                <img src="/templates/store-gizmo.png" className="size-full object-contain" />
+                <img src="https://images.unsplash.com/photo-1545454675-3531b543be5d?w=400&auto=format&fit=crop&q=80" className="size-full object-cover rounded-lg" alt="Headphones" />
               </div>
             </div>
 
             {/* Promo 2: Mobiles */}
             <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#818cf8]/30 via-[#c7d2fe]/20 to-white p-5 border border-indigo-200 flex items-center justify-between shadow-sm">
               <div className="space-y-1.5 text-right z-10">
-                <span className="text-[11px] font-bold text-slate-600 block">أفضل عروض الهواتف</span>
+                <span className="text-[11px] font-bold text-slate-600 block">أفضل عروض الأجهزة</span>
                 <h4 className="font-black text-base text-slate-900">أجهزة ومواصفات عالية</h4>
                 <button
                   type="button"
@@ -275,7 +275,7 @@ export function StoreNovaTheme({
                 </button>
               </div>
               <div className="size-24 rounded-xl overflow-hidden bg-white/60 p-1 shrink-0">
-                <img src="/templates/store-novatrend.png" className="size-full object-contain" />
+                <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80" className="size-full object-cover rounded-lg" alt="Smartphone" />
               </div>
             </div>
           </div>
@@ -328,7 +328,7 @@ export function StoreNovaTheme({
               <div>
                 <div className="h-60 bg-slate-50 relative overflow-hidden flex items-center justify-center p-3">
                   <img
-                    src={p.imageUrl || '/templates/store-nova.jpg'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-contain group-hover:scale-105 transition-transform duration-500"
                   />

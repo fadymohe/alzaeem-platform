@@ -15,11 +15,16 @@ export function StoreStrideTheme({
   products,
   filteredProducts,
   cartCount,
+  onOpenCart,
+  onOpenProductDetail,
+  onOpenCustomerAuth,
+  currentCustomer,
   selectedCategory,
   onSelectCategory,
   searchQuery,
   onSearchChange,
   onQuickBuy,
+  onAddToCart,
   logoUrl,
   customization
 }: ThemeComponentProps) {
@@ -32,10 +37,10 @@ export function StoreStrideTheme({
   const isSticky = customization?.isHeaderSticky !== false;
   const showTrust = customization?.showTrustFeatures !== false;
   const showBanner = customization?.showHeroBanner !== false;
-  const announcement = customization?.announcementText || 'شحن مجاني فوق $50 • إرجاع خلال 30 يوماً • شحن مجاني فوق $50 • إرجاع خلال 30 يوماً';
-  const heroTitle = customization?.heroTitle || (isEn ? 'High-Top & Suede Season' : 'موسم الرقبة العالية');
-  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Handcrafted leather & sports footwear designed for all-day comfort' : 'أفضل الخامات الطبية والجلدية لراحة قدميك طوال اليوم، مع فحص القياس وتجربة الحذاء قبل الاستلام.');
-  const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Footwear' : 'تسوق الأحذية');
+  const announcement = customization?.announcementText || 'توصيل سريع لكافة محافظات العراق • الدفع عند الاستلام مع إمكانية المعاينة والفحص باليد';
+  const heroTitle = customization?.heroTitle || (isEn ? 'Cobalt Power. Stride Bold.' : 'أحذية وسنيكرز حصرية بأعلى جودة');
+  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'From pure suede Italian loafers to high-performance track runners, inspected before payment.' : 'من أحذية اللوفر الجلدية الكلاسيكية إلى السنيكرز الرياضي الخفيف، مع ميزة الفحص قبل الاستلام.');
+  const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Shoes' : 'تسوق التشكيلة الآن');
   const gridCols = customization?.productGridCols || 4;
   const showDiscount = customization?.showDiscountBadge !== false;
   const showStock = customization?.showStockStatus !== false;
@@ -58,22 +63,24 @@ export function StoreStrideTheme({
 
   return (
     <div
-      className="min-h-screen bg-[#071322] text-slate-100 font-sans antialiased selection:bg-[#0052cc] selection:text-white"
+      className="min-h-screen bg-[#071322] text-slate-100 font-sans antialiased selection:bg-[#00c8ff] selection:text-slate-950"
       dir={isEn ? 'ltr' : 'rtl'}
     >
       
-      {/* 1. Top Cobalt Ticker Bar (Matching Screenshot 1 Stride) */}
+      {/* 1. Top Striped Ticker Bar */}
       {customization?.showAnnouncement !== false && (
-        <div className="bg-[#0052cc] text-white text-[11px] font-black py-2 px-4 md:px-8 text-center shadow-md">
+        <div className="bg-[#0052cc] text-white text-xs font-black py-2 px-4 md:px-8 shadow-md">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 mx-auto sm:mx-0">
-              <Zap className="size-3.5 fill-amber-300 text-amber-300" />
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-3.5 text-[#00c8ff]" />
               <span>{announcement}</span>
-            </span>
-            <div className="hidden sm:flex items-center gap-4 text-xs font-bold text-blue-100">
-              <span>{isEn ? '30 Days Return' : 'إرجاع خلال 30 يوماً'}</span>
-              <span>|</span>
-              <span>{isEn ? 'Inspect Before Payment' : 'فحص الحذاء قبل الدفع'}</span>
+            </div>
+            <div className="flex items-center gap-4 text-[11px] font-bold">
+              <a href="tel:+9647700000000" className="hover:text-cyan-200">
+                📞 +964 770 000 0000
+              </a>
+              <span className="hidden sm:inline">|</span>
+              <span className="font-mono text-cyan-200">https://{fullDomain}</span>
             </div>
           </div>
         </div>
@@ -86,7 +93,7 @@ export function StoreStrideTheme({
           {/* Logo & Store */}
           <div className="flex items-center gap-3">
             {logoUrl ? (
-              <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[140px] object-contain rounded-xl border border-blue-500/40" />
+              <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[150px] object-contain rounded-xl border border-blue-500/40" />
             ) : (
               <div className="flex items-center gap-2.5">
                 <div
@@ -96,29 +103,29 @@ export function StoreStrideTheme({
                   <Footprints className="size-6" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-black text-xl text-white tracking-tight">{storeName}</span>
-                    <span className="px-2 py-0.5 rounded text-[9px] font-black bg-[#0052cc] text-white">STRIDE</span>
-                  </div>
+                  <span className="font-black text-xl text-white tracking-tight">{storeName}</span>
                   <span className="text-[10px] font-mono text-blue-400 dir-ltr block mt-0.5">{fullDomain}</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-black text-blue-200">
-            {['الرئيسية', 'المتجر', 'جري', 'بوت', 'FOOTWEAR', 'SHOES', 'التخفيضات'].map((item) => (
+          {/* Dynamic Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-4 text-xs font-black text-blue-200">
+            {categories.slice(0, 6).map((cat) => (
               <button
-                key={item}
+                key={cat}
                 type="button"
-                onClick={() => setActiveTab(item)}
+                onClick={() => {
+                  onSelectCategory(cat);
+                  setActiveTab(cat);
+                }}
                 className={`py-1 transition-all hover:text-white relative ${
-                  activeTab === item ? 'text-white font-black' : ''
+                  selectedCategory === cat ? 'text-white font-black' : ''
                 }`}
               >
-                {item}
-                {activeTab === item && (
+                {cat}
+                {selectedCategory === cat && (
                   <span className="absolute -bottom-2 right-0 left-0 h-0.5 bg-[#00c8ff] rounded-full" />
                 )}
               </button>
@@ -126,25 +133,36 @@ export function StoreStrideTheme({
           </nav>
 
           {/* Search & Actions */}
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block w-60">
+          <div className="flex items-center gap-2.5">
+            <div className="relative hidden sm:block w-48 lg:w-56">
               <Search className={`absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-2.5 size-4 text-blue-400/60`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder={isEn ? 'Search shoes, models...' : 'ابحث عن موديل، مقاس...'}
+                placeholder={isEn ? 'Search shoes...' : 'ابحث عن موديل، مقاس...'}
                 className={`w-full h-9 ${isEn ? 'pl-10 pr-4' : 'pr-10 pl-4'} rounded-xl border border-blue-900/60 bg-[#071322] text-xs text-white placeholder:text-blue-300/40 focus:outline-none focus:border-[#00c8ff]`}
               />
             </div>
 
+            {/* Customer Account Button */}
             <button
               type="button"
-              onClick={() => {
-                const el = document.getElementById('stride-grid');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-black text-xs shadow-lg transition-all hover:scale-105"
+              onClick={() => onOpenCustomerAuth?.()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-blue-800 bg-[#0b1c33] text-blue-100 font-bold text-xs hover:bg-[#102747] transition-all"
+              title="حسابي / تسجيل الدخول"
+            >
+              <User className="size-4" />
+              <span className="hidden sm:inline">
+                {currentCustomer ? currentCustomer.name : 'دخول'}
+              </span>
+            </button>
+
+            {/* Cart Button */}
+            <button
+              type="button"
+              onClick={() => onOpenCart?.()}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-black text-xs shadow-lg transition-all hover:scale-105"
               style={{ backgroundColor: brandColor }}
             >
               <ShoppingBag className="size-4" />
@@ -225,9 +243,12 @@ export function StoreStrideTheme({
               className="bg-[#0b1c33] border border-blue-900/60 rounded-3xl overflow-hidden hover:border-[#00c8ff] hover:shadow-2xl hover:shadow-blue-900/40 transition-all duration-300 flex flex-col justify-between group"
             >
               <div>
-                <div className="h-64 bg-[#071322] relative overflow-hidden">
+                <div
+                  onClick={() => onOpenProductDetail?.(p)}
+                  className="h-64 bg-[#071322] relative overflow-hidden cursor-pointer"
+                >
                   <img
-                    src={p.imageUrl || '/templates/store-sneak.png'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -247,7 +268,10 @@ export function StoreStrideTheme({
                 </div>
 
                 <div className="p-5 text-right space-y-2">
-                  <h4 className="font-black text-sm text-white line-clamp-1 group-hover:text-[#00c8ff] transition-colors">
+                  <h4
+                    onClick={() => onOpenProductDetail?.(p)}
+                    className="font-black text-sm text-white line-clamp-1 group-hover:text-[#00c8ff] transition-colors cursor-pointer"
+                  >
                     {p.name}
                   </h4>
                   <p className="text-xs text-blue-200/60 line-clamp-2 leading-relaxed">
@@ -263,7 +287,7 @@ export function StoreStrideTheme({
                 </div>
               </div>
 
-              <div className="p-5 border-t border-blue-900/50 bg-[#09172a] flex items-center justify-between">
+              <div className="p-5 border-t border-blue-900/50 bg-[#09172a] flex items-center justify-between gap-2">
                 <div>
                   <span className="text-base font-black font-mono text-white block">
                     {formatIQD(p.price)}
@@ -275,17 +299,31 @@ export function StoreStrideTheme({
                   )}
                 </div>
 
-                {enableQuick && (
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => onQuickBuy(p)}
-                    className="px-4 py-2 rounded-xl text-xs font-black text-white shadow-md flex items-center gap-1.5 transition-all hover:scale-105"
-                    style={{ backgroundColor: brandColor }}
+                    onClick={() => {
+                      if (onAddToCart) onAddToCart(p);
+                      else onQuickBuy(p);
+                    }}
+                    className="p-2 rounded-xl border border-blue-800 bg-[#071322] text-blue-200 hover:bg-[#0c2340] transition-colors"
+                    title="أضف إلى السلة"
                   >
-                    <span>{isEn ? 'Buy' : 'طلب'}</span>
-                    <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
+                    <ShoppingBag className="size-3.5" />
                   </button>
-                )}
+
+                  {enableQuick && (
+                    <button
+                      type="button"
+                      onClick={() => onQuickBuy(p)}
+                      className="px-3.5 py-2 rounded-xl text-xs font-black text-white shadow-md flex items-center gap-1.5 transition-all hover:scale-105"
+                      style={{ backgroundColor: brandColor }}
+                    >
+                      <span>{isEn ? 'Buy' : 'طلب'}</span>
+                      <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

@@ -403,7 +403,7 @@ export function StoreBrickTheme({
               <div>
                 <div className="h-56 bg-slate-100 relative overflow-hidden">
                   <img
-                    src={p.imageUrl || '/templates/store-brick.jpg'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

@@ -154,7 +154,7 @@ export function StoreNexoraTheme({
               <div>
                 <div className="h-64 bg-[#080816] relative overflow-hidden">
                   <img
-                    src={p.imageUrl || '/templates/store-nexora.png'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

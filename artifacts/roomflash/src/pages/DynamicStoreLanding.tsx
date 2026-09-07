@@ -523,21 +523,61 @@ export function DynamicStoreLanding() {
   };
 
   // =========================================================================
-  // حالة جاري التحقق واسترداد المتجر من السيرفر السحابي
+  // حالة جاري التحقق واسترداد المتجر من السيرفر السحابي (واجهة تحميل فخمة وعصرية)
   // =========================================================================
   if (loading && cleanSubdomain !== "zero" && cleanSubdomain !== "demo") {
     return (
-      <div className="w-full min-h-screen bg-[#070b14] text-white flex flex-col items-center justify-center p-6 text-center font-sans selection:bg-teal-500 selection:text-slate-950" dir="rtl">
-        <div className="size-16 rounded-3xl bg-teal-500/10 border border-teal-500/30 text-teal-400 grid place-items-center mb-6 shadow-2xl shadow-teal-500/10">
-          <Globe className="size-8 animate-spin text-teal-400" />
+      <div className="w-full min-h-screen bg-[#060a12] text-white flex flex-col items-center justify-center p-6 text-center font-sans selection:bg-teal-500 selection:text-slate-950 relative overflow-hidden" dir="rtl">
+        {/* Background glow effects */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[500px] bg-gradient-to-tr from-teal-500/15 to-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 right-1/4 size-[250px] bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        {/* Luxury Glassmorphic Card */}
+        <div className="relative z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-2xl border border-slate-800/80 p-8 rounded-3xl shadow-2xl shadow-black/60 flex flex-col items-center">
+          
+          {/* Glowing Animated Ring with Store Icon */}
+          <div className="relative mb-6">
+            <div className="absolute -inset-2 bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full blur-md opacity-70 animate-pulse" />
+            <div className="size-20 rounded-full bg-gradient-to-b from-slate-900 to-slate-950 border border-teal-500/40 text-teal-400 flex items-center justify-center relative shadow-xl">
+              <ShoppingBag className="size-9 text-teal-300 animate-bounce" />
+            </div>
+            {/* Spinning Orbit Ring */}
+            <div className="absolute -inset-3.5 border-2 border-dashed border-teal-500/30 rounded-full animate-spin [animation-duration:8s]" />
+          </div>
+
+          <span className="text-[11px] font-black tracking-wider uppercase px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 mb-3">
+            منصة الزعيم للتجارة الإلكترونية
+          </span>
+
+          <h2 className="text-xl sm:text-2xl font-black text-white mb-2 tracking-tight">
+            جاري تهيئة وإطلاق متجرك...
+          </h2>
+          <p className="text-xs text-slate-400 max-w-xs leading-relaxed mb-6">
+            يتم استرداد المنتجات، السلة، وبوابة الشحن السريع لجميع محافظات العراق
+          </p>
+
+          {/* Animated Status Milestones */}
+          <div className="w-full bg-slate-950/60 border border-slate-800/60 rounded-2xl p-3.5 mb-5 space-y-2 text-right text-xs">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold">
+              <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+              <span>الاتصال بالسحابة السريعة لمتاجر الزعيم</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-300 font-medium">
+              <span className="size-2 rounded-full bg-teal-400" />
+              <span>تجهيز القالب والمنتجات الحصرية</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-400">
+              <span className="size-2 rounded-full bg-slate-600" />
+              <span>تفعيل الدفع عند الاستلام وكوبونات الخصم</span>
+            </div>
+          </div>
+
+          {/* Subdomain Badge */}
+          <div className="flex items-center gap-2 text-xs font-mono px-3.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-teal-300 shadow-inner">
+            <span className="size-2 rounded-full bg-teal-400 animate-pulse" />
+            <span>https://{cleanSubdomain}.za3em.shop</span>
+          </div>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-white mb-2">جاري استرداد وإطلاق متجرك أونلاين...</h2>
-        <p className="text-xs sm:text-sm text-slate-400 max-w-sm mb-4">
-          يتم تحميل قالب المتجر ومنتجاتك من قاعدة البيانات السحابية المركزية
-        </p>
-        <span className="font-mono text-xs px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-teal-300">
-          https://{cleanSubdomain}.za3em.shop
-        </span>
       </div>
     );
   }

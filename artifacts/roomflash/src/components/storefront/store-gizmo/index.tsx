@@ -152,7 +152,7 @@ export function StoreGizmoTheme({
               <div>
                 <div className="h-64 bg-[#070d18] relative overflow-hidden">
                   <img
-                    src={p.imageUrl || '/templates/store-gizmo.png'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=700&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

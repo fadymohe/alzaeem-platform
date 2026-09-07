@@ -13,6 +13,11 @@ export interface ThemeComponentProps {
   products: StoreProduct[];
   filteredProducts: StoreProduct[];
   cartCount: number;
+  cartItems?: Array<{ product: StoreProduct; quantity: number }>;
+  onOpenCart?: () => void;
+  onOpenProductDetail?: (product: StoreProduct) => void;
+  onOpenCustomerAuth?: () => void;
+  currentCustomer?: { name: string; phone: string; city: string; address?: string } | null;
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   searchQuery: string;
@@ -35,11 +40,16 @@ export function StoreClassicTheme({
   products,
   filteredProducts,
   cartCount,
+  onOpenCart,
+  onOpenProductDetail,
+  onOpenCustomerAuth,
+  currentCustomer,
   selectedCategory,
   onSelectCategory,
   searchQuery,
   onSearchChange,
   onQuickBuy,
+  onAddToCart,
   logoUrl
 }: ThemeComponentProps) {
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
@@ -48,21 +58,26 @@ export function StoreClassicTheme({
   return (
     <div className="min-h-screen bg-[#faf9f6] text-slate-900 font-sans antialiased selection:bg-slate-900 selection:text-white">
       {/* Top Announcement Bar */}
-      <div className="bg-slate-900 text-white text-xs py-2 px-4 text-center tracking-wide flex items-center justify-center gap-3">
+      <div className="bg-slate-900 text-white text-xs py-2 px-4 text-center tracking-wide flex items-center justify-between max-w-7xl mx-auto">
         <span className="text-[11px] font-medium opacity-90">
           ✨ توصيل مجاني لجميع محافظات العراق والدفع عند الاستلام • ضمان أصلي 100%
         </span>
-        <span className="hidden sm:inline text-slate-400">|</span>
-        <span className="hidden sm:inline text-[11px] font-mono text-amber-300">
-          https://{fullDomain}
-        </span>
+        <div className="flex items-center gap-4 text-[11px]">
+          <a href="tel:+9647700000000" className="hover:text-amber-300 font-mono">
+            📞 +964 770 000 0000
+          </a>
+          <span className="hidden sm:inline text-slate-400">|</span>
+          <span className="hidden sm:inline font-mono text-amber-300">
+            https://{fullDomain}
+          </span>
+        </div>
       </div>
 
       {/* Main Luxury Header (Centered Brand, Clean Minimal Nav) */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-12 py-5 shadow-sm transition-all">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-12 py-4 shadow-sm transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
           {/* Left: Nav Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-wider text-slate-700">
+          <nav className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-slate-700">
             <button
               type="button"
               onClick={() => setActiveNavTab('home')}
@@ -90,13 +105,6 @@ export function StoreClassicTheme({
             >
               عن المتجر
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveNavTab('contact')}
-              className="hover:text-slate-950 transition-colors"
-            >
-              تواصل معنا
-            </button>
           </nav>
 
           {/* Center: Brand Logo */}
@@ -104,18 +112,18 @@ export function StoreClassicTheme({
             {logoUrl ? (
               <img src={logoUrl} alt={storeName} className="h-10 max-w-[160px] object-contain mx-auto" />
             ) : (
-              <h1 className="text-2xl md:text-3xl font-serif font-black tracking-[0.2em] uppercase text-slate-950">
+              <h1 className="text-xl md:text-2xl font-serif font-black tracking-[0.2em] uppercase text-slate-950">
                 {storeName}
               </h1>
             )}
-            <span className="text-[10px] uppercase tracking-widest text-slate-400 block -mt-1 font-mono">
-              LUXURY COLLECTION
+            <span className="text-[10px] uppercase tracking-widest text-slate-400 block font-mono">
+              LUXURY STORE
             </span>
           </div>
 
           {/* Right: Search & Actions */}
-          <div className="flex items-center gap-4">
-            <div className="relative hidden sm:block w-52 lg:w-64">
+          <div className="flex items-center gap-3">
+            <div className="relative hidden sm:block w-48 lg:w-56">
               <Search className="absolute right-3 top-2.5 size-4 text-slate-400" />
               <input
                 type="text"
@@ -126,18 +134,28 @@ export function StoreClassicTheme({
               />
             </div>
 
+            {/* Customer Account */}
             <button
               type="button"
-              onClick={() => document.getElementById('classic-collection')?.scrollIntoView({ behavior: 'smooth' })}
-              className="relative p-2 text-slate-800 hover:text-slate-950 transition-colors"
-              title="سلة التسوق"
+              onClick={() => onOpenCustomerAuth?.()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-colors"
+              title="تسجيل الدخول / حسابي"
             >
-              <ShoppingBag className="size-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 size-5 rounded-full bg-slate-950 text-white text-[10px] font-bold grid place-items-center">
-                  {cartCount}
-                </span>
-              )}
+              <User className="size-4" />
+              <span className="hidden sm:inline">
+                {currentCustomer ? currentCustomer.name : 'دخول'}
+              </span>
+            </button>
+
+            {/* Cart Button */}
+            <button
+              type="button"
+              onClick={() => onOpenCart?.()}
+              className="relative p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors flex items-center gap-1.5 px-3"
+              title="سلة المشتريات"
+            >
+              <ShoppingBag className="size-4" />
+              <span className="text-xs font-mono font-bold">({cartCount})</span>
             </button>
           </div>
         </div>
@@ -173,8 +191,8 @@ export function StoreClassicTheme({
           {/* Hero Image Showcase */}
           <div className="hidden md:block absolute left-8 lg:left-16 bottom-0 top-0 w-1/2 overflow-hidden pointer-events-none">
             <img
-              src="/templates/store-classic.jpg"
-              alt="Botiga Luxury Showcase"
+              src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=900&auto=format&fit=crop&q=80"
+              alt="Luxury Showcase"
               className="size-full object-cover object-center opacity-90 mix-blend-multiply"
             />
           </div>
@@ -254,7 +272,7 @@ export function StoreClassicTheme({
         </div>
       </section>
 
-      {/* Products Grid (Botiga Minimalist Cards with SALE Badge) */}
+      {/* Products Grid */}
       <section className="max-w-7xl mx-auto px-4 md:px-12 mt-8 mb-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((p) => (
@@ -264,9 +282,12 @@ export function StoreClassicTheme({
             >
               <div>
                 {/* Product Image Container */}
-                <div className="h-64 bg-slate-50 relative overflow-hidden flex items-center justify-center p-4">
+                <div
+                  onClick={() => onOpenProductDetail?.(p)}
+                  className="h-64 bg-slate-50 relative overflow-hidden flex items-center justify-center p-4 cursor-pointer"
+                >
                   <img
-                    src={p.imageUrl || '/templates/store-classic.jpg'}
+                    src={p.imageUrl || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80'}
                     alt={p.name}
                     className="size-full object-contain group-hover:scale-105 transition-transform duration-500"
                   />
@@ -281,7 +302,10 @@ export function StoreClassicTheme({
 
                 {/* Content */}
                 <div className="p-5 text-right space-y-2">
-                  <h4 className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-slate-950 transition-colors">
+                  <h4
+                    onClick={() => onOpenProductDetail?.(p)}
+                    className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-slate-950 transition-colors cursor-pointer"
+                  >
                     {p.name}
                   </h4>
                   <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
@@ -291,7 +315,7 @@ export function StoreClassicTheme({
               </div>
 
               {/* Price & Action */}
-              <div className="p-5 pt-0 flex items-center justify-between border-t border-slate-100 mt-2">
+              <div className="p-5 pt-0 flex items-center justify-between border-t border-slate-100 mt-2 gap-2">
                 <div>
                   <span className="text-base font-black font-mono text-slate-950 block">
                     {formatIQD(p.price)}
@@ -303,13 +327,27 @@ export function StoreClassicTheme({
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => onQuickBuy(p)}
-                  className="px-4 py-2 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-black transition-transform hover:scale-105 shadow-sm"
-                >
-                  شراء فوري
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onAddToCart) onAddToCart(p);
+                      else onQuickBuy(p);
+                    }}
+                    className="p-2 rounded-full border border-slate-200 text-slate-800 hover:bg-slate-100 transition-colors"
+                    title="أضف إلى السلة"
+                  >
+                    <ShoppingBag className="size-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onQuickBuy(p)}
+                    className="px-3.5 py-2 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-black transition-transform hover:scale-105 shadow-sm"
+                  >
+                    طلب فوري
+                  </button>
+                </div>
               </div>
             </div>
           ))}
