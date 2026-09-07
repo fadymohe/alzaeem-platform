@@ -15,11 +15,14 @@ import { registerStore, encodeStoreSeed, checkSubdomainAvailability } from '../u
 import { saveCloudStore } from '../utils/cloudDb';
 import { getStoredProducts, saveStoredProducts, type StoreProduct } from '../data/storeState';
 import { validateProductImageSafety } from '../utils/nsfwDetector';
+import { StoreTemplates, TEMPLATES_MAP, type TemplateId, normalizeTemplateId } from '../components/storefront/StoreTemplates';
 
 export interface RealTemplateOption {
   id: string;
   name: string;
+  nameEn: string;
   categoryTitle: string;
+  categoryKey: 'all' | 'fashion' | 'perfumes' | 'electronics' | 'home' | 'general';
   badge: string;
   tagline: string;
   features: string[];
@@ -33,14 +36,106 @@ export interface RealTemplateOption {
   pillBg: string;
   priceColor: string;
   btnBg: string;
+  colorDot: string;
+  palette: string[];
 }
 
 export const REAL_STORE_TEMPLATES: RealTemplateOption[] = [
   {
+    id: 'store-sprout',
+    name: 'سبراوت (Sprout)',
+    nameEn: 'Sprout Garden',
+    categoryTitle: 'أزياء ملابس أطفال وعائلة بروح الطبيعة',
+    categoryKey: 'fashion',
+    badge: 'ثيم أطفال وعائلة',
+    tagline: 'واجهة ملابس أطفال بروح الحديقة — درجات زيتونية وعاجية راقية، كولاج منتجات عائم، وشبكة مقتنيات مصممة لزيادة المبيعات.',
+    features: ['واجهة كولاج للأطفال بروح الحديقة', 'شبكة مقتنيات نقية عالية التحويل', 'شحن سريع لكافة المحافظات مع COD'],
+    heroImage: '/templates/store-classic.jpg',
+    accentColor: 'emerald',
+    borderActive: 'border-emerald-500',
+    ringColor: 'ring-emerald-500/40',
+    previewBg: 'bg-[#faf9f6]',
+    headerBg: 'bg-white border-slate-200',
+    cardBg: 'bg-white border-stone-200',
+    pillBg: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+    priceColor: 'text-emerald-800',
+    btnBg: 'bg-emerald-700 hover:bg-emerald-800 text-white',
+    colorDot: 'bg-[#588157]',
+    palette: ['#344e41', '#588157', '#a3b18a', '#dad7cd']
+  },
+  {
+    id: 'store-wardrobe',
+    name: 'واردروب (Wardrobe)',
+    nameEn: 'Wardrobe Minimal',
+    categoryTitle: 'أزياء وملابس كاجوال يومية',
+    categoryKey: 'fashion',
+    badge: 'تصميم مينيمال أحادي',
+    tagline: 'واجهة أزياء تبدأ بالمنتجات مباشرة بلا تعقيد — فسيفساء بانرات وتصفح سلس وسريع مع شريط مميزات يبرز الفخامة.',
+    features: ['تصفح بصري سريع للملابس والكاجوال', 'سلة تسوق عائمة ومحدثة فورياً', 'شحن سريع مع أسطول الزعيم'],
+    heroImage: '/templates/store-aurit.jpg',
+    accentColor: 'slate',
+    borderActive: 'border-slate-400',
+    ringColor: 'ring-slate-500/40',
+    previewBg: 'bg-[#fafafa]',
+    headerBg: 'bg-white border-slate-200',
+    cardBg: 'bg-white border-slate-200',
+    pillBg: 'bg-slate-100 text-slate-800 border-slate-300',
+    priceColor: 'text-slate-900',
+    btnBg: 'bg-black hover:bg-neutral-800 text-white',
+    colorDot: 'bg-black',
+    palette: ['#000000', '#333333', '#888888', '#e63946']
+  },
+  {
+    id: 'store-stride',
+    name: 'سترايد (Stride)',
+    nameEn: 'Stride Sneakers',
+    categoryTitle: 'أحذية رياضية وسنيكرز وأناقة حركية',
+    categoryKey: 'fashion',
+    badge: 'متجر سنيكرز كثيف',
+    tagline: 'واجهة أحذية وسنيكرز حيوية وكثيفة — بنرات مائلة، جدار ماركات، مقاسات تفاعلية، وسرعة فائقة في الشيك أوت.',
+    features: ['متجر سنيكرز رياضي فائق الحيوية', 'عرض المقاسات والمخزون الحي', 'ربط فوري ببوليصة الشحن'],
+    heroImage: '/templates/store-sneak.png',
+    accentColor: 'blue',
+    borderActive: 'border-blue-500',
+    ringColor: 'ring-blue-500/40',
+    previewBg: 'bg-[#f0f7ff]',
+    headerBg: 'bg-[#071322] border-blue-900',
+    cardBg: 'bg-white border-blue-100',
+    pillBg: 'bg-blue-50 text-blue-800 border-blue-200',
+    priceColor: 'text-blue-700',
+    btnBg: 'bg-blue-600 hover:bg-blue-500 text-white',
+    colorDot: 'bg-[#0052cc]',
+    palette: ['#071322', '#0052cc', '#00c8ff', '#ffffff']
+  },
+  {
+    id: 'store-chic',
+    name: 'شيك (Chic)',
+    nameEn: 'Chic Boutique',
+    categoryTitle: 'بوتيك أزياء وموضة نسائية راقية',
+    categoryKey: 'fashion',
+    badge: 'بوتيك ومجلات راقية',
+    tagline: 'واجهة بوتيك مستوحاة من المجلات العالمية — تباين بصري عالي، وتشكيلات حصرية للفساتين والأناقة والمناسبات.',
+    features: ['تصميم مجلات أزياء عصرية راقية', 'عرض تشكيلات الموضة بلمسات ناعمة', 'تجربة شيك أوت COD فورية'],
+    heroImage: '/templates/store-nova.jpg',
+    accentColor: 'rose',
+    borderActive: 'border-rose-500',
+    ringColor: 'ring-rose-500/40',
+    previewBg: 'bg-[#fff5f6]',
+    headerBg: 'bg-white border-rose-100',
+    cardBg: 'bg-white border-rose-100',
+    pillBg: 'bg-rose-50 text-rose-800 border-rose-200',
+    priceColor: 'text-rose-700',
+    btnBg: 'bg-[#540b0e] hover:bg-[#6f1115] text-white',
+    colorDot: 'bg-[#540b0e]',
+    palette: ['#000000', '#ffffff', '#fff0f3', '#540b0e']
+  },
+  {
     id: 'store-classic',
     name: 'بوتيجا (كلاسيك)',
+    nameEn: 'Botiga Minimalist',
     categoryTitle: 'عطور ومستحضرات فاخرة وتراثية',
-    badge: 'ثيم مجاني معتمد',
+    categoryKey: 'perfumes',
+    badge: 'مينيمال أبيض فاخر',
     tagline: 'واجهة مينيمال ناصعة البياض مع هيدر مركزي أنيق وشبكة مقتنيات وتشكيلات حصرية مناسبة للعطور ومستحضرات التجميل الراقية.',
     features: ['مينيمال أبيض فاخر وهيدر أنيق', 'شبكة مقتنيات نقية عالية التحويل', 'شحن سريع لكافة المحافظات مع COD'],
     heroImage: '/templates/store-classic.jpg',
@@ -52,13 +147,17 @@ export const REAL_STORE_TEMPLATES: RealTemplateOption[] = [
     cardBg: 'bg-white border-stone-200',
     pillBg: 'bg-stone-100 text-stone-800 border-stone-300',
     priceColor: 'text-amber-800',
-    btnBg: 'bg-stone-900 hover:bg-stone-800 text-white'
+    btnBg: 'bg-stone-900 hover:bg-stone-800 text-white',
+    colorDot: 'bg-amber-600',
+    palette: ['#1c1917', '#d97706', '#fef3c7', '#ffffff']
   },
   {
     id: 'store-aurit',
     name: 'شوب ويل (أوريت)',
+    nameEn: 'ShopWell Mega Store',
     categoryTitle: 'أزياء وإلكترونيات وسلع استهلاكية',
-    badge: 'ثيم مجاني معتمد',
+    categoryKey: 'general',
+    badge: 'ميجا ستور حديث',
     tagline: 'واجهة ميجا ستور أزرق حديث مع شريط إعلانات أكواد الخصم، وقائمة تسوق حسب الأقسام، ودوائر المنتجات الأكثر طلباً.',
     features: ['شريط إعلانات عروض وأكواد فلاش', 'تسوق ميجا ستور سريع وشامل', 'سلة تسوق عائمة وشيك أوت COD فوري'],
     heroImage: '/templates/store-aurit.jpg',
@@ -70,13 +169,17 @@ export const REAL_STORE_TEMPLATES: RealTemplateOption[] = [
     cardBg: 'bg-white border-slate-200',
     pillBg: 'bg-blue-50 text-blue-700 border-blue-200',
     priceColor: 'text-blue-600',
-    btnBg: 'bg-blue-600 hover:bg-blue-500 text-white'
+    btnBg: 'bg-blue-600 hover:bg-blue-500 text-white',
+    colorDot: 'bg-blue-600',
+    palette: ['#0f172a', '#2563eb', '#38bdf8', '#f8fafc']
   },
   {
     id: 'store-nova',
     name: 'إيشوب كيت (نوفا)',
+    nameEn: 'eShopkit Marketplace',
     categoryTitle: 'إلكترونيات وأجهزة ذكية وملحقات',
-    badge: 'ثيم مجاني معتمد',
+    categoryKey: 'electronics',
+    badge: 'ماركت بليس تقني',
     tagline: 'واجهة ماركت بليس إلكتروني تقني شامل مع شريط علوي بنفسجي، وبادج عروض فلاش، وبطاقات ترويجية جانبية لزيادة التحويل.',
     features: ['ماركت بليس تقني عصري متطور', 'شارات فلاش وتخفيضات أجهزة ذكية', 'شيك أوت سريع ونموذج استلام سهل'],
     heroImage: '/templates/store-nova.jpg',
@@ -88,7 +191,119 @@ export const REAL_STORE_TEMPLATES: RealTemplateOption[] = [
     cardBg: 'bg-white border-purple-100',
     pillBg: 'bg-purple-50 text-purple-700 border-purple-200',
     priceColor: 'text-purple-700',
-    btnBg: 'bg-purple-600 hover:bg-purple-500 text-white'
+    btnBg: 'bg-purple-600 hover:bg-purple-500 text-white',
+    colorDot: 'bg-purple-600',
+    palette: ['#581c87', '#9333ea', '#f3e8ff', '#ffffff']
+  },
+  {
+    id: 'store-mane',
+    name: 'مين (Mane)',
+    nameEn: 'Mane Beauty Salon',
+    categoryTitle: 'صالون ومستحضرات تجميل وعناية',
+    categoryKey: 'perfumes',
+    badge: 'صالون وعناية متقدمة',
+    tagline: 'واجهة صالون وعناية مبنية على فكرة التحول والجمال — درجات أرجوانية عميقة تبرز الباقات والمنتجات بأسلوب احترافي.',
+    features: ['تصميم صالونات ومستحضرات فاخرة', 'عرض باقات العناية الشخصية', 'شيك أوت سريع مع COD'],
+    heroImage: '/templates/store-novatrend.png',
+    accentColor: 'purple',
+    borderActive: 'border-purple-500',
+    ringColor: 'ring-purple-500/40',
+    previewBg: 'bg-[#faf5ff]',
+    headerBg: 'bg-[#240046] border-purple-900',
+    cardBg: 'bg-white border-purple-100',
+    pillBg: 'bg-purple-50 text-purple-700 border-purple-200',
+    priceColor: 'text-purple-700',
+    btnBg: 'bg-[#7209b7] hover:bg-[#8318cb] text-white',
+    colorDot: 'bg-[#7209b7]',
+    palette: ['#240046', '#7209b7', '#f72585', '#ffffff']
+  },
+  {
+    id: 'store-loftora',
+    name: 'لوفتورا (Loftora)',
+    nameEn: 'Loftora Home Decor',
+    categoryTitle: 'ديكور منزلي وأثاث وتحف',
+    categoryKey: 'home',
+    badge: 'ديكور وطين وبلوط',
+    tagline: 'واجهة ديكور منزلي مختارة بمشهد غرفة وفسيفساء بانرات بألوان حجرية وطينية بلمسة بلوط تعكس فخامة المنزل.',
+    features: ['أجواء ديكور منزلي دافئة وأنيقة', 'تنسيق الغرف والمجموعات المنزلية', 'توصيل آمن لجميع محافظات العراق'],
+    heroImage: '/templates/store-classic.jpg',
+    accentColor: 'amber',
+    borderActive: 'border-amber-700',
+    ringColor: 'ring-amber-700/40',
+    previewBg: 'bg-[#f7f5f0]',
+    headerBg: 'bg-[#2b2927] border-amber-900',
+    cardBg: 'bg-white border-amber-100',
+    pillBg: 'bg-amber-50 text-amber-900 border-amber-200',
+    priceColor: 'text-amber-900',
+    btnBg: 'bg-[#8b5a2b] hover:bg-[#744a22] text-white',
+    colorDot: 'bg-[#8b5a2b]',
+    palette: ['#2b2927', '#8b5a2b', '#d4b996', '#f7f5f0']
+  },
+  {
+    id: 'store-gizmo',
+    name: 'جيزمو سايبر تك',
+    nameEn: 'Gizmo Cyber Tech',
+    categoryTitle: 'إلكترونيات وأجهزة ذكية وملحقات',
+    categoryKey: 'electronics',
+    badge: 'سايبر تك متطور',
+    tagline: 'تصميم مستقبلي بتقنية السايبر للإلكترونيات والأجهزة الذكية مع أضواء نيون وتأثيرات تقنية متقدمة.',
+    features: ['تصميم سايبر نيون متقدم', 'عرض مواصفات الأجهزة الذكية', 'سلة تسوق إلكترونية سريعة'],
+    heroImage: '/templates/store-gizmo.png',
+    accentColor: 'cyan',
+    borderActive: 'border-cyan-500',
+    ringColor: 'ring-cyan-500/40',
+    previewBg: 'bg-[#0b1120]',
+    headerBg: 'bg-[#070d18] border-cyan-900',
+    cardBg: 'bg-slate-900 border-cyan-900/60',
+    pillBg: 'bg-cyan-950 text-cyan-300 border-cyan-800',
+    priceColor: 'text-cyan-400',
+    btnBg: 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black',
+    colorDot: 'bg-cyan-400',
+    palette: ['#070d18', '#06b6d4', '#3b82f6', '#ffffff']
+  },
+  {
+    id: 'store-novatrend',
+    name: 'نوفا تريند',
+    nameEn: 'NovaTrend Youth',
+    categoryTitle: 'تريندات شبابية وموضة الشارع',
+    categoryKey: 'fashion',
+    badge: 'تريند شبابي',
+    tagline: 'واجهة مخصصة لصيحات الموضة الجريئة والتريندات الشبابية مع خلفيات متدرجة داكنة وتأثيرات حركية.',
+    features: ['مظهر شبابي حيوي وعصري', 'شريط عروض فلاش تفاعلي', 'تسوق سهل ومريح عبر الهاتف'],
+    heroImage: '/templates/store-novatrend.png',
+    accentColor: 'pink',
+    borderActive: 'border-pink-500',
+    ringColor: 'ring-pink-500/40',
+    previewBg: 'bg-[#0f0c1b]',
+    headerBg: 'bg-[#18112e] border-pink-900/60',
+    cardBg: 'bg-[#1b1435] border-pink-900/40',
+    pillBg: 'bg-pink-950 text-pink-300 border-pink-800',
+    priceColor: 'text-pink-400',
+    btnBg: 'bg-pink-600 hover:bg-pink-500 text-white',
+    colorDot: 'bg-pink-500',
+    palette: ['#0f0c1b', '#ec4899', '#f43f5e', '#ffffff']
+  },
+  {
+    id: 'store-brick',
+    name: 'شوب واي (بريك)',
+    nameEn: 'ShopWay Mega Store',
+    categoryTitle: 'معدات صناعية وميجا ستور شامل',
+    categoryKey: 'general',
+    badge: 'ميجا ستور متين',
+    tagline: 'واجهة متجر شامل باللون الكحلي والبرتقالي، تحتوي على قائمة أقسام عمودية ومربع العروض الأسبوعية الحصرية.',
+    features: ['ميجا ستور للمنتجات المتنوعة', 'قائمة أقسام واسعة وشاملة', 'شحن وتوصيل فوري مع COD'],
+    heroImage: '/templates/store-brick.jpg',
+    accentColor: 'orange',
+    borderActive: 'border-orange-500',
+    ringColor: 'ring-orange-500/40',
+    previewBg: 'bg-[#fffbf5]',
+    headerBg: 'bg-[#111a28] border-orange-950',
+    cardBg: 'bg-white border-orange-100',
+    pillBg: 'bg-orange-50 text-orange-800 border-orange-200',
+    priceColor: 'text-orange-700',
+    btnBg: 'bg-orange-600 hover:bg-orange-500 text-white',
+    colorDot: 'bg-orange-500',
+    palette: ['#111a28', '#ea580c', '#fbbf24', '#ffffff']
   }
 ];
 
@@ -152,7 +367,7 @@ const NICHE_OPTIONS = [
     label: 'أزياء وملابس',
     desc: 'رجالي، نسائي، أطفال، أحذية وحقائب',
     icon: Shirt,
-    recommendedTheme: 'store-aurit',
+    recommendedTheme: 'store-wardrobe',
     defaultCats: ['أزياء رجالي', 'فساتين وعبايات', 'أحذية رياضية', 'حقائب وإكسسوارات']
   },
   {
@@ -168,7 +383,7 @@ const NICHE_OPTIONS = [
     label: 'ساعات وهدايا',
     desc: 'ساعات رجالي ونسائي، نظارات، أطقم هدايا',
     icon: Star,
-    recommendedTheme: 'store-classic',
+    recommendedTheme: 'store-chic',
     defaultCats: ['ساعات كلاسيك', 'ساعات رياضية', 'نظارات شمسية', 'أطقم هدايا']
   },
   {
@@ -176,7 +391,7 @@ const NICHE_OPTIONS = [
     label: 'أدوات منزلية وديكور',
     desc: 'مستلزمات البيت، ديكورات، إضاءة عصرية',
     icon: Store,
-    recommendedTheme: 'store-aurit',
+    recommendedTheme: 'store-loftora',
     defaultCats: ['إضاءة عصرية', 'مستلزمات مطبخ', 'ديكور منزلي', 'منظمات']
   },
   {
@@ -289,6 +504,9 @@ export function OnboardingPage() {
   const [previewActiveCategory, setPreviewActiveCategory] = useState('الكل');
   const [previewIsReloading, setPreviewIsReloading] = useState(false);
   const [previewOrderPlaced, setPreviewOrderPlaced] = useState(false);
+  const [templateFilter, setTemplateFilter] = useState<'all' | 'fashion' | 'perfumes' | 'electronics' | 'home' | 'general'>('all');
+  const [previewReloadKey, setPreviewReloadKey] = useState<number>(0);
+  const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
 
   // Launch Modal State
   const [isLaunching, setIsLaunching] = useState(false);
@@ -1289,120 +1507,168 @@ export function OnboardingPage() {
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
                   <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-800/40">
-                    الخطوة 3 من 5 • قوالب المتجر الإلكتروني المعتمدة (المجانية فقط)
+                    الخطوة 3 من 5 • قوالب وتصميمات المتجر المعتمدة (الجديدة)
                   </span>
                   <h2 className="text-xl font-black text-white mt-2">
-                    اختر تصميم متجرك الفعلي من الثيمات المجانية
+                    اختر تصميم متجرك الفعلي من القوالب المعتمدة
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
-                    ثيمات تسوق حقيقية متكاملة تدعم سلة المشتريات وشيك أوت الدفع عند الاستلام، ومربوطة فوراً بدومينك بدون أي رسوم.
+                    12 ثيم تسوق حقيقي معتمد بالكامل يدعم سلة المشتريات، بوليصة شحن أسطول الزعيم، وتأكيد الطلب السريع.
                   </p>
                 </div>
-                <div className="size-12 rounded-2xl bg-emerald-500/10 text-emerald-400 grid place-items-center border border-emerald-500/20">
+                <div className="size-12 rounded-2xl bg-emerald-500/10 text-emerald-400 grid place-items-center border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
                   <ShoppingBag className="size-6" />
                 </div>
               </div>
 
-              {/* 3 Real Free Store Templates Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {REAL_STORE_TEMPLATES.map((tmpl) => {
-                  const isSelected = selectedTheme === tmpl.id;
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 rf-scrollbar select-none">
+                {[
+                  { key: 'all', label: 'جميع القوالب (12)' },
+                  { key: 'fashion', label: 'أزياء وملابس' },
+                  { key: 'perfumes', label: 'عطور وتجميل' },
+                  { key: 'electronics', label: 'إلكترونيات وتقنية' },
+                  { key: 'home', label: 'ديكور ومنزل' },
+                  { key: 'general', label: 'ميجا ستور وشامل' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setTemplateFilter(tab.key as any)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      templateFilter === tab.key
+                        ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md shadow-teal-600/30'
+                        : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-                  return (
-                    <div
-                      key={tmpl.id}
-                      onClick={() => setSelectedTheme(tmpl.id)}
-                      className={`relative rounded-2xl border p-4 transition-all flex flex-col justify-between space-y-3 cursor-pointer group ${
-                        isSelected
-                          ? `${tmpl.borderActive} ${tmpl.previewBg} ring-2 ${tmpl.ringColor} shadow-xl scale-[1.02]`
-                          : `${tmpl.previewBg} border-slate-800 hover:border-slate-700 opacity-85 hover:opacity-100`
-                      }`}
-                    >
-                      <div className="space-y-3">
-                        <div className="relative h-36 rounded-xl overflow-hidden border border-slate-800 shadow-md">
-                          <img
-                            src={tmpl.heroImage}
-                            alt={tmpl.name}
-                            className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+              {/* Full Store Templates Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[580px] overflow-y-auto rf-scrollbar pr-1">
+                {REAL_STORE_TEMPLATES
+                  .filter(tmpl => templateFilter === 'all' || tmpl.categoryKey === templateFilter)
+                  .map((tmpl) => {
+                    const isSelected = selectedTheme === tmpl.id;
 
-                          <div className="absolute top-2.5 right-2.5 left-2.5 flex items-center justify-between">
-                            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-600/90 text-white border border-emerald-400/40 shadow-sm backdrop-blur-sm">
-                              {tmpl.badge}
-                            </span>
-                            {isSelected && (
-                              <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white text-[10px] font-black flex items-center gap-1 shadow-lg shadow-teal-600/30">
-                                <Check className="size-3 stroke-[3]" /> مفعّل لمتجرك
+                    return (
+                      <div
+                        key={tmpl.id}
+                        onClick={() => {
+                          setSelectedTheme(tmpl.id);
+                          setPreviewReloadKey(k => k + 1);
+                        }}
+                        className={`relative rounded-2xl border p-4 transition-all flex flex-col justify-between space-y-3 cursor-pointer group ${
+                          isSelected
+                            ? 'border-emerald-500 bg-slate-900/95 ring-2 ring-emerald-500/40 shadow-xl scale-[1.01]'
+                            : 'bg-slate-950/60 border-slate-800/90 hover:border-slate-700 opacity-90 hover:opacity-100 hover:bg-slate-900/60'
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          <div className="relative h-40 rounded-xl overflow-hidden border border-slate-800 shadow-md">
+                            <img
+                              src={tmpl.heroImage}
+                              alt={tmpl.name}
+                              className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+
+                            <div className="absolute top-2.5 right-2.5 left-2.5 flex items-center justify-between">
+                              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-slate-950/90 text-emerald-300 border border-emerald-500/40 shadow-sm backdrop-blur-sm">
+                                {tmpl.badge}
                               </span>
-                            )}
+                              {isSelected && (
+                                <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white text-[10px] font-black flex items-center gap-1 shadow-lg shadow-teal-600/40 animate-pulse">
+                                  <Check className="size-3 stroke-[3]" /> مفعّل لمتجرك
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="absolute bottom-2.5 right-3 left-3 text-right">
+                              <h4 className="text-sm font-black text-white flex items-center gap-2">
+                                <span>{tmpl.name}</span>
+                                <span className={`size-2.5 rounded-full ${tmpl.colorDot}`} />
+                              </h4>
+                              <p className="text-[10px] text-teal-300 font-bold mt-0.5">{tmpl.categoryTitle}</p>
+                            </div>
                           </div>
 
-                          <div className="absolute bottom-2 right-2.5 left-2.5 text-right">
-                            <h4 className="text-sm font-black text-white">{tmpl.name}</h4>
-                            <p className="text-[10px] text-teal-300 font-bold">{tmpl.categoryTitle}</p>
+                          <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-2">
+                            {tmpl.tagline}
+                          </p>
+
+                          {/* Palette color dots & Features */}
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <div className="flex flex-wrap gap-1">
+                              {tmpl.features.slice(0, 2).map((feat, fIdx) => (
+                                <span
+                                  key={fIdx}
+                                  className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-black/40 border border-white/10 text-slate-300 truncate max-w-[150px]"
+                                >
+                                  ✓ {feat}
+                                </span>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0 bg-black/40 px-2 py-1 rounded-md border border-white/10">
+                              {tmpl.palette.map((colorHex, cIdx) => (
+                                <span
+                                  key={cIdx}
+                                  style={{ backgroundColor: colorHex }}
+                                  className="size-2.5 rounded-full border border-black/30"
+                                  title={colorHex}
+                                />
+                              ))}
+                            </div>
                           </div>
                         </div>
 
-                        <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-3">
-                          {tmpl.tagline}
-                        </p>
+                        <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                          <span className={`text-[10px] font-bold ${isSelected ? 'text-emerald-400' : 'text-slate-400'}`}>
+                            {isSelected ? '✓ الثيم المختار' : 'اضغط للتطبيق'}
+                          </span>
 
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {tmpl.features.map((feat, fIdx) => (
-                            <span
-                              key={fIdx}
-                              className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-black/20 border border-white/10 text-slate-300"
+                          <div className="flex items-center gap-1.5">
+                            {/* Live External Preview Link */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePreviewTemplateExternal(tmpl.id);
+                              }}
+                              className="flex items-center gap-1 text-[11px] font-bold text-teal-300 hover:text-white bg-teal-950/60 hover:bg-teal-900 border border-teal-800/60 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-sm"
+                              title={`فتح المعاينة الحية للقالب على دومين ${tmpl.id.replace('store-', '')}.za3em.shop`}
                             >
-                              ✓ {feat}
-                            </span>
-                          ))}
+                              <ExternalLink className="size-3 text-teal-400" />
+                              <span>معاينة</span>
+                            </button>
+
+                            {/* Quick Modal Preview */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewModalTemplate(tmpl);
+                              }}
+                              className="flex items-center gap-1 text-[11px] font-bold text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                              title="معاينة تفاصيل الثيم"
+                            >
+                              <Eye className="size-3 text-slate-400" />
+                              <span>تفاصيل</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                        <span className={`text-[10px] font-bold ${tmpl.priceColor}`}>
-                          {isSelected ? '✓ الثيم المختار' : 'اضغط للتطبيق'}
-                        </span>
-
-                        <div className="flex items-center gap-1.5">
-                          {/* Live External Preview Link (e.g. nova.za3em.shop) */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePreviewTemplateExternal(tmpl.id);
-                            }}
-                            className="flex items-center gap-1 text-[11px] font-bold text-teal-300 hover:text-white bg-teal-950/60 hover:bg-teal-900 border border-teal-800/60 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-sm"
-                            title={`فتح المعاينة الحية للقالب على دومين ${tmpl.id.replace('store-', '')}.za3em.shop`}
-                          >
-                            <ExternalLink className="size-3 text-teal-400" />
-                            <span>معاينة خارجية</span>
-                          </button>
-
-                          {/* Quick Modal Preview */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewModalTemplate(tmpl);
-                            }}
-                            className="flex items-center gap-1 text-[11px] font-bold text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                            title="معاينة تفاصيل الثيم"
-                          >
-                            <Eye className="size-3 text-slate-400" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
 
               <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center gap-3 text-xs text-emerald-200">
                 <ShieldCheck className="size-5 text-emerald-400 shrink-0" />
                 <span>
-                  هذه الثيمات الثلاثة (كلاسيك، أوريت، نوفا) مجانية 100% ومربوطة بنظام الشحن وسلة التسوق وأسطول الزعيم لكل محافظات العراق.
+                  جميع القوالب الـ 12 معتمدة ومجانية 100%، متوافقة مع أحدث هوية بصرية للمنصة ومربوطة بسلة التسوق والشحن السريع لأسطول الزعيم في كافة محافظات العراق.
                 </span>
               </div>
             </div>
@@ -1658,6 +1924,9 @@ export function OnboardingPage() {
         {/* ========================================================================= */}
         {/* RIGHT: Real Live Website Preview (Authentic Interactive Store Simulator)  */}
         {/* ========================================================================= */}
+                {/* ========================================================================= */}
+        {/* RIGHT: Real Live Website Preview (Interactive Modular Store Engine)       */}
+        {/* ========================================================================= */}
         <div className="lg:col-span-5 order-2">
           <div className="sticky top-20 rounded-3xl border border-slate-800 bg-[#0f172a]/95 backdrop-blur-xl p-4 flex flex-col space-y-3.5 shadow-2xl">
             {/* Top Controls: Live Indicator + Device Mode Switcher */}
@@ -1702,6 +1971,7 @@ export function OnboardingPage() {
                   type="button"
                   onClick={() => {
                     setPreviewIsReloading(true);
+                    setPreviewReloadKey(k => k + 1);
                     setTimeout(() => setPreviewIsReloading(false), 450);
                   }}
                   className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
@@ -1714,463 +1984,123 @@ export function OnboardingPage() {
 
             {/* Current Active Theme Indicator */}
             <div className="flex items-center justify-between px-1 text-[11px]">
-              <span className="text-slate-400 font-bold flex items-center gap-1">
+              <span className="text-slate-400 font-bold flex items-center gap-1.5">
                 <span>القالب المطبق:</span>
                 <span className="text-emerald-400 font-black">{activeTheme.name}</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-bold">مجاني</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-bold">معتمد 100%</span>
               </span>
               <span className="text-slate-500 font-mono text-[10px]">
-                {previewDevice === 'mobile' ? 'Mobile View (380px)' : 'Desktop View (Full)'}
+                {previewDevice === 'mobile' ? 'Mobile View (375px)' : 'Desktop View (Full)'}
               </span>
             </div>
 
-            {/* Device Shell Container */}
-            <div className={`transition-all duration-300 mx-auto w-full ${previewDevice === 'mobile' ? 'max-w-[395px]' : 'max-w-full'}`}>
-              <div className={`rounded-3xl border-2 border-slate-700/80 ${activeTheme.previewBg} overflow-hidden shadow-2xl flex flex-col transition-all ${previewIsReloading ? 'opacity-50 scale-[0.99]' : 'opacity-100 scale-100'}`}>
+            {/* Realistic Browser Window Frame */}
+            <div className={`transition-all duration-300 mx-auto w-full ${previewDevice === 'mobile' ? 'max-w-[410px]' : 'max-w-full'}`}>
+              <div className={`rounded-3xl border-2 border-slate-700/80 bg-slate-900 overflow-hidden shadow-2xl flex flex-col transition-all ${previewIsReloading ? 'opacity-50 scale-[0.99]' : 'opacity-100 scale-100'}`}>
 
-                {/* Desktop/Mobile Browser Bar */}
-                <div className="bg-slate-900 border-b border-slate-800 px-3 py-2 flex items-center justify-between gap-2 select-none">
-                  {/* Window Traffic Lights */}
-                  <div className="flex items-center gap-1 text-[10px] shrink-0">
-                    <span className="size-2.5 rounded-full bg-rose-500/80 inline-block" />
-                    <span className="size-2.5 rounded-full bg-amber-500/80 inline-block" />
-                    <span className="size-2.5 rounded-full bg-emerald-500/80 inline-block" />
+                {/* macOS Chrome Bar */}
+                <div className="bg-[#1e293b] border-b border-slate-700/80 px-3 py-2 flex items-center justify-between gap-2 select-none">
+                  {/* Traffic Lights */}
+                  <div className="flex items-center gap-1.5 text-[10px] shrink-0">
+                    <span className="size-2.5 rounded-full bg-[#ef4444] inline-block" />
+                    <span className="size-2.5 rounded-full bg-[#f59e0b] inline-block" />
+                    <span className="size-2.5 rounded-full bg-[#10b981] inline-block" />
                   </div>
 
                   {/* HTTPS Omnibar */}
-                  <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1 flex items-center justify-between text-[11px] font-mono text-slate-300 shadow-inner">
+                  <div className="flex-1 max-w-sm mx-auto bg-[#0f172a] border border-slate-700 rounded-full px-3 py-1 flex items-center justify-between text-[11px] font-mono text-slate-300 shadow-inner">
                     <div className="flex items-center gap-1.5 overflow-hidden">
                       <ShieldCheck className="size-3.5 text-emerald-400 shrink-0" />
                       <span className="truncate text-emerald-400 font-bold">https://</span>
                       <span className="truncate text-slate-200">{subdomain.replace('.za3em.shop', '')}</span>
                       <span className="text-slate-500">.za3em.shop</span>
                     </div>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-bold hidden sm:inline">
-                      SSL معتمد
-                    </span>
-                  </div>
-
-                  {/* Refresh icon */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPreviewIsReloading(true);
-                      setTimeout(() => setPreviewIsReloading(false), 450);
-                    }}
-                    className="text-slate-400 hover:text-white shrink-0 p-1"
-                  >
-                    <RotateCcw className={`size-3 ${previewIsReloading ? 'animate-spin text-teal-400' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Mobile Status Bar (If mobile view) */}
-                {previewDevice === 'mobile' && (
-                  <div className="bg-slate-950/90 px-4 py-1 flex items-center justify-between text-[9px] text-slate-400 font-mono border-b border-slate-800/40">
-                    <span>12:45</span>
-                    <div className="size-2.5 rounded-full bg-slate-700/80 mx-auto" />
-                    <span>5G 98%</span>
-                  </div>
-                )}
-
-                {/* ========================================================================= */}
-                {/* STORE CONTENT: Realistic Theme-Tailored Storefront */}
-                {/* ========================================================================= */}
-                <div className="max-h-[580px] overflow-y-auto rf-scrollbar text-slate-900 select-text flex flex-col">
-
-                  {/* 1. Theme-Specific Top Announcement Bar */}
-                  {selectedTheme === 'store-classic' && (
-                    <div className="bg-stone-900 text-stone-100 text-[10px] py-1.5 px-3 text-center font-bold tracking-wide flex items-center justify-center gap-2">
-                      <Sparkles className="size-3 text-amber-400 shrink-0" />
-                      <span className="truncate">توصيل مجاني لكافة محافظات العراق والدفع عند الاستلام • ضمان أصلي 100%</span>
-                    </div>
-                  )}
-
-                  {selectedTheme === 'store-aurit' && (
-                    <div className="bg-blue-600 text-white text-[10px] py-1.5 px-3 text-center font-black tracking-wide flex items-center justify-center gap-2">
-                      <Zap className="size-3 text-amber-300 shrink-0" />
-                      <span className="truncate">🔥 عروض الصيف الكبرى: شحن مجاني لكافة المحافظات | كود الخصم ZAEEM</span>
-                    </div>
-                  )}
-
-                  {selectedTheme === 'store-nova' && (
-                    <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-950 text-purple-200 text-[10px] py-1.5 px-3 text-center font-bold tracking-wide flex items-center justify-center gap-2">
-                      <Zap className="size-3 text-cyan-300 shrink-0" />
-                      <span className="truncate">⚡ فلاش سيل الأجهزة والتقنيات: ضمان رسمي سنة كاملة لكافة المنتجات</span>
-                    </div>
-                  )}
-
-                  {/* 2. Main Store Header Navigation */}
-                  <header className={`p-3.5 border-b sticky top-0 z-20 backdrop-blur-md ${
-                    selectedTheme === 'store-classic'
-                      ? 'bg-white/95 border-stone-200 text-stone-900'
-                      : selectedTheme === 'store-aurit'
-                      ? 'bg-[#0f172a]/95 border-blue-900 text-white'
-                      : 'bg-[#1e1035]/95 border-purple-900 text-white'
-                  }`}>
-                    <div className="flex items-center justify-between gap-3">
-                      {/* Brand Logo & Store Name */}
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        {logoUrl ? (
-                          <img src={logoUrl} alt="Store Logo" className="size-9 rounded-xl object-cover border border-slate-300/40 shrink-0 shadow-sm" />
-                        ) : (
-                          <span className={`size-9 rounded-xl font-black grid place-items-center text-xs shrink-0 shadow-md ${
-                            selectedTheme === 'store-classic'
-                              ? 'bg-stone-900 text-amber-300'
-                              : selectedTheme === 'store-aurit'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-purple-600 text-white shadow-purple-600/30'
-                          }`}>
-                            {storeName.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                        <div className="text-right overflow-hidden">
-                          <h3 className={`font-black text-xs leading-tight truncate flex items-center gap-1 ${
-                            selectedTheme === 'store-classic' ? 'text-stone-900' : 'text-white'
-                          }`}>
-                            <span>{storeName}</span>
-                            <CheckCircle className="size-3 text-teal-400 shrink-0" />
-                          </h3>
-                          <p className={`text-[9px] truncate max-w-[150px] mt-0.5 ${
-                            selectedTheme === 'store-classic' ? 'text-stone-500' : 'text-slate-400'
-                          }`}>
-                            {slogan}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Desktop Nav Links (Visible in desktop view) */}
-                      {previewDevice === 'desktop' && (
-                        <nav className={`hidden md:flex items-center gap-4 text-xs font-bold ${
-                          selectedTheme === 'store-classic' ? 'text-stone-700' : 'text-slate-300'
-                        }`}>
-                          <span className="text-teal-400 border-b-2 border-teal-400 pb-0.5">الرئيسية</span>
-                          <span className="hover:opacity-80 cursor-pointer">المتجر</span>
-                          <span className="hover:opacity-80 cursor-pointer">العروض</span>
-                          <span className="hover:opacity-80 cursor-pointer">تواصل معنا</span>
-                        </nav>
-                      )}
-
-                      {/* Quick Icons: Search & Cart Counter */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className={`size-8 rounded-xl border grid place-items-center cursor-pointer ${
-                          selectedTheme === 'store-classic'
-                            ? 'bg-stone-100 border-stone-200 text-stone-700'
-                            : 'bg-white/10 border-white/10 text-slate-300'
-                        }`}>
-                          <Search className="size-3.5" />
-                        </div>
-
-                        <div className={`relative size-8 rounded-xl grid place-items-center text-white cursor-pointer shadow-md ${
-                          selectedTheme === 'store-classic'
-                            ? 'bg-stone-900'
-                            : selectedTheme === 'store-aurit'
-                            ? 'bg-blue-600'
-                            : 'bg-purple-600'
-                        }`}>
-                          <ShoppingCart className="size-3.5" />
-                          <span className="absolute -top-1 -right-1 size-4 rounded-full bg-amber-400 text-stone-950 text-[9px] font-black grid place-items-center shadow-sm">
-                            {previewQuantity}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </header>
-
-                  {/* 3. Hero Promotional Banner */}
-                  <div className="relative h-36 sm:h-44 overflow-hidden shrink-0 group">
-                    <img
-                      src={bannerUrl || activeTheme.heroImage}
-                      alt="Store Hero Banner"
-                      className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className={`absolute inset-0 flex flex-col justify-end p-4 text-right ${
-                      selectedTheme === 'store-classic'
-                        ? 'bg-gradient-to-t from-stone-950/90 via-stone-950/40 to-transparent'
-                        : selectedTheme === 'store-aurit'
-                        ? 'bg-gradient-to-t from-[#0f172a]/95 via-[#0f172a]/40 to-transparent'
-                        : 'bg-gradient-to-t from-[#1b0a2a]/95 via-[#1b0a2a]/40 to-transparent'
-                    }`}>
-                      <div className="space-y-1.5 max-w-md">
-                        <span className={`inline-block text-[9px] font-black px-2.5 py-0.5 rounded-full shadow-md ${
-                          selectedTheme === 'store-classic'
-                            ? 'bg-amber-400 text-stone-950'
-                            : selectedTheme === 'store-aurit'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-purple-500 text-white'
-                        }`}>
-                          {selectedTheme === 'store-classic'
-                            ? '✨ مجموعة المقتنيات الملكية'
-                            : selectedTheme === 'store-aurit'
-                            ? '⚡ تخفيضات كبرى حتى 40%'
-                            : '🚀 عروض الفلاش والتريندات'}
-                        </span>
-                        <h2 className="text-sm sm:text-base font-black text-white leading-tight">
-                          {storeName}
-                        </h2>
-                        <p className="text-[10px] text-slate-200 line-clamp-1">
-                          {slogan}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 4. Trust Pillars / Benefits Strip */}
-                  <div className={`py-2 px-3 border-b grid grid-cols-3 gap-2 text-center text-[9px] font-bold ${
-                    selectedTheme === 'store-classic'
-                      ? 'bg-stone-100 border-stone-200 text-stone-700'
-                      : selectedTheme === 'store-aurit'
-                      ? 'bg-slate-900 border-slate-800 text-slate-300'
-                      : 'bg-purple-950/60 border-purple-900 text-purple-200'
-                  }`}>
-                    <div className="flex items-center justify-center gap-1">
-                      <Truck className="size-3 text-teal-400 shrink-0" />
-                      <span className="truncate">شحن لكافة المحافظات</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-1">
-                      <ShieldCheck className="size-3 text-emerald-500 shrink-0" />
-                      <span className="truncate">فحص عند الاستلام</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-1">
-                      <Sparkles className="size-3 text-amber-500 shrink-0" />
-                      <span className="truncate">دفع عند الباب (COD)</span>
-                    </div>
-                  </div>
-
-                  {/* 5. Clickable Categories Pills Bar */}
-                  <div className={`p-2.5 flex items-center gap-1.5 overflow-x-auto border-b rf-scrollbar ${
-                    selectedTheme === 'store-classic'
-                      ? 'bg-white border-stone-200'
-                      : 'bg-slate-900/60 border-slate-800'
-                  }`}>
                     <button
                       type="button"
-                      onClick={() => setPreviewActiveCategory('الكل')}
-                      className={`shrink-0 text-[10px] font-bold px-3 py-1 rounded-full transition-all cursor-pointer ${
-                        previewActiveCategory === 'الكل'
-                          ? selectedTheme === 'store-classic'
-                            ? 'bg-stone-900 text-white shadow-sm'
-                            : selectedTheme === 'store-aurit'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'bg-purple-600 text-white shadow-sm'
-                          : 'bg-slate-800/40 text-slate-400 hover:text-white'
-                      }`}
+                      onClick={() => {
+                        navigator.clipboard.writeText(`https://${subdomain.replace('.za3em.shop', '')}.za3em.shop`);
+                        setCopiedUrl(true);
+                        setTimeout(() => setCopiedUrl(false), 2000);
+                      }}
+                      title="نسخ الرابط"
+                      className="text-slate-500 hover:text-white shrink-0 ml-1 cursor-pointer"
                     >
-                      الكل
+                      {copiedUrl ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
                     </button>
-                    {categories.map((cat, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setPreviewActiveCategory(cat)}
-                        className={`shrink-0 text-[10px] font-bold px-3 py-1 rounded-full transition-all cursor-pointer border ${
-                          previewActiveCategory === cat
-                            ? selectedTheme === 'store-classic'
-                              ? 'bg-stone-900 text-white border-stone-900'
-                              : 'bg-blue-600 text-white border-blue-600'
-                            : activeTheme.pillBg
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
                   </div>
 
-                  {/* 6. Realistic Main Product Showcase & Instant COD Box */}
-                  <div className="p-3.5 space-y-4">
-                    {/* Test Order Feedback Toast */}
-                    {previewOrderPlaced && (
-                      <div className="p-3 rounded-2xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-between shadow-xl animate-fadeIn">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="size-4 shrink-0" />
-                          <span>✓ تم تأكيد طلب المعاينة بنجاح إلى ({previewGov})!</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setPreviewOrderPlaced(false)}
-                          className="text-white/80 hover:text-white text-sm font-bold"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Star Product Card (Shows user custom product or prompt to add in Step 4) */}
-                    {productName ? (
-                      <div className={`rounded-2xl border ${activeTheme.cardBg} overflow-hidden shadow-lg transition-all`}>
-                        <div className="relative h-44 sm:h-48 bg-slate-900 overflow-hidden flex items-center justify-center">
-                          {productImage ? (
-                            <img
-                              src={productImage}
-                              alt={productName}
-                              className="size-full object-cover"
-                            />
-                          ) : (
-                            <div className="size-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-slate-900 to-slate-950 text-slate-400">
-                              <Package className="size-10 text-teal-400 mb-2 opacity-80" />
-                              <span className="text-xs font-bold text-slate-200">{productName}</span>
-                              <span className="text-[10px] text-teal-400/80">منتجك الخاص مضاف وجاهز للشحن</span>
-                            </div>
-                          )}
-                          <div className="absolute top-2.5 right-2.5 flex flex-col gap-1">
-                            <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md">
-                              المنتج الأول • جاهز للطلب
-                            </span>
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-600/90 text-white shadow-sm">
-                              متوفر بالمخزن جاهز للشحن
-                            </span>
-                          </div>
-
-                          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-1 rounded-lg text-amber-400 text-[10px] font-bold">
-                            <Star className="size-3 fill-amber-400" />
-                            <span>5.0 (تقييم ممتاز)</span>
-                          </div>
-                        </div>
-
-                        <div className="p-3.5 text-right space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
-                              {productCategory || 'عام'}
-                            </span>
-                            <span className="text-[10px] text-emerald-600 font-bold">
-                              توصيل خلال 24 - 48 ساعة
-                            </span>
-                          </div>
-
-                          <div>
-                            <h4 className="font-black text-sm text-slate-900 leading-snug">
-                              {productName}
-                            </h4>
-                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
-                              {slogan}
-                            </p>
-                          </div>
-
-                          {/* Price & Discount */}
-                          <div className="flex items-baseline justify-between pt-1 border-t border-slate-100">
-                            <div className="flex items-baseline gap-2">
-                              <span className={`text-lg font-black ${activeTheme.priceColor} font-mono`}>
-                                {formatIQD((Number(productPrice) || 0) * previewQuantity)}
-                              </span>
-                              {Number(productPrice) > 0 && (
-                                <span className="text-[11px] text-slate-400 line-through font-mono">
-                                  {formatIQD(Math.round(Number(productPrice) * 1.35 * previewQuantity))}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Quantity Stepper */}
-                            <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                              <button
-                                type="button"
-                                onClick={() => setPreviewQuantity(prev => Math.max(1, prev - 1))}
-                                className="size-7 flex items-center justify-center text-slate-700 hover:bg-slate-200 font-black cursor-pointer"
-                              >
-                                -
-                              </button>
-                              <span className="px-2.5 font-mono text-xs font-black text-slate-900">
-                                {previewQuantity}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setPreviewQuantity(prev => prev + 1)}
-                                className="size-7 flex items-center justify-center text-slate-700 hover:bg-slate-200 font-black cursor-pointer"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Realistic COD Checkout Form Box */}
-                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-right">
-                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                              <span>طلب سريع عبر الدفع عند الاستلام (COD):</span>
-                              <span className="text-teal-600 text-[10px]">بدون فيزا كارت</span>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <input
-                                type="text"
-                                value={previewCustomerName}
-                                onChange={(e) => setPreviewCustomerName(e.target.value)}
-                                placeholder="اسم المستلم (مثال: علي العراقي)"
-                                className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-teal-500"
-                              />
-                              <select
-                                value={previewGov}
-                                onChange={(e) => setPreviewGov(e.target.value)}
-                                className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-slate-800 focus:outline-none focus:border-teal-500"
-                              >
-                                {IRAQ_GOVERNORATES.map(gov => (
-                                  <option key={gov} value={gov}>المحافظة: {gov}</option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <input
-                              type="tel"
-                              value={previewCustomerPhone}
-                              onChange={(e) => setPreviewCustomerPhone(e.target.value)}
-                              placeholder="رقم الهاتف (07XXXXXXXXX)"
-                              className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-teal-500 font-mono"
-                            />
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPreviewOrderPlaced(true);
-                                setTimeout(() => setPreviewOrderPlaced(false), 3500);
-                              }}
-                              className={`w-full py-2.5 rounded-xl ${activeTheme.btnBg} text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]`}
-                            >
-                              <ShoppingCart className="size-3.5" />
-                              <span>اطلب الآن — الدفع عند الاستلام ({formatIQD((Number(productPrice) || 0) * previewQuantity)})</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white/80 p-6 text-center space-y-3 shadow-sm">
-                        <div className="size-12 rounded-2xl bg-teal-50 text-teal-600 border border-teal-200 mx-auto grid place-items-center shadow-sm">
-                          <Package className="size-6" />
-                        </div>
-                        <div>
-                          <h4 className="font-black text-sm text-slate-900">لم تقم بإضافة منتج بعد</h4>
-                          <p className="text-xs text-slate-500 max-w-xs mx-auto mt-1 leading-relaxed">
-                            أضف منتجك يدوياً في الخطوة 4 ليظهر هنا في المتجر المباشر مع تفاصيله وسعره ونموذج الدفع عند الاستلام (COD).
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setCurrentStep(4)}
-                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-xs font-black transition-all shadow-md shadow-teal-600/20 cursor-pointer inline-flex items-center gap-1.5"
-                        >
-                          <Plus className="size-3.5" />
-                          <span>إضافة منتجك الأول الآن (الخطوة 4)</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {/* 8. Realistic Store Footer */}
-                    <footer className={`pt-4 pb-2 border-t text-center space-y-1 text-[10px] ${
-                      selectedTheme === 'store-classic'
-                        ? 'border-stone-200 text-stone-500'
-                        : 'border-slate-200 text-slate-500'
-                    }`}>
-                      <p className="font-bold">جميع الحقوق محفوظة © {new Date().getFullYear()} {storeName}</p>
-                      <p className="text-[9px] text-slate-400">
-                        مربوط عبر شبكة الزعيم للشحن السريع • متجر إلكتروني معتمد
-                      </p>
-                    </footer>
+                  {/* Live Status Pill */}
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-600/60 text-emerald-300 text-[9px] font-black shrink-0">
+                    <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>مباشر</span>
                   </div>
                 </div>
+
+                {/* Main Store Viewport (Mobile or Desktop) */}
+                {previewDevice === 'mobile' ? (
+                  <div className="bg-slate-950 p-2 sm:p-3 flex justify-center">
+                    <div className="w-[375px] max-w-full rounded-[38px] border-[5px] border-slate-800 bg-slate-900 overflow-hidden shadow-2xl relative">
+                      {/* Dynamic Island */}
+                      <div className="bg-slate-950 h-4 w-24 mx-auto rounded-b-xl flex items-center justify-center mb-1">
+                        <span className="size-1.5 rounded-full bg-slate-800" />
+                      </div>
+                      <div className="overflow-y-auto max-h-[580px] rf-scrollbar text-right">
+                        <StoreTemplates
+                          key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                          storeName={storeName || 'متجري'}
+                          subdomain={subdomain.replace('.za3em.shop', '')}
+                          activeTemplateId={selectedTheme as any}
+                          standalone={true}
+                          logoUrl={logoUrl}
+                          storeCode={storeCode}
+                          customProduct={
+                            productAdded && productName
+                              ? {
+                                  id: 1,
+                                  name: productName,
+                                  price: Number(productPrice) || 35000,
+                                  imageUrl: productImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80',
+                                  category: productCategory || 'عام',
+                                  description: slogan || 'منتج أصلي معتمد'
+                                }
+                              : undefined
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-y-auto max-h-[620px] rf-scrollbar bg-slate-950 text-right">
+                    <StoreTemplates
+                      key={`${selectedTheme}-${previewReloadKey}-${storeName}`}
+                      storeName={storeName || 'متجري'}
+                      subdomain={subdomain.replace('.za3em.shop', '')}
+                      activeTemplateId={selectedTheme as any}
+                      standalone={true}
+                      logoUrl={logoUrl}
+                      storeCode={storeCode}
+                      customProduct={
+                        productAdded && productName
+                          ? {
+                              id: 1,
+                              name: productName,
+                              price: Number(productPrice) || 35000,
+                              imageUrl: productImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=80',
+                              category: productCategory || 'عام',
+                              description: slogan || 'منتج أصلي معتمد'
+                            }
+                          : undefined
+                      }
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 4️⃣ FULL-SCREEN TEMPLATE LIVE PREVIEW MODAL */}
+{/* 4️⃣ FULL-SCREEN TEMPLATE LIVE PREVIEW MODAL */}
       {/* ========================================================================= */}
       {previewModalTemplate && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 md:p-6 animate-fadeIn">
