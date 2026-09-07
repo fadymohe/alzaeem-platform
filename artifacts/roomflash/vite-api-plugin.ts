@@ -348,7 +348,48 @@ export function zaeemApiPlugin(): Plugin {
           });
         }
 
-        // 7. Auth OTP mocks (instant access fallback)
+        // 7. Auth OTP and User Account Endpoints
+        const usersFile = path.join(dataDir, 'users.json');
+        const getUsers = (): Record<string, any> => {
+          try {
+            if (!fs.existsSync(dataDir)) {
+              fs.mkdirSync(dataDir, { recursive: true });
+            }
+            if (fs.existsSync(usersFile)) {
+              return JSON.parse(fs.readFileSync(usersFile, 'utf8'));
+            }
+          } catch (e) {
+            console.warn('[Vite API] Error reading users:', e);
+          }
+          return {};
+        };
+
+        const saveUsers = (users: Record<string, any>) => {
+          try {
+            if (!fs.existsSync(dataDir)) {
+              fs.mkdirSync(dataDir, { recursive: true });
+            }
+            fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf8');
+          } catch (e) {
+            console.warn('[Vite API] Error saving users:', e);
+          }
+        };
+
+        const normalizePhone = (phone: string): string => {
+          if (!phone) return '';
+          const digits = phone.replace(/\D/g, '');
+          if (digits.startsWith('964') && (digits.length === 12 || digits.length === 13)) {
+            return `+${digits}`;
+          }
+          if (digits.startsWith('07') && digits.length === 11) {
+            return `+964${digits.slice(1)}`;
+          }
+          if (digits.startsWith('7') && digits.length === 10) {
+            return `+964${digits}`;
+          }
+          return phone.startsWith('+') ? phone : `+${digits}`;
+        };
+
         if (pathname === '/api/auth/send-otp' && req.method === 'POST') {
           return sendJson(200, { success: true, otpCode: '123456', message: 'تم إرسال كود التحقق بنجاح' });
         }
@@ -358,7 +399,102 @@ export function zaeemApiPlugin(): Plugin {
         }
 
         if (pathname === '/api/auth/check-email' && req.method === 'POST') {
+          const body = await readBody();
+          const email = (body.email || '').toLowerCase().trim();
+          const users = getUsers();
+          const exists = Boolean(users[email]);
+          return sendJson(200, { exists });
+        }
+
+        // Phone existence check for Sign-Up
+        if (pathname === '/api/auth/check-phone' && (req.method === 'POST' || req.method === 'GET')) {
+          let phone = '';
+          if (req.method === 'GET') {
+            phone = parsedUrl.searchParams.get('phone') || '';
+          } else {
+            const body = await readBody();
+            phone = body.phone || '';
+          }
+          const normPhone = normalizePhone(phone);
+          const users = getUsers();
+          let matchedUser: any = null;
+
+          for (const key of Object.keys(users)) {
+            const u = users[key];
+            if (u.phone && normalizePhone(u.phone) === normPhone) {
+              matchedUser = u;
+              break;
+            }
+          }
+
+          if (matchedUser) {
+            return sendJson(200, {
+              exists: true,
+              email: matchedUser.email,
+              name: matchedUser.name,
+              storeName: matchedUser.storeName
+            });
+          }
+
           return sendJson(200, { exists: false });
+        }
+
+        // Lookup account by phone for Sign-In
+        if (pathname === '/api/auth/lookup-by-phone' && (req.method === 'POST' || req.method === 'GET')) {
+          let phone = '';
+          if (req.method === 'GET') {
+            phone = parsedUrl.searchParams.get('phone') || '';
+          } else {
+            const body = await readBody();
+            phone = body.phone || '';
+          }
+          const normPhone = normalizePhone(phone);
+          const users = getUsers();
+          let matchedUser: any = null;
+
+          for (const key of Object.keys(users)) {
+            const u = users[key];
+            if (u.phone && normalizePhone(u.phone) === normPhone) {
+              matchedUser = u;
+              break;
+            }
+          }
+
+          if (matchedUser) {
+            return sendJson(200, {
+              found: true,
+              email: matchedUser.email,
+              name: matchedUser.name,
+              phone: normPhone,
+              storeName: matchedUser.storeName,
+              subdomain: matchedUser.subdomain
+            });
+          }
+
+          return sendJson(200, { found: false });
+        }
+
+        // Register new user record
+        if (pathname === '/api/auth/register-user' && req.method === 'POST') {
+          const body = await readBody();
+          const { email, phone, name, governorate, storeName, subdomain } = body;
+          if (email) {
+            const normEmail = email.toLowerCase().trim();
+            const normPhone = normalizePhone(phone || '');
+            const users = getUsers();
+            users[normEmail] = {
+              email: normEmail,
+              phone: normPhone,
+              name: name || normEmail.split('@')[0],
+              governorate: governorate || 'بغداد',
+              storeName: storeName || '',
+              subdomain: subdomain || '',
+              updatedAt: new Date().toISOString()
+            };
+            saveUsers(users);
+            return sendJson(200, { success: true, user: users[normEmail] });
+          }
+          return sendJson(400, { error: 'Email is required' });
         }
 
         // Pass to next if not matched

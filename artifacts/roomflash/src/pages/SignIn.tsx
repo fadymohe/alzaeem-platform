@@ -3,9 +3,9 @@ import { Link, useLocation } from 'wouter';
 import { Logo } from '../components/common/Logo';
 import {
   Eye, EyeOff, ArrowLeft, Globe, Mail, Lock, AlertCircle,
-  CheckCircle2, ShieldCheck, KeyRound, RefreshCw, X, User, Sparkles
+  CheckCircle2, ShieldCheck, KeyRound, RefreshCw, X, User, Sparkles, Phone
 } from 'lucide-react';
-import { fetchCloudStoreByUser } from '../utils/cloudDb';
+import { fetchCloudStoreByUser, lookupUserByPhone, normalizeIraqiPhone } from '../utils/cloudDb';
 import { supabase } from '../utils/supabase';
 
 const GOOGLE_CLIENT_ID = '142585183945-gtdbluikj92oj5r5qpb902467a4ag95f.apps.googleusercontent.com';
@@ -297,10 +297,56 @@ export function SignInPage() {
     };
   }, [isAr]);
 
+  // Helper to resolve email from phone or return direct email
+  const resolveAccountIdentifier = async (raw: string): Promise<{
+    email?: string;
+    phone?: string;
+    name?: string;
+    isPhone: boolean;
+    error?: string;
+  }> => {
+    const clean = raw.trim();
+    if (!clean) {
+      return { isPhone: false, error: isAr ? 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف' : 'Please enter email or phone number' };
+    }
+
+    if (clean.includes('@')) {
+      if (!/\S+@\S+\.\S+/.test(clean)) {
+        return { isPhone: false, error: isAr ? 'صيغة البريد الإلكتروني غير صحيحة' : 'Invalid email format' };
+      }
+      return { email: clean.toLowerCase(), isPhone: false };
+    }
+
+    // It is a phone number
+    const normPhone = normalizeIraqiPhone(clean);
+    if (!normPhone || normPhone.length < 10) {
+      return { isPhone: true, error: isAr ? 'رقم الهاتف غير مكتمل، يرجى كتابة الرقم كاملاً (مثل: 07701234567)' : 'Incomplete phone number' };
+    }
+
+    try {
+      const lookup = await lookupUserByPhone(normPhone);
+      if (lookup.found && lookup.email) {
+        return {
+          email: lookup.email.toLowerCase(),
+          phone: lookup.phone || normPhone,
+          name: lookup.name,
+          isPhone: true
+        };
+      }
+    } catch {}
+
+    return {
+      isPhone: true,
+      error: isAr
+        ? 'لم يتم العثور على حساب مسجل برقم الهاتف هذا. يرجى التأكد من كتابة الرقم أو تسجيل الدخول بالبريد الإلكتروني.'
+        : 'No registered account found with this phone number.'
+    };
+  };
+
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
-    if (!email || !/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = isAr ? 'يرجى إدخال بريد إلكتروني صحيح' : 'Please enter a valid email address';
+    if (!email.trim()) {
+      newErrors.email = isAr ? 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف' : 'Please enter email or phone number';
     }
     if (!password || password.length < 6) {
       newErrors.password = isAr ? 'كلمة المرور يجب أن لا تقل عن 6 أحرف' : 'Password must be at least 6 characters';
@@ -309,7 +355,7 @@ export function SignInPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 1. Password Login Handler
+  // 1. Password Login Handler (Supports Email OR Phone)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -317,7 +363,14 @@ export function SignInPage() {
     setLoading(true);
     setErrors({});
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const resolved = await resolveAccountIdentifier(email);
+    if (resolved.error || !resolved.email) {
+      setLoading(false);
+      setErrors({ email: resolved.error || (isAr ? 'بيانات الدخول غير صحيحة' : 'Invalid credentials') });
+      return;
+    }
+
+    const normalizedEmail = resolved.email;
 
     // Authenticate with Supabase Auth (Production Database)
     try {
@@ -341,7 +394,7 @@ export function SignInPage() {
             id: data.user.id,
             email: data.user.email,
             name: meta.full_name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : (data.user.email.split('@')[0])),
-            phone: meta.phone || '+9647700000000',
+            phone: meta.phone || resolved.phone || '+9647700000000',
             governorate: meta.governorate || 'بغداد',
             storeName: meta.store_name || '',
             subdomain: meta.subdomain || `${data.user.email.split('@')[0]}.za3em.shop`,
@@ -359,8 +412,8 @@ export function SignInPage() {
         if (errorData?.error_code === 'invalid_credentials') {
           setErrors({
             general: isAr
-              ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة. هل قمت بتعيين كلمة مرور مسبقاً؟ يمكنك الضغط على "كود التحقق (بدون كلمة مرور)" بالأعلى للدخول الفوري، أو الضغط على "نسيت كلمة المرور".'
-              : 'Invalid email or password. You can also sign in via "Email OTP" tab above or click "Forgot Password".'
+              ? 'بيانات تسجيل الدخول أو كلمة المرور غير صحيحة. يمكنك الدخول فوراً عبر "كود التحقق" بالأعلى بدون كلمة مرور، أو الضغط على "نسيت كلمة المرور".'
+              : 'Invalid credentials or password. You can also sign in via "OTP" tab above or click "Forgot Password".'
           });
           return;
         }
@@ -377,11 +430,11 @@ export function SignInPage() {
     }
   };
 
-  // 2. Direct OTP Login Handlers (Instant Access Without Password)
+  // 2. Direct OTP Login Handlers (Instant Access Without Password - Email OR Phone)
   const handleSendOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !/\S+@\S+\.\S+/.test(email)) {
-      setErrors({ email: isAr ? 'يرجى إدخال بريد إلكتروني مسجل صحيح' : 'Please enter a valid registered email' });
+    if (!email.trim()) {
+      setErrors({ email: isAr ? 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف' : 'Please enter email or phone number' });
       return;
     }
     setOtpLoading(true);
@@ -389,7 +442,14 @@ export function SignInPage() {
     setOtpSuccess('');
     setLoginOtpHint('');
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const resolved = await resolveAccountIdentifier(email);
+    if (resolved.error || !resolved.email) {
+      setOtpLoading(false);
+      setErrors({ email: resolved.error || (isAr ? 'لم يتم العثور على الحساب' : 'Account not found') });
+      return;
+    }
+
+    const normalizedEmail = resolved.email;
 
     try {
       // 1. Backend Send OTP (Immediate local generation and logging)
@@ -423,8 +483,10 @@ export function SignInPage() {
       if (res.ok || backendData?.success) {
         setOtpSent(true);
         setOtpSuccess(isAr
-          ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️ يرجى إدخاله أدناه للدخول الفوري.'
-          : 'Verification code sent to your email! Enter it below to sign in.'
+          ? (resolved.isPhone
+              ? `تم العثور على حسابك وإرسال كود التحقق بنجاح ✉️ (${normalizedEmail})`
+              : 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️ يرجى إدخاله أدناه للدخول الفوري.')
+          : 'Verification code sent successfully! Enter it below to sign in.'
         );
       } else {
         if (data?.error_code === 'over_email_send_rate_limit') {
@@ -449,7 +511,9 @@ export function SignInPage() {
 
     setOtpLoading(true);
     setOtpError('');
-    const normalizedEmail = email.trim().toLowerCase();
+    
+    const resolved = await resolveAccountIdentifier(email);
+    const normalizedEmail = resolved.email || email.trim().toLowerCase();
 
     try {
       // 1. Try Supabase verify
@@ -473,7 +537,7 @@ export function SignInPage() {
           id: data.user.id,
           email: data.user.email,
           name: meta.full_name || (meta.first_name ? `${meta.first_name} ${meta.last_name || ''}`.trim() : data.user.email.split('@')[0]),
-          phone: meta.phone || '+9647700000000',
+          phone: meta.phone || resolved.phone || '+9647700000000',
           governorate: meta.governorate || 'بغداد',
           storeName: meta.store_name || '',
           subdomain: meta.subdomain || `${data.user.email.split('@')[0]}.za3em.shop`,
@@ -499,7 +563,7 @@ export function SignInPage() {
           id: `usr_${Date.now().toString().slice(-6)}`,
           email: normalizedEmail,
           name: cleanName,
-          phone: '+9647700000000',
+          phone: resolved.phone || '+9647700000000',
           governorate: 'بغداد',
           storeName: cleanName,
           subdomain: `${cleanName}.za3em.shop`,
@@ -520,18 +584,25 @@ export function SignInPage() {
     }
   };
 
-  // 3. Send OTP for Password Recovery
+  // 3. Send OTP for Password Recovery (Email OR Phone)
   const handleSendRecoveryOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recoveryEmail || !/\S+@\S+\.\S+/.test(recoveryEmail)) {
-      setRecoveryError(isAr ? 'يرجى إدخال بريد إلكتروني مسجل صحيح' : 'Please enter a valid registered email');
+    if (!recoveryEmail.trim()) {
+      setRecoveryError(isAr ? 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف المسجل' : 'Please enter registered email or phone');
       return;
     }
     setRecoveryLoading(true);
     setRecoveryError('');
     setRecoveryOtpHint('');
 
-    const normalizedEmail = recoveryEmail.trim().toLowerCase();
+    const resolved = await resolveAccountIdentifier(recoveryEmail);
+    if (resolved.error || !resolved.email) {
+      setRecoveryLoading(false);
+      setRecoveryError(resolved.error || (isAr ? 'لم يتم العثور على الحساب' : 'Account not found'));
+      return;
+    }
+
+    const normalizedEmail = resolved.email;
 
     try {
       // 1. Backend Send OTP
@@ -559,12 +630,14 @@ export function SignInPage() {
       setRecoveryLoading(false);
       setRecoveryStep(2);
       setRecoverySuccess(isAr
-        ? `تم تجهيز كود استعادة الحساب بنجاح ✉️ يرجى مراجعة صندوق الوارد (أو Spam).`
+        ? (resolved.isPhone
+            ? `تم تجهيز كود استعادة الحساب للحساب المرتبط برقمك (${normalizedEmail}) بنجاح ✉️`
+            : `تم تجهيز كود استعادة الحساب بنجاح ✉️ يرجى مراجعة صندوق الوارد (أو Spam).`)
         : `Recovery code generated for your email! Please check inbox or spam.`
       );
     } catch (err) {
       setRecoveryLoading(false);
-      setRecoveryError(isAr ? 'فشل إرسال كود التحقق إلى البريد' : 'Failed to send recovery code');
+      setRecoveryError(isAr ? 'فشل إرسال كود التحقق' : 'Failed to send recovery code');
     }
   };
 
@@ -578,7 +651,8 @@ export function SignInPage() {
     setRecoveryLoading(true);
     setRecoveryError('');
 
-    const normalizedEmail = recoveryEmail.trim().toLowerCase();
+    const resolved = await resolveAccountIdentifier(recoveryEmail);
+    const normalizedEmail = resolved.email || recoveryEmail.trim().toLowerCase();
 
     try {
       // 1. Try Supabase verify
@@ -644,7 +718,8 @@ export function SignInPage() {
 
     setRecoveryLoading(true);
     setRecoveryError('');
-    const normalizedEmail = recoveryEmail.trim().toLowerCase();
+    const resolved = await resolveAccountIdentifier(recoveryEmail);
+    const normalizedEmail = resolved.email || recoveryEmail.trim().toLowerCase();
 
     try {
       // 1. Supabase User Password Update if session token exists
@@ -829,7 +904,7 @@ export function SignInPage() {
               {isAr ? 'تسجيل الدخول إلى حسابك' : 'Sign In to Your Account'}
             </h1>
             <p className="text-xs font-medium text-slate-500">
-              {isAr ? 'أدخل بريدك الإلكتروني المعتمد وكلمة المرور للوصول إلى لوحة التحكم' : 'Enter your registered email and password to access dashboard'}
+              {isAr ? 'أدخل بريدك الإلكتروني أو رقم هاتفك العراقي المعتمد للوصول إلى لوحة التحكم' : 'Enter your registered email or Iraqi phone number to access dashboard'}
             </p>
           </div>
 
@@ -855,7 +930,7 @@ export function SignInPage() {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              {isAr ? '✉️ كود التحقق (بدون كلمة مرور)' : '✉️ Email OTP'}
+              {isAr ? '✉️ كود التحقق (بدون كلمة مرور)' : '✉️ Email / Phone OTP'}
             </button>
           </div>
 
@@ -869,24 +944,33 @@ export function SignInPage() {
           {/* Mode 1: Traditional Password Form */}
           {loginMode === 'password' && (
             <form onSubmit={handleSubmit} className="space-y-4 text-right" noValidate>
-              {/* Email Field */}
+              {/* Email or Phone Field */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">
-                  {isAr ? 'البريد الإلكتروني' : 'Email Address'}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    {isAr ? 'البريد الإلكتروني أو رقم الهاتف' : 'Email Address or Phone Number'}
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {isAr ? 'مثال: 07701234567 أو بريدك' : 'e.g. 07701234567 or email'}
+                  </span>
+                </div>
                 <div className="relative">
                   <input
-                    type="email"
+                    type="text"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="merchant@za3em.shop"
+                    placeholder={isAr ? "merchant@za3em.shop أو 07701234567" : "merchant@za3em.shop or 07701234567"}
                     dir="ltr"
                     className={`w-full rounded-2xl border px-3.5 py-3 text-xs text-slate-900 focus:outline-none transition-all pl-10 ${
                       errors.email ? 'border-red-400 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 focus:border-teal-600 focus:bg-white'
                     }`}
                   />
-                  <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  {email.match(/^(\+?964|0?7)/) ? (
+                    <Phone className="size-4 text-teal-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  ) : (
+                    <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  )}
                 </div>
                 {errors.email && (
                   <p className="text-[11px] text-red-500 font-bold">{errors.email}</p>
@@ -968,21 +1052,30 @@ export function SignInPage() {
               )}
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">
-                  {isAr ? 'البريد الإلكتروني المسجل' : 'Registered Email Address'}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    {isAr ? 'البريد الإلكتروني أو رقم الهاتف المسجل' : 'Registered Email or Phone Number'}
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {isAr ? 'هاتف أو بريد' : 'Phone or Email'}
+                  </span>
+                </div>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <input
-                      type="email"
+                      type="text"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="merchant@za3em.shop"
+                      placeholder={isAr ? "merchant@za3em.shop أو 07701234567" : "merchant@za3em.shop or 07701234567"}
                       dir="ltr"
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-3 text-xs text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none pl-10"
                     />
-                    <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    {email.match(/^(\+?964|0?7)/) ? (
+                      <Phone className="size-4 text-teal-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    ) : (
+                      <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    )}
                   </div>
                   <button
                     type="button"
@@ -1202,20 +1295,30 @@ export function SignInPage() {
               </div>
             )}
 
-            {/* STEP 1: Enter Email */}
+            {/* STEP 1: Enter Email or Phone */}
             {recoveryStep === 1 && (
               <form onSubmit={handleSendRecoveryOtp} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">البريد الإلكتروني المسجل</label>
-                  <input
-                    type="email"
-                    required
-                    value={recoveryEmail}
-                    onChange={(e) => setRecoveryEmail(e.target.value)}
-                    placeholder="merchant@za3em.shop"
-                    dir="ltr"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none"
-                  />
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 block">البريد الإلكتروني أو رقم الهاتف المسجل</label>
+                    <span className="text-[10px] text-slate-400">هاتف أو بريد</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={recoveryEmail}
+                      onChange={(e) => setRecoveryEmail(e.target.value)}
+                      placeholder="merchant@za3em.shop أو 07701234567"
+                      dir="ltr"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none pl-10"
+                    />
+                    {recoveryEmail.match(/^(\+?964|0?7)/) ? (
+                      <Phone className="size-4 text-teal-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    ) : (
+                      <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    )}
+                  </div>
                 </div>
                 <button
                   type="submit"
