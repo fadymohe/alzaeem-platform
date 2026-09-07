@@ -60,6 +60,7 @@ export interface TemplateConfig {
   categoryTag: string;
   badge: string;
   isPro: boolean;
+  isMostPopular?: boolean;
   image: string;
   colorDot: string;
   palette: string[];
@@ -102,6 +103,7 @@ export const TEMPLATES_MAP: Record<string, TemplateConfig> = {
     categoryTag: 'أزياء',
     badge: 'متجر أحذية كثيف',
     isPro: true,
+    isMostPopular: true,
     image: '/templates/store-sneak.png',
     colorDot: 'bg-[#0052cc]',
     palette: ['#071322', '#0052cc', '#00c8ff', '#ffffff'],

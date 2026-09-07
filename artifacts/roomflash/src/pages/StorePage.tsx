@@ -501,9 +501,11 @@ export function StorePage() {
                             <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md flex items-center gap-1">
                               <Crown className="size-3" /> بريميوم
                             </span>
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-orange-600 to-rose-600 text-white shadow-md flex items-center gap-1 animate-pulse">
-                              <Flame className="size-3" /> الأكثر استخداماً
-                            </span>
+                            {t.isMostPopular && (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-orange-600 to-rose-600 text-white shadow-md flex items-center gap-1 animate-pulse">
+                                <Flame className="size-3" /> الأكثر استخداماً
+                              </span>
+                            )}
                           </>
                         ) : (
                           <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500 text-slate-950 shadow-md flex items-center gap-1">
@@ -563,9 +565,11 @@ export function StorePage() {
                             <span className="text-[11px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
                               <Crown className="size-3" /> ثيم مدفوع
                             </span>
-                            <span className="text-[11px] font-black text-orange-500 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Flame className="size-3" /> الأكثر استخداماً
-                            </span>
+                            {t.isMostPopular && (
+                              <span className="text-[11px] font-black text-orange-500 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Flame className="size-3" /> الأكثر استخداماً
+                              </span>
+                            )}
                           </>
                         ) : (
                           <span className="text-[11px] font-black text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
