@@ -8,6 +8,7 @@ import {
   type TemplateId
 } from '../components/storefront/StoreTemplates';
 import { getRegisteredStore, type RegisteredStoreData } from '../utils/storeRegistry';
+import { fetchCloudStore } from '../utils/cloudDb';
 import { ExternalLink, ArrowRight } from 'lucide-react';
 import { setStoreDocumentIdentity, restoreDefaultDocumentIdentity } from '../utils/storeIdentityHelper';
 
@@ -85,6 +86,28 @@ export function StandaloneStorePage() {
         setStoreData(parsed);
       }
     } catch (e) {}
+
+    // 4. Fetch from central Neon PostgreSQL database
+    fetchCloudStore(cleanSub).then(record => {
+      if (record) {
+        if (record.name) setStoreName(record.name);
+        if (record.template_id) {
+          const normTmpl = normalizeTemplateId(record.template_id);
+          if (TEMPLATES_MAP[normTmpl]) setTemplateId(normTmpl);
+        }
+        setStoreData(prev => ({
+          ...prev,
+          storeName: record.name || prev?.storeName || `متجر ${cleanSub}`,
+          subdomain: cleanSub,
+          templateId: record.template_id || prev?.templateId || 'store-sprout',
+          logoUrl: record.logo_url || prev?.logoUrl,
+          bannerUrl: record.banner_url || prev?.bannerUrl,
+          slogan: record.slogan || prev?.slogan,
+          products: record.products || prev?.products,
+          isActive: typeof record.is_active === 'boolean' ? record.is_active : (prev?.isActive ?? true)
+        }));
+      }
+    }).catch(() => {});
   }, [cleanSub, isPreviewMode]);
 
   const activeThemeConfig = TEMPLATES_MAP[templateId];

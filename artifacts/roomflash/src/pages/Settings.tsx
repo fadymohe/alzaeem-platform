@@ -5,8 +5,9 @@ import {
   AlertCircle, Smartphone, Key, User, Mail, Sparkles, ExternalLink, Clock,
   MapPin, Phone, Building2, HelpCircle, ArrowRight
 } from 'lucide-react';
-import { updateStoreActiveStatus, unregisterStore } from '../utils/storeRegistry';
+import { updateStoreActiveStatus, unregisterStore, registerStore } from '../utils/storeRegistry';
 import { updateCloudStoreFullSettings, checkCloudSubdomain, saveCloudStore, releaseCloudSubdomain } from '../utils/cloudDb';
+import { getStoredProducts } from '../data/storeState';
 import { IRAQ_GOVERNORATES } from '../data/iraqData';
 import { useLocation } from 'wouter';
 
@@ -121,9 +122,14 @@ export function SettingsPage() {
         }
       }
 
+      const rawOld = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store') || '{}';
+      const parsedOld = JSON.parse(rawOld);
+      const products = getStoredProducts();
+
       const updatedStoreData = {
+        ...parsedOld,
         storeName: storeName.trim(),
-        subdomain: cleanSub,
+        subdomain: `${cleanSub}.za3em.shop`,
         slogan: slogan.trim(),
         category,
         phone: storePhone.trim(),
@@ -132,18 +138,32 @@ export function SettingsPage() {
         currency: 'IQD',
       };
 
-      // If subdomain was changed, release the previous subdomain completely
+      // If subdomain was changed, register new subdomain locally
       if (originalSubdomain && cleanSub !== originalSubdomain) {
+        registerStore({
+          subdomain: cleanSub,
+          storeName: storeName.trim(),
+          templateId: updatedStoreData.selectedTheme || updatedStoreData.templateId || 'store-sprout',
+          isActive: isSubdomainActive,
+          logoUrl: updatedStoreData.logoUrl,
+          bannerUrl: updatedStoreData.bannerUrl,
+          slogan: slogan.trim(),
+          products: products
+        });
         unregisterStore(originalSubdomain);
-        await releaseCloudSubdomain(originalSubdomain).catch(() => {});
       }
 
-      // 1. Save to cloud PostgreSQL server
+      // 1. Save to cloud PostgreSQL server with full settings and safe rename
       await updateCloudStoreFullSettings({
         subdomain: cleanSub,
-        previousSubdomain: originalSubdomain,
+        previousSubdomain: (originalSubdomain && cleanSub !== originalSubdomain) ? originalSubdomain : undefined,
         name: storeName.trim(),
+        templateId: updatedStoreData.selectedTheme || updatedStoreData.templateId || 'store-sprout',
         isActive: isSubdomainActive,
+        logoUrl: updatedStoreData.logoUrl,
+        bannerUrl: updatedStoreData.bannerUrl,
+        slogan: slogan.trim(),
+        products: products
       });
 
       // 2. Save locally

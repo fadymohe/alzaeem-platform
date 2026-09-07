@@ -30,6 +30,7 @@ export interface RegisteredStoreData {
     description?: string;
     category?: string;
   };
+  products?: any[];
   isActive?: boolean;
   freeShipmentsRemaining?: number;
   createdAt?: string;

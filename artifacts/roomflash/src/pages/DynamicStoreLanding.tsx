@@ -15,7 +15,7 @@ import { fetchCloudStore, fetchCloudLandingPageBySlug } from "../utils/cloudDb";
 import { addStoredOrder } from "../data/storeState";
 import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, PauseCircle, Power } from "lucide-react";
 import { StandaloneStorePage } from "./StandaloneStore";
-import { isTemplatePreview } from "../components/storefront/StoreTemplates";
+import { isTemplatePreview, checkAndEnforceThemeTrialExpiration } from "../components/storefront/StoreTemplates";
 import { setStoreDocumentIdentity, restoreDefaultDocumentIdentity } from "../utils/storeIdentityHelper";
 
 export function DynamicStoreLanding() {
@@ -181,15 +181,22 @@ export function DynamicStoreLanding() {
 
   const [loading, setLoading] = useState<boolean>(!isInitiallyKnown);
 
-  // تحديث عنوان التبويب (Tab Title) وأيقونة المتجر (Favicon) لحظياً مع اسم وشعار المتجر
+  // تحديث عنوان التبويب (Tab Title) وأيقونة المتجر (Favicon) لحظياً مع اسم وشعار المتجر المختار فقط
   useEffect(() => {
     if (store?.name) {
-      setStoreDocumentIdentity(store.name, store.logoUrl || product?.imageUrl);
+      setStoreDocumentIdentity(store.name, store.logoUrl);
     }
     return () => {
       restoreDefaultDocumentIdentity();
     };
-  }, [store?.name, store?.logoUrl, product?.imageUrl]);
+  }, [store?.name, store?.logoUrl]);
+
+  // فحص انقضاء الـ 3 أيام التجريبية للقوالب
+  useEffect(() => {
+    if (cleanSubdomain && cleanSubdomain !== 'alzaeem') {
+      checkAndEnforceThemeTrialExpiration(cleanSubdomain).catch(() => {});
+    }
+  }, [cleanSubdomain]);
 
   // جلب ومزامنة بيانات المتجر لحظياً
   useEffect(() => {

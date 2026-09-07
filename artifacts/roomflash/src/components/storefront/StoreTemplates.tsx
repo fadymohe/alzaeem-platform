@@ -376,8 +376,8 @@ export const SAMPLE_THEME_PRODUCTS: StoreProduct[] = [
   }
 ];
 
-// Check if merchant has an active PRO subscription
-export function isMerchantPro(): boolean {
+// Check if merchant has an explicit paid PRO plan
+export function isPaidMerchantPro(): boolean {
   try {
     const rawUser = localStorage.getItem('zaeem_user');
     const user = rawUser ? JSON.parse(rawUser) : null;
@@ -394,6 +394,126 @@ export function isMerchantPro(): boolean {
   } catch {
     return false;
   }
+}
+
+// Get merchant account creation timestamp (ms)
+export function getAccountCreatedAt(): number {
+  try {
+    const rawStored = localStorage.getItem('zaeem_account_created_at');
+    if (rawStored) {
+      const t = new Date(rawStored).getTime();
+      if (!isNaN(t) && t > 0) return t;
+    }
+
+    const rawUser = localStorage.getItem('zaeem_user');
+    if (rawUser) {
+      const u = JSON.parse(rawUser);
+      const dateVal = u.createdAt || u.created_at || u.time;
+      if (dateVal) {
+        const t = new Date(dateVal).getTime();
+        if (!isNaN(t) && t > 0) {
+          localStorage.setItem('zaeem_account_created_at', new Date(t).toISOString());
+          return t;
+        }
+      }
+    }
+
+    const rawStore = localStorage.getItem('zaeem_store_data');
+    if (rawStore) {
+      const s = JSON.parse(rawStore);
+      if (s.createdAt) {
+        const t = new Date(s.createdAt).getTime();
+        if (!isNaN(t) && t > 0) {
+          localStorage.setItem('zaeem_account_created_at', new Date(t).toISOString());
+          return t;
+        }
+      }
+    }
+  } catch {}
+
+  // If no previous creation date found, initialize to now
+  const now = Date.now();
+  try {
+    localStorage.setItem('zaeem_account_created_at', new Date(now).toISOString());
+  } catch {}
+  return now;
+}
+
+// 3-Day Free Trial window for all themes from account creation date
+export const THEME_TRIAL_DURATION_MS = 3 * 24 * 60 * 60 * 1000; // 3 days (72 hours)
+
+export function isFreeTrialActive(): boolean {
+  const createdMs = getAccountCreatedAt();
+  const diffMs = Date.now() - createdMs;
+  return diffMs <= THEME_TRIAL_DURATION_MS;
+}
+
+export function getTrialTimeRemaining(): { days: number; hours: number; isExpired: boolean } {
+  const createdMs = getAccountCreatedAt();
+  const diffMs = Date.now() - createdMs;
+  const remainingMs = THEME_TRIAL_DURATION_MS - diffMs;
+  if (remainingMs <= 0) {
+    return { days: 0, hours: 0, isExpired: true };
+  }
+  const days = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  return { days, hours, isExpired: false };
+}
+
+// Check if merchant has access to PRO themes (either paid PRO or within 3-day free trial)
+export function isMerchantPro(): boolean {
+  if (isPaidMerchantPro()) return true;
+  return isFreeTrialActive();
+}
+
+/**
+ * Check if the 3-day trial has expired for a free merchant.
+ * If expired and currently using a PRO theme, automatically revert to a free theme (store-sprout or store-classic).
+ */
+export async function checkAndEnforceThemeTrialExpiration(subdomain?: string): Promise<boolean> {
+  if (isPaidMerchantPro()) return false;
+  if (isFreeTrialActive()) return false;
+
+  try {
+    const rawStore = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store') || '{}';
+    const parsed = JSON.parse(rawStore);
+    const activeId = normalizeTemplateId(parsed.selectedTheme || parsed.templateId || 'store-sprout');
+    const themeConfig = TEMPLATES_MAP[activeId];
+
+    if (themeConfig?.isPro) {
+      const freeThemeId: TemplateId = 'store-sprout';
+      parsed.selectedTheme = freeThemeId;
+      parsed.templateId = freeThemeId;
+      localStorage.setItem('zaeem_store_data', JSON.stringify(parsed));
+      localStorage.setItem('zaeem_onboarded_store', JSON.stringify(parsed));
+
+      const rawUser = localStorage.getItem('zaeem_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        u.selectedTheme = freeThemeId;
+        u.templateId = freeThemeId;
+        localStorage.setItem('zaeem_user', JSON.stringify(u));
+      }
+
+      window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+
+      // Lazy import cloudDb update to avoid circular dependency
+      try {
+        const { updateCloudStoreFullSettings } = await import('../../utils/cloudDb');
+        const cleanSub = (subdomain || parsed.subdomain || 'alzaeem').replace('.za3em.shop', '').toLowerCase().trim();
+        await updateCloudStoreFullSettings({
+          subdomain: cleanSub,
+          templateId: freeThemeId
+        });
+      } catch {}
+
+      console.log(`[ThemeTrial] 3-day trial period expired. Reverted store to free theme: ${freeThemeId}`);
+      return true;
+    }
+  } catch (err) {
+    console.warn('[ThemeTrial] Error checking trial expiration:', err);
+  }
+  return false;
 }
 
 export interface StoreTemplatesProps {

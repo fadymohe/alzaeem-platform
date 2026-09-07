@@ -5,14 +5,16 @@ import {
   Layers, Eye, RefreshCw, Zap, CheckCircle2, Palette, Save, ArrowLeft,
   ArrowUpRight, ShieldCheck, Box, Truck, Package, Plus, Trash2, Edit2,
   Smartphone, Monitor, CreditCard, DollarSign, Wallet, CheckSquare,
-  Type, Lock, Crown, Tag, X, Search, Sliders, Play, Settings
+  Type, Lock, Crown, Tag, X, Search, Sliders, Play, Settings, Flame
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
 import {
-  StoreTemplates, type TemplateId, TEMPLATES_MAP, isMerchantPro, normalizeTemplateId, type TemplateConfig
+  StoreTemplates, type TemplateId, TEMPLATES_MAP, isMerchantPro, isPaidMerchantPro,
+  isFreeTrialActive, getTrialTimeRemaining, checkAndEnforceThemeTrialExpiration,
+  normalizeTemplateId, type TemplateConfig
 } from '../components/storefront/StoreTemplates';
 import { getStoredOrders, getStoredProducts } from '../data/storeState';
-import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus, unregisterStore } from '../utils/storeRegistry';
+import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus, unregisterStore, registerStore } from '../utils/storeRegistry';
 import { updateCloudStoreFullSettings, fetchCloudStore, releaseCloudSubdomain } from '../utils/cloudDb';
 import { LandingPageBuilderPage } from './LandingPageBuilder';
 
@@ -110,6 +112,13 @@ export function StorePage() {
         if (typeof record.is_active === 'boolean') setIsStoreActive(record.is_active);
       }
     }).catch(() => {});
+
+    // Enforce 3-day trial expiration: revert to free theme if 3 days have passed on free plan
+    checkAndEnforceThemeTrialExpiration(subdomain).then(reverted => {
+      if (reverted) {
+        setActiveTemplate('store-sprout');
+      }
+    }).catch(() => {});
   }, []);
 
   const fullDomain = `${subdomain}.za3em.shop`;
@@ -192,21 +201,37 @@ export function StorePage() {
         localStorage.setItem('zaeem_user', JSON.stringify(u));
       }
 
-      // If subdomain was changed, release the previous subdomain completely so it becomes available for others
+      const products = getStoredProducts();
+
+      // If subdomain was changed, register new subdomain locally
       if (subdomain && cleanSub !== subdomain) {
+        registerStore({
+          subdomain: cleanSub,
+          storeName: cleanName,
+          templateId: activeTemplate,
+          isActive: isStoreActive,
+          logoUrl: parsed.logoUrl,
+          bannerUrl: parsed.bannerUrl,
+          slogan: parsed.slogan,
+          products: products
+        });
         unregisterStore(subdomain);
-        await releaseCloudSubdomain(subdomain).catch(() => {});
       }
 
+      // Update cloud DB first with full store details and safe rename
       await updateCloudStoreFullSettings({
         subdomain: cleanSub,
-        previousSubdomain: subdomain,
+        previousSubdomain: (subdomain && cleanSub !== subdomain) ? subdomain : undefined,
         name: cleanName,
         templateId: activeTemplate,
         font: storeFont,
         categories: categories,
         paymentMethods: paymentMethods,
-        isActive: isStoreActive
+        isActive: isStoreActive,
+        logoUrl: parsed.logoUrl,
+        bannerUrl: parsed.bannerUrl,
+        slogan: parsed.slogan,
+        products: products
       });
 
       window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
@@ -409,9 +434,43 @@ export function StorePage() {
           </div>
 
           {/* Themes Showcase Grid (Dual Desktop+Mobile Mockup Frames matching Screenshots 3, 4, 5) */}
+          {/* 3-Day Free Trial Notice Banner */}
+          {isFreeTrialActive() && !isPaidMerchantPro() && (
+            <div className="p-4.5 rounded-3xl bg-gradient-to-r from-teal-950/90 via-slate-900 to-teal-950/90 border border-teal-500/40 text-xs text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center gap-3.5">
+                <span className="size-11 rounded-2xl bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/30">
+                  <Sparkles className="size-5 text-amber-400 animate-pulse" />
+                </span>
+                <div className="space-y-1">
+                  <div className="font-extrabold text-sm text-teal-300 flex items-center gap-2 flex-wrap">
+                    <span>كافة القوالب متاحة لك مجاناً لفترة تجريبية! 🎉</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 shadow-sm">
+                      متبقي {getTrialTimeRemaining().days} أيام و {getTrialTimeRemaining().hours} ساعة
+                    </span>
+                  </div>
+                  <p className="text-slate-300 text-xs leading-relaxed">
+                    جميع ثيمات وقوالب الـ PRO مفتوحة ومجانية تماماً لمدة 3 أيام من تاريخ تسجيل حسابك لتجربتها على متجرك بحرية قبل التحويل التلقائي للقالب المجاني.
+                  </p>
+                </div>
+              </div>
+              <a
+                href="#/subscriptions"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs shrink-0 shadow-lg transition-transform hover:scale-105 flex items-center gap-1.5"
+              >
+                <Crown className="size-4" />
+                <span>ترقية الاشتراك</span>
+              </a>
+            </div>
+          )}
+
+          {/* Themes Showcase Grid (Dual Desktop+Mobile Mockup Frames matching Screenshots 3, 4, 5) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {themeList.map((t) => {
               const isCurrent = activeTemplate === t.id;
+              const cleanThemeSub = t.id.replace('store-', '');
+              const demoUrl = typeof window !== 'undefined' && (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1'))
+                ? `/#/store/${cleanThemeSub}`
+                : `https://${cleanThemeSub}.za3em.shop`;
 
               return (
                 <div
@@ -426,21 +485,30 @@ export function StorePage() {
                     {/* Dual Mockup Frame (Desktop + Mobile in frame matching Screenshots 3, 4, 5) */}
                     <div className="rounded-2xl overflow-hidden bg-slate-950 p-4 border border-slate-800 relative shadow-inner min-h-[260px] flex items-center justify-center">
                       
-                      {/* Live Preview / Applied Badge */}
+                      {/* Live Preview / Applied Badge (Left) */}
                       <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
-                        {isCurrent ? (
+                        {isCurrent && (
                           <span className="px-3 py-1 rounded-full text-[10px] font-black bg-emerald-500 text-slate-950 shadow-md flex items-center gap-1">
                             <CheckCircle2 className="size-3" /> مُطبّق
                           </span>
+                        )}
+                      </div>
+
+                      {/* Free vs Pro Badge + Most Used Badge (Right) */}
+                      <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 flex-wrap justify-end">
+                        {t.isPro ? (
+                          <>
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md flex items-center gap-1">
+                              <Crown className="size-3" /> بريميوم
+                            </span>
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-orange-600 to-rose-600 text-white shadow-md flex items-center gap-1 animate-pulse">
+                              <Flame className="size-3" /> الأكثر استخداماً
+                            </span>
+                          </>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewThemeModal(t)}
-                            className="px-3 py-1 rounded-full text-[10px] font-black bg-slate-900/90 text-emerald-400 border border-emerald-500/40 shadow-md flex items-center gap-1 hover:bg-emerald-500 hover:text-slate-950 transition-colors"
-                          >
-                            <span className="size-1.5 rounded-full bg-emerald-400 animate-ping" />
-                            <span>عرض مباشر</span>
-                          </button>
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500 text-slate-950 shadow-md flex items-center gap-1">
+                            <Check className="size-3" /> مجاني
+                          </span>
                         )}
                       </div>
 
@@ -455,14 +523,14 @@ export function StorePage() {
                         
                         {/* Domain Tag overlay */}
                         <a
-                          href={typeof window !== 'undefined' && (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')) ? `/#/store/${t.id.replace('store-', '')}` : `https://${t.id.replace('store-', '')}.za3em.shop`}
+                          href={demoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           className="absolute bottom-2 left-3 text-[10px] font-mono font-bold text-teal-300 hover:text-white bg-slate-950/80 hover:bg-slate-900 px-2.5 py-0.5 rounded border border-teal-500/30 transition-colors flex items-center gap-1 shadow"
                           title="معاينة حية للقالب في نافذة خارجية"
                         >
-                          <span>{t.id.replace('store-', '')}.za3em.shop</span>
+                          <span>{cleanThemeSub}.za3em.shop</span>
                           <ExternalLink className="size-2.5 text-teal-400" />
                         </a>
                       </div>
@@ -477,7 +545,7 @@ export function StorePage() {
                       </div>
                     </div>
 
-                    {/* Palette Dots & Tag */}
+                    {/* Palette Dots & Badges */}
                     <div className="mt-5 flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         {t.palette.map((c, i) => (
@@ -489,9 +557,25 @@ export function StorePage() {
                         ))}
                       </div>
 
-                      <span className="text-[11px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">
-                        {t.categoryTag}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {t.isPro ? (
+                          <>
+                            <span className="text-[11px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Crown className="size-3" /> ثيم مدفوع
+                            </span>
+                            <span className="text-[11px] font-black text-orange-500 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Flame className="size-3" /> الأكثر استخداماً
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[11px] font-black text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            ثيم مجاني
+                          </span>
+                        )}
+                        <span className="text-[11px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">
+                          {t.categoryTag}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Theme Names & Description */}
@@ -509,7 +593,7 @@ export function StorePage() {
                     </div>
                   </div>
 
-                  {/* Action Buttons (استخدم الثيم / جرب على متجرك / تخصيص) */}
+                  {/* Action Buttons (استخدم الثيم / معاينة الثيم) */}
                   <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
                     <button
                       type="button"
@@ -533,26 +617,16 @@ export function StorePage() {
                       )}
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setPreviewThemeModal(t)}
-                      className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors flex items-center gap-1.5"
+                    <a
+                      href={demoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-teal-700 hover:text-white dark:hover:bg-teal-600 text-slate-700 dark:text-slate-200 font-extrabold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-slate-200/80 dark:border-slate-700/80 cursor-pointer whitespace-nowrap"
+                      title={`معاينة مباشرة لقالب ${t.name} على رابط ${cleanThemeSub}.za3em.shop`}
                     >
-                      <Eye className="size-3.5 text-teal-600" />
-                      <span>جرّب على متجرك</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleApplyTheme(t);
-                        setLocation('/theme-customizer');
-                      }}
-                      className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
-                      title="فتح في محرر الثيمات"
-                    >
-                      <Sliders className="size-4" />
-                    </button>
+                      <ExternalLink className="size-3.5 text-teal-600 dark:text-teal-400 group-hover:text-white" />
+                      <span>معاينة الثيم</span>
+                    </a>
                   </div>
                 </div>
               );
@@ -691,8 +765,8 @@ export function StorePage() {
 
       {/* PRO UPGRADE MODAL */}
       {showProUpgradeModal && attemptedProTheme && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-md w-full rounded-3xl border border-amber-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95 relative">
+        <div className="fixed inset-0 z-[99999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="max-w-md w-full rounded-3xl border border-amber-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95 relative my-auto">
             <button
               onClick={() => setShowProUpgradeModal(false)}
               className="absolute top-4 left-4 text-slate-400 hover:text-white"

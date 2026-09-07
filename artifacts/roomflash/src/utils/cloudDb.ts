@@ -33,6 +33,8 @@ export interface CloudStoreRecord {
   };
   products?: any[];
   is_active?: boolean;
+  user_email?: string;
+  owner_id?: string;
   created_at?: string;
 }
 
@@ -678,14 +680,26 @@ export async function updateCloudStoreFullSettings(settings: {
   categories?: string[];
   paymentMethods?: any;
   isActive?: boolean;
+  logoUrl?: string;
+  bannerUrl?: string;
+  slogan?: string;
+  products?: any[];
+  product?: any;
 }): Promise<boolean> {
   try {
     const cleanSub = (settings.subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
     const cleanPrevSub = (settings.previousSubdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
     if (!cleanSub) return false;
 
+    // Check if we are renaming a subdomain
+    const isRename = cleanPrevSub && cleanPrevSub !== cleanSub;
+    let existingPrevRecord: CloudStoreRecord | null = null;
+    if (isRename) {
+      existingPrevRecord = await fetchCloudStore(cleanPrevSub).catch(() => null);
+    }
+
     const updates: string[] = [];
-    if (cleanPrevSub && cleanPrevSub !== cleanSub) {
+    if (isRename) {
       updates.push(`subdomain = '${cleanSub}'`);
     }
     if (settings.name) updates.push(`name = '${settings.name.replace(/'/g, "''")}'`);
@@ -694,35 +708,70 @@ export async function updateCloudStoreFullSettings(settings: {
     if (settings.categories) updates.push(`categories = '${JSON.stringify(settings.categories).replace(/'/g, "''")}'::jsonb`);
     if (settings.paymentMethods) updates.push(`payment_methods = '${JSON.stringify(settings.paymentMethods).replace(/'/g, "''")}'::jsonb`);
     if (typeof settings.isActive === 'boolean') updates.push(`is_active = ${settings.isActive ? 'TRUE' : 'FALSE'}`);
+    if (settings.logoUrl) updates.push(`logo_url = '${settings.logoUrl.replace(/'/g, "''")}'`);
+    if (settings.bannerUrl) updates.push(`banner_url = '${settings.bannerUrl.replace(/'/g, "''")}'`);
+    if (settings.slogan) updates.push(`slogan = '${settings.slogan.replace(/'/g, "''")}'`);
+    if (Array.isArray(settings.products) && settings.products.length > 0) {
+      updates.push(`products = '${JSON.stringify(settings.products).replace(/'/g, "''")}'::jsonb`);
+    }
+    if (settings.product) {
+      updates.push(`product = '${JSON.stringify(settings.product).replace(/'/g, "''")}'::jsonb`);
+    }
 
-    const targetSub = cleanPrevSub && cleanPrevSub !== cleanSub ? cleanPrevSub : cleanSub;
+    const targetSub = isRename ? cleanPrevSub : cleanSub;
     let query = `UPDATE za3em_stores SET ${updates.join(', ')} WHERE subdomain = '${targetSub}' RETURNING id;`;
     let res = await executeSql(query);
 
-    // If subdomain was renamed, also migrate landing pages and shipments, and delete old subdomain reservation
-    if (cleanPrevSub && cleanPrevSub !== cleanSub) {
+    // If subdomain was renamed, also migrate landing pages and shipments
+    if (isRename) {
       await executeSql(`UPDATE za3em_landing_pages SET subdomain = '${cleanSub}' WHERE subdomain = '${cleanPrevSub}';`).catch(() => {});
       await executeSql(`UPDATE za3em_shipments SET subdomain = '${cleanSub}' WHERE subdomain = '${cleanPrevSub}';`).catch(() => {});
+      await executeSql(`UPDATE za3em_customers SET subdomain = '${cleanSub}' WHERE subdomain = '${cleanPrevSub}';`).catch(() => {});
       await executeSql(`DELETE FROM za3em_stores WHERE subdomain = '${cleanPrevSub}' AND subdomain != '${cleanSub}';`).catch(() => {});
     }
 
-    // If no row was updated, insert store as new row
+    // If no row was updated, insert store preserving any existing or provided properties
     if (!res || !Array.isArray(res.rows) || res.rows.length === 0) {
-      const nameEsc = (settings.name || `متجر ${cleanSub}`).replace(/'/g, "''");
-      const tplEsc = (settings.templateId || 'store-classic').replace(/'/g, "''");
-      const isAct = settings.isActive !== false ? 'TRUE' : 'FALSE';
-      const catJson = JSON.stringify(settings.categories || ['عام']).replace(/'/g, "''");
+      const nameEsc = (settings.name || existingPrevRecord?.name || `متجر ${cleanSub}`).replace(/'/g, "''");
+      const tplEsc = (settings.templateId || existingPrevRecord?.template_id || 'store-sprout').replace(/'/g, "''");
+      const isAct = (typeof settings.isActive === 'boolean' ? settings.isActive : (existingPrevRecord?.is_active ?? true)) ? 'TRUE' : 'FALSE';
+      const catJson = JSON.stringify(settings.categories || existingPrevRecord?.categories || ['عام']).replace(/'/g, "''");
       const payJson = JSON.stringify(settings.paymentMethods || { cod: true }).replace(/'/g, "''");
       
+      const logoVal = settings.logoUrl || existingPrevRecord?.logo_url;
+      const logoEsc = logoVal ? `'${logoVal.replace(/'/g, "''")}'` : 'NULL';
+
+      const bannerVal = settings.bannerUrl || existingPrevRecord?.banner_url;
+      const bannerEsc = bannerVal ? `'${bannerVal.replace(/'/g, "''")}'` : 'NULL';
+
+      const sloganVal = settings.slogan || existingPrevRecord?.slogan || '';
+      const sloganEsc = sloganVal.replace(/'/g, "''");
+
+      const productsVal = (Array.isArray(settings.products) && settings.products.length > 0)
+        ? settings.products
+        : (existingPrevRecord?.products || []);
+      const productsJson = JSON.stringify(productsVal).replace(/'/g, "''");
+
+      const productVal = settings.product || existingPrevRecord?.product || null;
+      const productJson = productVal ? `'${JSON.stringify(productVal).replace(/'/g, "''")}'::jsonb` : `'{}'::jsonb`;
+
+      const codeEsc = (existingPrevRecord?.store_code || `ZAEEM-${cleanSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`).replace(/'/g, "''");
+      const emailEsc = existingPrevRecord?.user_email ? `'${existingPrevRecord.user_email.replace(/'/g, "''")}'` : 'NULL';
+      const ownerEsc = existingPrevRecord?.owner_id ? `'${existingPrevRecord.owner_id.replace(/'/g, "''")}'` : 'NULL';
+
       const insertQuery = `
-        INSERT INTO za3em_stores (name, subdomain, template_id, is_active, categories, payment_methods)
-        VALUES ('${nameEsc}', '${cleanSub}', '${tplEsc}', ${isAct}, '${catJson}'::jsonb, '${payJson}'::jsonb)
+        INSERT INTO za3em_stores (name, subdomain, template_id, store_code, slogan, logo_url, banner_url, is_active, categories, payment_methods, products, product, user_email, owner_id)
+        VALUES ('${nameEsc}', '${cleanSub}', '${tplEsc}', '${codeEsc}', '${sloganEsc}', ${logoEsc}, ${bannerEsc}, ${isAct}, '${catJson}'::jsonb, '${payJson}'::jsonb, '${productsJson}'::jsonb, ${productJson}, ${emailEsc}, ${ownerEsc})
         ON CONFLICT (subdomain) DO UPDATE
         SET name = EXCLUDED.name,
             template_id = EXCLUDED.template_id,
             is_active = EXCLUDED.is_active,
             categories = EXCLUDED.categories,
-            payment_methods = EXCLUDED.payment_methods
+            payment_methods = EXCLUDED.payment_methods,
+            logo_url = COALESCE(EXCLUDED.logo_url, za3em_stores.logo_url),
+            banner_url = COALESCE(EXCLUDED.banner_url, za3em_stores.banner_url),
+            slogan = COALESCE(EXCLUDED.slogan, za3em_stores.slogan),
+            products = CASE WHEN jsonb_array_length(EXCLUDED.products) > 0 THEN EXCLUDED.products ELSE za3em_stores.products END
         RETURNING id;
       `;
       res = await executeSql(insertQuery);
