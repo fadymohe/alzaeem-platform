@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRoute } from "wouter";
+import { ErrorBoundary } from "../components/error-boundary";
 import { DynamicTemplateRenderer } from "../components/landing-templates/DynamicTemplateRenderer";
 import {
   TemplateProduct,
@@ -829,14 +830,16 @@ export function DynamicStoreLanding() {
         </div>
       )}
 
-      {/* محرك القوالب الديناميكي */}
-      <DynamicTemplateRenderer
-        templateId={store.templateId}
-        store={store}
-        product={product}
-        products={productsList}
-        onPlaceOrder={handlePlaceOrder}
-      />
+      {/* محرك القوالب الديناميكي محمي بـ ErrorBoundary */}
+      <ErrorBoundary resetKey={`${store.templateId}-${cleanSubdomain}`}>
+        <DynamicTemplateRenderer
+          templateId={store.templateId}
+          store={store}
+          product={product}
+          products={productsList}
+          onPlaceOrder={handlePlaceOrder}
+        />
+      </ErrorBoundary>
     </div>
   );
 }

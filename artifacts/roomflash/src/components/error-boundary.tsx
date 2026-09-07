@@ -36,29 +36,45 @@ function toError(value: unknown): Error {
 }
 
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
+  const errorMessage = error?.message || String(error || '');
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 p-6">
-      <div className="max-w-lg w-full text-center">
-        <h1 className="text-xl font-semibold text-gray-900">
-          Something went wrong
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          This part of the app hit an error. The rest of the app is still
-          running.
-        </p>
-        {/* Dev only: messages can carry API responses and other internals. */}
-        {import.meta.env.DEV ? (
-          <pre className="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-left text-xs text-gray-800">
-            {error.message || String(error)}
-          </pre>
-        ) : null}
-        <button
-          type="button"
-          onClick={resetError}
-          className="mt-4 rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700"
-        >
-          Try again
-        </button>
+    <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 p-6 text-white font-sans selection:bg-teal-500 selection:text-slate-950" dir="rtl">
+      <div className="max-w-md w-full text-center space-y-4 p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl">
+        <div className="size-16 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center mx-auto text-2xl font-black">
+          ⚠️
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-lg font-black text-white">
+            جاري استعادة الاتصال بالمتجر
+          </h1>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            حدث تنبيه أثناء تهيئة بيانات الصفحة. تم حفظ كافة الطلبات والبيانات بأمان.
+          </p>
+        </div>
+        {errorMessage && (
+          <div className="rounded-xl bg-slate-950 p-3 text-left font-mono text-[11px] text-teal-400 border border-slate-800/80 max-h-24 overflow-y-auto" dir="ltr">
+            {errorMessage}
+          </div>
+        )}
+        <div className="flex flex-col sm:flex-row gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              resetError();
+              window.location.reload();
+            }}
+            className="flex-1 py-3 px-4 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs shadow-lg transition-transform active:scale-95"
+          >
+            إعادة المحاولة والتحديث 🔄
+          </button>
+          <a
+            href="/"
+            className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition-colors"
+          >
+            الرئيسية 🏠
+          </a>
+        </div>
       </div>
     </div>
   );

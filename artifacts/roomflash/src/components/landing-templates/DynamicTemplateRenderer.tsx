@@ -48,8 +48,8 @@ export const DynamicTemplateRenderer: React.FC<DynamicTemplateRendererProps> = (
 
       return (
         <StoreTemplates
-          storeName={store.name}
-          subdomain={store.subdomain}
+          storeName={store.name || `متجر ${store.subdomain || 'الزعيم'}`}
+          subdomain={store.subdomain || 'alzaeem'}
           activeTemplateId={validTemplateId}
           standalone={true}
           customProduct={product}

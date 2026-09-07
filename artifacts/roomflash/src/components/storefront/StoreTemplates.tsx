@@ -1008,12 +1008,11 @@ export function StoreTemplates({
   const baseProducts = getStoredProducts();
   const themeDefaults = THEME_SPECIFIC_PRODUCTS[currentThemeId] || THEME_SPECIFIC_PRODUCTS['store-wardrobe'] || SAMPLE_THEME_PRODUCTS;
 
-  // In standalone preview mode, always use the authentic theme products matching the screenshots unless merchant passed specific products
+  // In standalone preview mode or when merchant products array is empty, always use authentic theme defaults
+  const passedProducts = Array.isArray(products) && products.length > 0 ? products : null;
   const productsList: StoreProduct[] = standalone
-    ? (Array.isArray(products) && products.length > 0 ? products : themeDefaults)
-    : (Array.isArray(products) && products.length > 0
-      ? products
-      : (baseProducts.length > 0 ? baseProducts : themeDefaults));
+    ? (passedProducts || themeDefaults)
+    : (passedProducts || (baseProducts.length > 0 ? baseProducts : themeDefaults));
 
   const fullDomain = `${subdomain}.za3em.shop`;
 
@@ -1245,17 +1244,38 @@ export function StoreTemplates({
     setCouponCode('');
   };
 
-  const filteredProducts = productsList.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchCat = selectedCategory === 'الكل' || p.category.includes(selectedCategory);
+  // Sanitize and ensure every product has valid fields
+  const safeProductsList: StoreProduct[] = (productsList || [])
+    .filter(Boolean)
+    .map((p, idx) => ({
+      id: p.id || idx + 1,
+      name: p.name || (p as any).title || 'منتج المتجر',
+      sku: p.sku || `PRD-${idx + 1}`,
+      description: p.description || '',
+      price: Number(p.price) || 0,
+      compareAtPrice: p.compareAtPrice ? Number(p.compareAtPrice) : undefined,
+      stock: p.stock ?? 20,
+      lowStockThreshold: p.lowStockThreshold ?? 5,
+      category: p.category || 'عام',
+      status: p.status || 'active',
+      imageUrl: p.imageUrl || (p as any).image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+      weightGrams: p.weightGrams ?? 500,
+    }));
+
+  const filteredProducts = safeProductsList.filter(p => {
+    const q = (searchQuery || '').toLowerCase();
+    const pName = (p.name || '').toLowerCase();
+    const pCat = (p.category || '').toLowerCase();
+    const matchSearch = !q || pName.includes(q) || pCat.includes(q);
+    const matchCat = !selectedCategory || selectedCategory === 'الكل' || pCat.includes(selectedCategory.toLowerCase());
     return matchSearch && matchCat;
   });
 
   const themeProps = {
-    storeName,
-    subdomain,
+    storeName: storeName || 'متجر الزعيم',
+    subdomain: subdomain || 'alzaeem',
     fullDomain,
-    products: productsList,
+    products: safeProductsList,
     filteredProducts,
     cartCount,
     cartItems,
@@ -2111,18 +2131,22 @@ export function StoreTemplates({
                   <h5 className="font-extrabold text-xs text-slate-200">طلباتي السابقة:</h5>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {(() => {
-                      const allOrders = getStoredProducts(); // triggers storage access
-                      const customerOrders = (getStoredProducts && typeof window !== 'undefined')
-                        ? (() => {
-                            try {
-                              const raw = localStorage.getItem(`zaeem_store_orders`);
-                              const arr = raw ? JSON.parse(raw) : [];
-                              return arr.filter((o: any) => o.customerPhone === currentCustomer.phone || o.customerName === currentCustomer.name);
-                            } catch {
-                              return [];
-                            }
-                          })()
-                        : [];
+                      if (!currentCustomer) return null;
+                      let customerOrders: any[] = [];
+                      try {
+                        const raw = localStorage.getItem('zaeem_store_orders');
+                        const arr = raw ? JSON.parse(raw) : [];
+                        if (Array.isArray(arr)) {
+                          customerOrders = arr.filter((o: any) => 
+                            Boolean(o) && (
+                              (currentCustomer.phone && o.customerPhone === currentCustomer.phone) ||
+                              (currentCustomer.name && o.customerName === currentCustomer.name)
+                            )
+                          );
+                        }
+                      } catch {
+                        customerOrders = [];
+                      }
 
                       if (customerOrders.length === 0) {
                         return (
@@ -2132,17 +2156,17 @@ export function StoreTemplates({
                         );
                       }
 
-                      return customerOrders.map((ord: any) => (
-                        <div key={ord.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
+                      return customerOrders.map((ord: any, idx: number) => (
+                        <div key={ord.id || ord.number || idx} className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-teal-400">{ord.number}</span>
+                            <span className="font-mono font-bold text-teal-400">{ord.number || `ORD-${idx + 1}`}</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-950 text-teal-300 border border-teal-800">
                               {ord.status === 'delivered' ? 'تم التسليم' : 'قيد المعالجة'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-[11px] text-slate-400">
-                            <span>المبلغ: {formatIQD(ord.total)}</span>
-                            <a href={`#/track?q=${ord.trackingNumber || ord.number}`} className="text-teal-400 underline hover:text-teal-300">
+                            <span>المبلغ: {formatIQD(ord.total || 0)}</span>
+                            <a href={`#/track?q=${encodeURIComponent(ord.trackingNumber || ord.number || '')}`} className="text-teal-400 underline hover:text-teal-300">
                               تتبع الشحنة
                             </a>
                           </div>

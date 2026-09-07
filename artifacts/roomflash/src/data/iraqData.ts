@@ -42,8 +42,10 @@ export const SHIPPING_RATES: Record<Governorate, number> = {
   السليمانية: 5000,
 };
 
-export function formatIQD(amount: number): string {
-  return `${new Intl.NumberFormat('ar-IQ', { maximumFractionDigits: 0 }).format(amount)} د.ع`;
+export function formatIQD(amount: number | string | undefined | null): string {
+  const num = typeof amount === 'number' ? amount : Number(amount);
+  const safeNum = isNaN(num) || !isFinite(num) ? 0 : num;
+  return `${new Intl.NumberFormat('ar-IQ', { maximumFractionDigits: 0 }).format(safeNum)} د.ع`;
 }
 
 export interface DemoShipment {
