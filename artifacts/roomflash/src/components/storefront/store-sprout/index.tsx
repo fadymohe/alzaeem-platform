@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   ShoppingBag, Search, Heart, User, ArrowLeft, ArrowRight,
   Truck, ShieldCheck, Sparkles, Star, ChevronDown, CheckCircle2,
-  PhoneCall, Baby, Leaf, Sun, Flower2, HeartHandshake
+  PhoneCall, Baby, Leaf, Sun, Flower2, HeartHandshake, MessageCircle
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
@@ -20,53 +20,80 @@ export function StoreSproutTheme({
   searchQuery,
   onSearchChange,
   onQuickBuy,
-  logoUrl
+  logoUrl,
+  customization
 }: ThemeComponentProps) {
   const [activeTab, setActiveTab] = useState('الرئيسية');
 
-  // Categories
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
-  const kidsCategories = [
-    { name: 'ملابس الرضع', count: '12 منتج', icon: '🍼', color: 'bg-[#e8efe9]' },
-    { name: 'ألعاب ودمى لينة', count: '18 منتج', icon: '🧸', color: 'bg-[#f4efe6]' },
-    { name: 'أزياء أولاد', count: '15 منتج', icon: '👕', color: 'bg-[#e7eef4]' },
-    { name: 'فساتين بنات', count: '22 منتج', icon: '👗', color: 'bg-[#faebee]' },
-    { name: 'أحذية ومستلزمات', count: '9 منتجات', icon: '👟', color: 'bg-[#f5f1e8]' },
-    { name: 'غرف ومفروشات أطفال', count: '7 منتجات', icon: '🛏️', color: 'bg-[#edf3ee]' },
-  ];
+  const brandColor = customization?.brandColor || '#588157';
+  const isEn = customization?.defaultLanguage === 'en';
+  const isSticky = customization?.isHeaderSticky !== false;
+  const showTrust = customization?.showTrustFeatures !== false;
+  const showBanner = customization?.showHeroBanner !== false;
+  const announcement = customization?.announcementText || 'أزياء ومستلزمات أطفال طبيعية 100% بروح الطبيعة والحديقة • قطن عضوي آمن';
+  const heroTitle = customization?.heroTitle || (isEn ? 'Pure Garden Softness for Little Ones' : 'أناقة ناعمة وراحة تدوم لطفلك الصغير');
+  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Organic cotton fabrics and playful designs with safe inspection before payment' : 'خامات قطنية فائقة النعومة وتصاميم بروح البهجة، نوفرها لك مع ميزة فحص الشحنة قبل الاستلام.');
+  const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Sprout' : 'تسوق التشكيلة الآن');
+  const gridCols = customization?.productGridCols || 4;
+  const showDiscount = customization?.showDiscountBadge !== false;
+  const showStock = customization?.showStockStatus !== false;
+  const enableQuick = customization?.enableQuickBuy !== false;
+  const urgencyTicker = customization?.showUrgencyTicker !== false;
+  const copyright = customization?.footerCopyright || `© ${new Date().getFullYear()} ${storeName}. جميع الحقوق محفوظة • مدعوم بواسطة الزعيم`;
+  const showBadges = customization?.showPaymentBadges !== false;
+  const enableWa = customization?.enableWhatsAppFloating !== false;
+  const waNumber = customization?.whatsAppNumber || '+9647700000000';
+  const enableStickyCart = customization?.enableStickyCartBar !== false;
+
+  const getColsClass = () => {
+    switch (gridCols) {
+      case 2: return 'grid-cols-1 sm:grid-cols-2';
+      case 3: return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+      case 4:
+      default: return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] text-[#333d29] font-sans antialiased selection:bg-[#588157] selection:text-white" dir="rtl">
+    <div
+      className="min-h-screen bg-[#f7f6f2] text-[#333d29] font-sans antialiased selection:bg-[#588157] selection:text-white"
+      dir={isEn ? 'ltr' : 'rtl'}
+    >
       
       {/* 1. Top Olive Announcement Bar */}
-      <div className="bg-[#435135] text-[#e9edc9] text-xs py-2 px-4 md:px-8 shadow-sm">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 font-bold">
-              <Leaf className="size-3.5 text-[#ccd5ae]" />
-              <span>أزياء ومستلزمات أطفال طبيعية 100% بروح الطبيعة والحديقة</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-[11px] font-semibold text-[#fefae0]">
-            <span>🌿 قطن عضوي آمن لبشرة طفلك</span>
-            <span className="hidden sm:inline">|</span>
-            <span className="hidden sm:inline">🚚 توصيل سريع لكافة محافظات العراق</span>
+      {customization?.showAnnouncement !== false && (
+        <div className="bg-[#435135] text-[#e9edc9] text-xs py-2 px-4 md:px-8 shadow-sm">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 font-bold">
+                <Leaf className="size-3.5 text-[#ccd5ae]" />
+                <span>{announcement}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-[11px] font-semibold text-[#fefae0]">
+              <span>{isEn ? '🌿 100% Organic Cotton' : '🌿 قطن عضوي آمن لبشرة طفلك'}</span>
+              <span className="hidden sm:inline">|</span>
+              <span>{isEn ? '🚚 Express Delivery' : '🚚 توصيل سريع لكافة محافظات العراق'}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* 2. Main Header */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-[#e0ddcf] sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+      {/* 2. Main Header (Matching Screenshot 3 Sprout) */}
+      <header className={`bg-white/95 backdrop-blur-md border-b border-[#e0ddcf] ${isSticky ? 'sticky top-0' : 'relative'} z-40 shadow-sm`}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
           
-          {/* Logo & Store Info */}
           <div className="flex items-center gap-3">
             {logoUrl ? (
               <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[140px] object-contain rounded-xl border border-[#ccd5ae]" />
             ) : (
               <div className="flex items-center gap-2.5">
-                <div className="size-11 rounded-2xl bg-gradient-to-tr from-[#588157] to-[#a3b18a] text-white font-black grid place-items-center text-xl shadow-md shadow-[#588157]/20">
+                <div
+                  className="size-11 rounded-2xl text-white font-black grid place-items-center text-xl shadow-md"
+                  style={{ backgroundColor: brandColor }}
+                >
                   <Baby className="size-6" />
                 </div>
                 <div>
@@ -82,9 +109,9 @@ export function StoreSproutTheme({
             )}
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-7 text-xs font-black text-[#3a5a40]">
-            {['الرئيسية', 'حديثي الولادة', 'أزياء الأطفال', 'ألعاب تعليمية', 'عروض الموسم'].map((item) => (
+          {/* Navigation Links (Paw Paradise, toys, pet, tiny outfits, Kid Toy, المتجر, الرئيسية) */}
+          <nav className="hidden lg:flex items-center gap-5 text-xs font-black text-[#3a5a40]">
+            {['الرئيسية', 'المتجر', 'Kid Toy', 'tiny outfits', 'pet', 'toys', 'Paw Paradise', 'التخفيضات'].map((item) => (
               <button
                 key={item}
                 type="button"
@@ -101,16 +128,16 @@ export function StoreSproutTheme({
             ))}
           </nav>
 
-          {/* Search Bar & Cart Actions */}
+          {/* Search & Actions */}
           <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block w-64">
-              <Search className="absolute right-3.5 top-2.5 size-4 text-[#8b9b77]" />
+            <div className="relative hidden sm:block w-56">
+              <Search className={`absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-2.5 size-4 text-[#8b9b77]`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="ابحث عن ملابس، ألعاب..."
-                className="w-full h-9 pr-10 pl-4 rounded-full border border-[#ccd5ae] bg-[#f7f6f2] text-xs text-[#344e41] placeholder:text-[#99a888] focus:outline-none focus:border-[#588157] focus:bg-white transition-all"
+                placeholder={isEn ? 'Search tiny outfits...' : 'ابحث عن ملابس، دمى...'}
+                className={`w-full h-9 ${isEn ? 'pl-10 pr-4' : 'pr-10 pl-4'} rounded-full border border-[#ccd5ae] bg-[#f7f6f2] text-xs text-[#344e41] placeholder:text-[#99a888] focus:outline-none focus:border-[#588157] focus:bg-white`}
               />
             </div>
 
@@ -120,230 +147,199 @@ export function StoreSproutTheme({
                 const el = document.getElementById('sprout-grid');
                 el?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#588157] hover:bg-[#435135] text-white font-extrabold text-xs shadow-md shadow-[#588157]/20 transition-all hover:scale-105"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full text-white font-extrabold text-xs shadow-md transition-all hover:scale-105"
+              style={{ backgroundColor: brandColor }}
             >
               <ShoppingBag className="size-4" />
-              <span>السلة ({cartCount})</span>
+              <span>{isEn ? 'Cart' : 'السلة'} ({cartCount})</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* 3. Hero Section (Floating Collage with Olive & Ivory Palette matching Baseet Sprout) */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-        <div className="rounded-3xl overflow-hidden bg-gradient-to-r from-[#e9ece3] via-[#f1f3ec] to-[#e4e8dc] border border-[#ccd5ae] p-8 md:p-14 relative shadow-sm">
-          <div className="max-w-xl space-y-4 text-right relative z-10">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black bg-[#435135] text-[#fefae0] shadow-sm">
-              <Flower2 className="size-3.5 text-[#ccd5ae]" />
-              تشكيلة سبراوت الطبيعية للأطفال
-            </span>
-            <h1 className="text-3xl md:text-5xl font-extrabold text-[#344e41] leading-tight tracking-tight">
-              أناقة ناعمة وراحة تدوم لطفلك الصغير
-            </h1>
-            <p className="text-xs md:text-sm text-[#588157] leading-relaxed font-medium">
-              خامات قطنية فائقة النعومة وتصاميم بروح البهجة، نوفرها لك مع ميزة فحص الشحنة قبل الاستلام والدفع عند الباب.
-            </p>
-            <div className="pt-3 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('sprout-grid');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-6 py-3 rounded-full bg-[#435135] hover:bg-[#344e41] text-[#fefae0] font-black text-xs shadow-lg flex items-center gap-2 transition-transform hover:scale-105"
-              >
-                <span>تسوق تشكيلة الأطفال</span>
-                <ArrowLeft className="size-4" />
-              </button>
-              <span className="text-xs font-bold text-[#588157] flex items-center gap-1.5 bg-white/80 px-3.5 py-2.5 rounded-full border border-[#ccd5ae]">
-                <Truck className="size-4 text-[#588157]" /> توصيل سريع لكافة المحافظات
+      {/* 3. Hero Collage Section (Matching Screenshot 3 Sprout: Cuddle Plush Toy + Velvet Dress) */}
+      {showBanner && (
+        <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
+          <div className="rounded-3xl overflow-hidden bg-gradient-to-r from-[#e9ece3] via-[#f1f3ec] to-[#e4e8dc] border border-[#ccd5ae] relative shadow-sm min-h-[360px] flex flex-col md:flex-row items-center justify-between">
+            
+            {/* Left Image Collage: Adorable Deer Plush Toy on Cream Rug */}
+            <div className="w-full md:w-1/2 h-72 md:h-[380px] relative overflow-hidden order-2 md:order-1 flex items-center justify-center p-6">
+              <img
+                src="https://images.unsplash.com/photo-1559454403-b8fb88521f11?w=800&auto=format&fit=crop&q=80"
+                alt="Sprout Plush Cuddle Deer"
+                className="max-h-[320px] w-auto object-contain rounded-2xl drop-shadow-xl hover:scale-105 transition-transform duration-700"
+              />
+            </div>
+
+            {/* Right Text Content */}
+            <div className="w-full md:w-1/2 p-8 md:p-12 text-right space-y-4 relative z-10 order-1 md:order-2">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black bg-[#435135] text-[#fefae0] shadow-sm">
+                <Flower2 className="size-3.5 text-[#ccd5ae]" />
+                {isEn ? 'Sprout Organic Kids Collection' : 'تشكيلة سبراوت الطبيعية للأطفال'}
               </span>
-            </div>
-          </div>
-
-          <div className="hidden lg:block absolute left-10 top-1/2 -translate-y-1/2 size-72 rounded-3xl bg-[#d8dfcf] border-2 border-white/60 shadow-xl overflow-hidden rotate-3">
-            <img
-              src="/templates/store-classic.jpg"
-              alt="Sprout Collection"
-              className="size-full object-cover"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Popular Circular Categories */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-10">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-xl font-extrabold text-[#344e41]">أقسام المتجر المبهجة</h2>
-            <p className="text-xs text-[#588157] mt-0.5">اختاري ما يناسب عمر واحتياج طفلك</p>
-          </div>
-          <span className="text-xs font-bold text-[#588157] hover:underline cursor-pointer">
-            تصفح الكل ←
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {kidsCategories.map((c, i) => (
-            <div
-              key={i}
-              onClick={() => onSelectCategory(c.name)}
-              className={`p-4 rounded-3xl ${c.color} border border-[#e0ddcf] text-center space-y-2 cursor-pointer transition-all hover:scale-105 hover:shadow-md group`}
-            >
-              <div className="size-14 rounded-2xl bg-white shadow-sm mx-auto grid place-items-center text-2xl group-hover:scale-110 transition-transform">
-                {c.icon}
+              <h1 className="text-3xl md:text-5xl font-extrabold text-[#344e41] leading-tight tracking-tight">
+                {heroTitle}
+              </h1>
+              <p className="text-xs md:text-sm text-[#588157] leading-relaxed font-medium">
+                {heroSubtitle}
+              </p>
+              <div className="pt-3 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('sprout-grid');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-7 py-3.5 rounded-full text-white font-black text-xs shadow-md transition-transform hover:scale-105 flex items-center gap-2"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  <span>{heroBtnText}</span>
+                  <ArrowLeft className={`size-4 ${isEn ? 'rotate-180' : ''}`} />
+                </button>
               </div>
-              <h4 className="font-extrabold text-xs text-[#344e41]">{c.name}</h4>
-              <span className="text-[10px] text-[#588157] font-bold block">{c.count}</span>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* 5. Trust Features */}
+          </div>
+        </section>
+      )}
+
+      {/* 4. Category Title */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 mt-10">
-        <div className="bg-white rounded-3xl border border-[#ccd5ae] p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 shadow-sm">
-          <div className="flex items-center gap-3.5">
-            <div className="size-11 rounded-2xl bg-[#e9ece3] text-[#588157] grid place-items-center shrink-0">
-              <Leaf className="size-5" />
-            </div>
-            <div>
-              <h5 className="font-bold text-xs text-[#344e41]">أقمشة طبيعية آمنة</h5>
-              <p className="text-[11px] text-[#718260]">قطن صحي 100% مناسب للأطفال</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3.5">
-            <div className="size-11 rounded-2xl bg-[#e9ece3] text-[#588157] grid place-items-center shrink-0">
-              <Truck className="size-5" />
-            </div>
-            <div>
-              <h5 className="font-bold text-xs text-[#344e41]">شحن سريع للباب</h5>
-              <p className="text-[11px] text-[#718260]">تغطية شاملة لكل محافظات العراق</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3.5">
-            <div className="size-11 rounded-2xl bg-[#e9ece3] text-[#588157] grid place-items-center shrink-0">
-              <ShieldCheck className="size-5" />
-            </div>
-            <div>
-              <h5 className="font-bold text-xs text-[#344e41]">معاينة قبل الدفع</h5>
-              <p className="text-[11px] text-[#718260]">افحص قياس وجودة القطعة براحتك</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3.5">
-            <div className="size-11 rounded-2xl bg-[#e9ece3] text-[#588157] grid place-items-center shrink-0">
-              <HeartHandshake className="size-5" />
-            </div>
-            <div>
-              <h5 className="font-bold text-xs text-[#344e41]">ضمان الاستبدال</h5>
-              <p className="text-[11px] text-[#718260]">إمكانية تبديل المقاسات بكل سهولة</p>
-            </div>
-          </div>
+        <div className="text-center space-y-1 mb-8">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-[#344e41]">
+            {isEn ? 'Featured Baby & Kids Products' : 'أبرز المنتجات ومستلزمات الأطفال'}
+          </h2>
+          <p className="text-xs text-[#588157] font-medium">
+            {isEn ? 'Natural organic outfits, soft cuddle plushies and delicate dresses' : 'ملابس أطفال بروح الحديقة — زيتوني وعاجي وقطع مميزة'}
+          </p>
         </div>
       </section>
 
-      {/* 6. Products Catalog Grid */}
-      <section id="sprout-grid" className="max-w-7xl mx-auto px-4 md:px-8 mt-12 mb-16">
-        <div className="flex items-center justify-between mb-6 pb-3 border-b border-[#ccd5ae]">
-          <div>
-            <h3 className="font-extrabold text-2xl text-[#344e41]">أحدث التشكيلات المعروضة</h3>
-            <p className="text-xs text-[#588157] mt-0.5">منتجات عالية الجودة متوفرة للتوصيل الفوري</p>
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-md scrollbar-none">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => onSelectCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 border ${
-                  selectedCategory === cat
-                    ? 'bg-[#588157] text-white border-[#588157] shadow-sm'
-                    : 'bg-white text-[#344e41] border-[#ccd5ae] hover:border-[#588157]'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* 5. Products Grid */}
+      <section id="sprout-grid" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
+        <div className={`grid ${getColsClass()} gap-6`}>
           {filteredProducts.map((p) => (
             <div
               key={p.id}
-              className="bg-white rounded-3xl border border-[#ccd5ae] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1"
+              className="bg-white border border-[#e0ddcf] rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#588157] transition-all duration-300 flex flex-col justify-between group"
             >
               <div>
-                <div className="h-60 bg-[#f4efe6] relative overflow-hidden">
+                <div className="h-64 bg-[#f8f9f6] relative overflow-hidden flex items-center justify-center p-4">
                   <img
                     src={p.imageUrl || '/templates/store-classic.jpg'}
                     alt={p.name}
-                    className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="size-full object-contain group-hover:scale-105 transition-transform duration-500"
                   />
-                  <span className="absolute top-3 right-3 text-[10px] font-black bg-white/95 text-[#435135] px-3 py-1 rounded-full border border-[#ccd5ae] shadow-sm">
+                  {showDiscount && p.compareAtPrice && (
+                    <span className="absolute top-3 right-3 text-[10px] font-black bg-[#588157] text-white px-2.5 py-1 rounded-full shadow-sm">
+                      {isEn ? 'OFFER' : 'تخفيض'}
+                    </span>
+                  )}
+                  {showStock && (
+                    <span className="absolute bottom-3 left-3 text-[9px] font-black bg-white/90 text-[#344e41] px-2.5 py-0.5 rounded-full shadow-sm">
+                      {isEn ? 'Organic Cotton' : 'قطن طبيعي'}
+                    </span>
+                  )}
+                  <span className="absolute bottom-3 right-3 text-[10px] font-bold bg-[#344e41]/80 text-white px-2.5 py-0.5 rounded-full">
                     {p.category}
-                  </span>
-                  <span className="absolute top-3 left-3 text-[10px] font-black bg-[#588157] text-white px-2.5 py-0.5 rounded-full">
-                    شحن سريع
                   </span>
                 </div>
 
-                <div className="p-4 text-right space-y-1.5">
+                <div className="p-5 text-right space-y-1.5">
                   <h4 className="font-extrabold text-sm text-[#344e41] line-clamp-1 group-hover:text-[#588157] transition-colors">
                     {p.name}
                   </h4>
-                  <p className="text-xs text-[#718260] line-clamp-2 leading-relaxed">
-                    {p.description || 'قطعة أطفال راقية ومريحة مع خدمة الفحص عند الباب والدفع عند الاستلام.'}
+                  <p className="text-xs text-[#606c38] line-clamp-2 leading-relaxed">
+                    {p.description || 'قطعة أطفال فائقة النعومة من القطن الطبيعي مع فحص قبل الاستلام.'}
                   </p>
+
+                  {urgencyTicker && (
+                    <div className="pt-1 text-[10px] font-bold text-[#588157] flex items-center gap-1">
+                      <Sparkles className="size-3" />
+                      <span>{isEn ? 'Loved by parents • High comfort' : 'محبوب من الأمهات • راحة قصوى'}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="p-4 border-t border-[#e0ddcf] bg-[#fbfbf8] flex items-center justify-between">
+              <div className="p-5 border-t border-[#f0eee6] bg-[#faf9f6] flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-black font-mono text-[#435135] block">
+                  <span className="text-base font-black font-mono text-[#344e41] block">
                     {formatIQD(p.price)}
                   </span>
                   {p.compareAtPrice && (
-                    <span className="text-[11px] text-[#99a888] line-through font-mono">
+                    <span className="text-xs text-[#a3b18a] line-through font-mono">
                       {formatIQD(p.compareAtPrice)}
                     </span>
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => onQuickBuy(p)}
-                  className="px-4 py-2 rounded-full text-xs font-black bg-[#588157] hover:bg-[#435135] text-white shadow-md shadow-[#588157]/20 flex items-center gap-1.5 transition-all hover:scale-105"
-                >
-                  <span>شراء فوري</span>
-                  <ArrowLeft className="size-3.5" />
-                </button>
+                {enableQuick && (
+                  <button
+                    type="button"
+                    onClick={() => onQuickBuy(p)}
+                    className="px-4 py-2 rounded-full text-xs font-black text-white shadow-sm flex items-center gap-1 transition-all hover:scale-105"
+                    style={{ backgroundColor: brandColor }}
+                  >
+                    <span>{isEn ? 'Buy' : 'طلب'}</span>
+                    <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 7. Footer */}
-      <footer className="bg-[#435135] text-[#fefae0] text-xs py-12 px-4 border-t border-[#344e41]">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-right">
-          <div>
-            <h5 className="font-extrabold text-base text-white">{storeName}</h5>
-            <p className="text-xs text-[#ccd5ae] mt-1">المتجر المتخصص في مستلزمات وملابس الأطفال الآمنة في العراق.</p>
-          </div>
-          <div className="flex items-center gap-6 text-xs text-[#e9edc9]">
-            <span className="flex items-center gap-1.5"><Truck className="size-4 text-[#ccd5ae]" /> شحن 18 محافظة</span>
-            <span className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-[#ccd5ae]" /> معاينة قبل الاستلام</span>
-            <span className="flex items-center gap-1.5"><PhoneCall className="size-4 text-[#ccd5ae]" /> دعم متواصل</span>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-[#588157]/40 text-center text-[11px] text-[#ccd5ae]">
-          © {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة • مدعوم بواسطة منصة الزعيم
+      {/* 6. Footer */}
+      <footer className="bg-[#283618] text-[#dda15e] py-10 px-4 text-xs">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>{copyright}</p>
+          {showBadges && (
+            <div className="flex items-center gap-3 font-bold text-[#fefae0] text-xs">
+              <span className="px-2.5 py-1 rounded bg-white/10">دفع عند الاستلام</span>
+              <span className="px-2.5 py-1 rounded bg-white/10">شحن آمن مع شركة الزعيم</span>
+            </div>
+          )}
         </div>
       </footer>
+
+      {/* 7. WhatsApp Floating */}
+      {enableWa && (
+        <a
+          href={`https://wa.me/${waNumber.replace(/[^0-9]/g, '')}`}
+          target="_blank"
+          rel="noreferrer"
+          className="fixed bottom-6 left-6 z-40 size-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl grid place-items-center transition-transform hover:scale-110"
+        >
+          <MessageCircle className="size-6 fill-white" />
+        </a>
+      )}
+
+      {/* 8. Sticky Cart Bar */}
+      {enableStickyCart && cartCount > 0 && (
+        <div
+          className="fixed bottom-0 inset-x-0 text-white px-4 py-3 z-30 shadow-2xl flex items-center justify-between"
+          style={{ backgroundColor: brandColor }}
+        >
+          <div className="flex items-center gap-3">
+            <ShoppingBag className="size-4" />
+            <span className="text-xs font-bold">
+              {isEn ? `${cartCount} items in cart` : `لديك ${cartCount} قطع للأطفال في السلة`}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById('sprout-grid');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="px-4 py-1.5 rounded-full bg-white text-[#344e41] font-black text-xs hover:bg-[#f7f6f2] transition-colors"
+          >
+            {isEn ? 'Checkout' : 'إتمام الطلب'}
+          </button>
+        </div>
+      )}
 
     </div>
   );

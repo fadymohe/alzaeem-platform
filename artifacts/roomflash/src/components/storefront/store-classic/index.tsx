@@ -21,6 +21,7 @@ export interface ThemeComponentProps {
   onAddToCart?: (product: StoreProduct) => void;
   logoUrl?: string;
   storeCode?: string;
+  customization?: any;
 }
 
 /**
