@@ -5,7 +5,7 @@ import {
   Shirt, Smartphone, Sparkles, Grid, Check,
   ChevronLeft, ChevronRight, Upload, ExternalLink,
   Truck, Store, ShieldCheck, Eye, Wand2, RefreshCw,
-  CheckCircle2, AlertCircle, Tag, Package, Gift,
+  CheckCircle2, AlertCircle, Tag, Package, Gift, Plus,
   CheckCheck, Globe, Star, Copy, ShoppingBag,
   X, Search, ShoppingCart, Shield, Laptop, RotateCcw,
   SlidersHorizontal, Heart, Zap, Phone, MapPin, CheckCircle
