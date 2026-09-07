@@ -307,6 +307,7 @@ export function StorePage() {
       // 2. Neon PostgreSQL update
       await updateCloudStoreFullSettings({
         subdomain: cleanSub,
+        previousSubdomain: subdomain,
         name: cleanName,
         templateId: activeTemplate,
         font: storeFont,

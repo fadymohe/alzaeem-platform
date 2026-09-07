@@ -135,6 +135,7 @@ export function SettingsPage() {
       // 1. Save to cloud PostgreSQL server
       await updateCloudStoreFullSettings({
         subdomain: cleanSub,
+        previousSubdomain: originalSubdomain,
         name: storeName.trim(),
         isActive: isSubdomainActive,
       });
@@ -156,7 +157,7 @@ export function SettingsPage() {
       await updateStoreActiveStatus(cleanSub, isSubdomainActive);
       window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
 
-      showToast('تم حفظ بيانات المتجر ورفعها على السيرفر المركزي بنجاح ✅');
+      showToast('تم حفظ بيانات المتجر وتحديث النطاق بنجاح ✅');
     } catch (err) {
       console.warn('Error saving store info:', err);
       showToast('تم حفظ البيانات محلياً بنجاح ✅');

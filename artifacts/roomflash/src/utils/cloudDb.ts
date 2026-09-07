@@ -671,6 +671,7 @@ export async function deleteCloudLandingPage(idOrSlug: string | number, subdomai
  */
 export async function updateCloudStoreFullSettings(settings: {
   subdomain: string;
+  previousSubdomain?: string;
   name?: string;
   templateId?: string;
   font?: string;
@@ -680,9 +681,13 @@ export async function updateCloudStoreFullSettings(settings: {
 }): Promise<boolean> {
   try {
     const cleanSub = (settings.subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+    const cleanPrevSub = (settings.previousSubdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
     if (!cleanSub) return false;
 
     const updates: string[] = [];
+    if (cleanPrevSub && cleanPrevSub !== cleanSub) {
+      updates.push(`subdomain = '${cleanSub}'`);
+    }
     if (settings.name) updates.push(`name = '${settings.name.replace(/'/g, "''")}'`);
     if (settings.templateId) updates.push(`template_id = '${settings.templateId.replace(/'/g, "''")}'`);
     if (settings.font) updates.push(`font = '${settings.font.replace(/'/g, "''")}'`);
@@ -690,10 +695,38 @@ export async function updateCloudStoreFullSettings(settings: {
     if (settings.paymentMethods) updates.push(`payment_methods = '${JSON.stringify(settings.paymentMethods).replace(/'/g, "''")}'::jsonb`);
     if (typeof settings.isActive === 'boolean') updates.push(`is_active = ${settings.isActive ? 'TRUE' : 'FALSE'}`);
 
-    if (updates.length === 0) return true;
+    const targetSub = cleanPrevSub && cleanPrevSub !== cleanSub ? cleanPrevSub : cleanSub;
+    let query = `UPDATE za3em_stores SET ${updates.join(', ')} WHERE subdomain = '${targetSub}' RETURNING id;`;
+    let res = await executeSql(query);
 
-    const query = `UPDATE za3em_stores SET ${updates.join(', ')} WHERE subdomain = '${cleanSub}';`;
-    const res = await executeSql(query);
+    // If subdomain was renamed, also migrate landing pages and shipments
+    if (cleanPrevSub && cleanPrevSub !== cleanSub) {
+      await executeSql(`UPDATE za3em_landing_pages SET subdomain = '${cleanSub}' WHERE subdomain = '${cleanPrevSub}';`).catch(() => {});
+      await executeSql(`UPDATE za3em_shipments SET subdomain = '${cleanSub}' WHERE subdomain = '${cleanPrevSub}';`).catch(() => {});
+    }
+
+    // If no row was updated, insert store as new row
+    if (!res || !Array.isArray(res.rows) || res.rows.length === 0) {
+      const nameEsc = (settings.name || `متجر ${cleanSub}`).replace(/'/g, "''");
+      const tplEsc = (settings.templateId || 'store-classic').replace(/'/g, "''");
+      const isAct = settings.isActive !== false ? 'TRUE' : 'FALSE';
+      const catJson = JSON.stringify(settings.categories || ['عام']).replace(/'/g, "''");
+      const payJson = JSON.stringify(settings.paymentMethods || { cod: true }).replace(/'/g, "''");
+      
+      const insertQuery = `
+        INSERT INTO za3em_stores (name, subdomain, template_id, is_active, categories, payment_methods)
+        VALUES ('${nameEsc}', '${cleanSub}', '${tplEsc}', ${isAct}, '${catJson}'::jsonb, '${payJson}'::jsonb)
+        ON CONFLICT (subdomain) DO UPDATE
+        SET name = EXCLUDED.name,
+            template_id = EXCLUDED.template_id,
+            is_active = EXCLUDED.is_active,
+            categories = EXCLUDED.categories,
+            payment_methods = EXCLUDED.payment_methods
+        RETURNING id;
+      `;
+      res = await executeSql(insertQuery);
+    }
+
     return Boolean(res && !res.error);
   } catch (err) {
     console.warn('[CloudDb] Error updating store full settings:', err);
