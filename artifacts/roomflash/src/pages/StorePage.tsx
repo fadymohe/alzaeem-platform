@@ -1,151 +1,53 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import React, { useState, useEffect, type FormEvent } from 'react';
+import { useLocation } from 'wouter';
 import {
   Store as StoreIcon, ExternalLink, Copy, Check, Sparkles, Globe,
   Layers, Eye, RefreshCw, Zap, CheckCircle2, Palette, Save, ArrowLeft,
   ArrowUpRight, ShieldCheck, Box, Truck, Package, Plus, Trash2, Edit2,
   Smartphone, Monitor, CreditCard, DollarSign, Wallet, CheckSquare,
-  Type, Lock, Crown, Tag, X
+  Type, Lock, Crown, Tag, X, Search, Sliders, Play, Settings
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
-import { StoreTemplates, type TemplateId, TEMPLATES_MAP, isMerchantPro } from '../components/storefront/StoreTemplates';
+import {
+  StoreTemplates, type TemplateId, TEMPLATES_MAP, isMerchantPro, normalizeTemplateId, type TemplateConfig
+} from '../components/storefront/StoreTemplates';
 import { getStoredOrders, getStoredProducts } from '../data/storeState';
 import { getRegisteredStore, type RegisteredStoreData, updateStoreActiveStatus } from '../utils/storeRegistry';
 import { updateCloudStoreFullSettings, fetchCloudStore } from '../utils/cloudDb';
 import { LandingPageBuilderPage } from './LandingPageBuilder';
 
-export interface ExtendedTemplateConfig {
-  id: TemplateId;
-  name: string;
-  nameEn: string;
-  niche: string;
-  badge: string;
-  image: string;
-  isPro: boolean;
-  colorDot: string;
-}
-
-export const ALL_STORE_TEMPLATES: Record<string, ExtendedTemplateConfig> = {
-  'store-classic': {
-    id: 'store-classic' as TemplateId,
-    name: 'كلاسيك الفاخر',
-    nameEn: 'Store Classic',
-    niche: 'عطور ومقتنيات فاخرة وتراثية',
-    badge: 'ثيم كلاسيكي عربي',
-    image: '/templates/store-classic.jpg',
-    isPro: false,
-    colorDot: 'bg-amber-500'
-  },
-  'store-aurit': {
-    id: 'store-aurit' as TemplateId,
-    name: 'أوريت بوتيك',
-    nameEn: 'Store Aurit',
-    niche: 'أزياء عصرية ومستلزمات حياة يومية',
-    badge: 'بوتيك عصري',
-    image: '/templates/store-aurit.jpg',
-    isPro: false,
-    colorDot: 'bg-teal-400'
-  },
-  'store-nova': {
-    id: 'store-nova' as TemplateId,
-    name: 'نوفا الملكي',
-    nameEn: 'Store Nova',
-    niche: 'مستحضرات تجميل وأزياء نسائية راقية',
-    badge: 'تصميم أوروبي فاخر',
-    image: '/templates/store-nova.jpg',
-    isPro: false,
-    colorDot: 'bg-purple-400'
-  },
-  'store-brick': {
-    id: 'store-brick' as TemplateId,
-    name: 'بريك إندستريال',
-    nameEn: 'Store Brick',
-    niche: 'معدات وأدوات قوية وإلكترونيات صناعية',
-    badge: 'قوة وتحمل عالي',
-    image: '/templates/store-brick.jpg',
-    isPro: true,
-    colorDot: 'bg-orange-500'
-  },
-  'store-novatrend': {
-    id: 'store-novatrend' as TemplateId,
-    name: 'نوفا تريند',
-    nameEn: 'Store NovaTrend',
-    niche: 'تريندات شبابية وموضة الشارع العصرية',
-    badge: 'تريند شبابي',
-    image: '/templates/store-novatrend.png',
-    isPro: true,
-    colorDot: 'bg-pink-500'
-  },
-  'store-gizmo': {
-    id: 'store-gizmo' as TemplateId,
-    name: 'جيزمو سايبر تك',
-    nameEn: 'Store Gizmo',
-    niche: 'إلكترونيات وأجهزة ذكية وملحقات تقنية',
-    badge: 'سايبر تك متطور',
-    image: '/templates/store-gizmo.png',
-    isPro: true,
-    colorDot: 'bg-cyan-400'
-  },
-  'store-sneak': {
-    id: 'store-sneak' as TemplateId,
-    name: 'سنيك سبورت',
-    nameEn: 'Store Sneak',
-    niche: 'سنيكرز وملابس رياضية حيوية',
-    badge: 'رياضة وحيوية',
-    image: '/templates/store-sneak.png',
-    isPro: true,
-    colorDot: 'bg-red-500'
-  },
-  'store-nexora': {
-    id: 'store-nexora' as TemplateId,
-    name: 'نيكسورا الملكي',
-    nameEn: 'Store Nexora',
-    niche: 'فخامة مطلقة وأجهزة ذكية وإكسسوارات VIP',
-    badge: 'فخامة VIP',
-    image: '/templates/store-nexora.png',
-    isPro: true,
-    colorDot: 'bg-indigo-500'
-  }
-};
-
-export const STORE_FONTS = [
-  { id: 'Tajawal', name: 'تجوال (Tajawal)', fontClass: 'font-tajawal', desc: 'خط عصري متوازن، ممتاز للعناوين والأرقام' },
-  { id: 'Cairo', name: 'كايرو (Cairo)', fontClass: 'font-cairo', desc: 'خط جريء وشائع جداً في المتاجر العراقية' },
-  { id: 'IBM Plex Sans Arabic', name: 'آي بي إم (IBM Plex Arabic)', fontClass: 'font-ibm', desc: 'خط رسمي عالي الوضوح والاحترافية' },
-  { id: 'Almarai', name: 'المراعي (Almarai)', fontClass: 'font-almarai', desc: 'خط ناعم ومريح لعين الزبون في التصفح' },
-  { id: 'Alexandria', name: 'الإسكندرية (Alexandria)', fontClass: 'font-alexandria', desc: 'خط هندسي فائق الأناقة والحداثة' },
-  { id: 'Amiri', name: 'الأميري (Amiri)', fontClass: 'font-amiri', desc: 'خط عربي كلاسيكي فاخر للعطور والذهب' },
-];
-
 export function StorePage() {
+  const [, setLocation] = useLocation();
+
   const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
   const [saveSuccessAlert, setSaveSuccessAlert] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Main section tabs: إعدادات المتجر vs صفحات الهبوط
-  const [activeMainTab, setActiveMainTab] = useState<'store' | 'landing'>(() => {
-    const hash = typeof window !== 'undefined' ? window.location.hash || '' : '';
-    return hash.includes('tab=landing') || hash.includes('/landing-page') ? 'landing' : 'store';
-  });
+  // Main section tabs: ثيمات المتجر vs إعدادات الدومين والخط vs صفحات الهبوط
+  const [activeMainTab, setActiveMainTab] = useState<'themes' | 'settings' | 'landing'>('themes');
 
   // 1. Basic Store Info & Subdomain
-  const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
+  const [storeName, setStoreName] = useState('متجر الزعيم');
   const [subdomainInput, setSubdomainInput] = useState('alzaeem');
   const [subdomain, setSubdomain] = useState('alzaeem');
   const [isStoreActive, setIsStoreActive] = useState<boolean>(true);
-  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('store-classic');
-  const [templateFilter, setTemplateFilter] = useState<'all' | 'free' | 'pro'>('all');
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('store-sprout');
+  const [themeSearch, setThemeSearch] = useState('');
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState('الكل');
+
+  // Pro Upgrade Warning Modal
   const [showProUpgradeModal, setShowProUpgradeModal] = useState(false);
-  const [attemptedProTheme, setAttemptedProTheme] = useState<ExtendedTemplateConfig | null>(null);
+  const [attemptedProTheme, setAttemptedProTheme] = useState<TemplateConfig | null>(null);
+
+  // Live Preview Modal for themes
+  const [previewThemeModal, setPreviewThemeModal] = useState<TemplateConfig | null>(null);
 
   // 2. Store Font & Typography
   const [storeFont, setStoreFont] = useState<string>('Tajawal');
 
   // 3. Store Categories / Sections
-  const [categories, setCategories] = useState<string[]>(['عام', 'عطور فاخرة', 'إلكترونيات', 'ساعات']);
+  const [categories, setCategories] = useState<string[]>(['عام', 'عطور فاخرة', 'إلكترونيات', 'أزياء']);
   const [newCategoryInput, setNewCategoryInput] = useState('');
-  const [editingCategoryIdx, setEditingCategoryIdx] = useState<number | null>(null);
-  const [editingCategoryVal, setEditingCategoryVal] = useState('');
 
   // 4. Payment Options
   const [paymentMethods, setPaymentMethods] = useState({
@@ -156,11 +58,6 @@ export function StorePage() {
     asiaHawala: false,
     asiaHawalaPhone: '07701234567',
   });
-
-  // 5. Live Preview States
-  const [showLivePreview, setShowLivePreview] = useState(true);
-  const [previewViewport, setPreviewViewport] = useState<'desktop' | 'mobile'>('desktop');
-  const [storeData, setStoreData] = useState<RegisteredStoreData | null>(null);
 
   // Load from local storage & database
   useEffect(() => {
@@ -185,15 +82,13 @@ export function StorePage() {
         setSubdomain(cleanSub);
         setSubdomainInput(cleanSub);
 
-        if (parsed.selectedTheme) setActiveTemplate(parsed.selectedTheme as TemplateId);
-        else if (parsed.templateId) setActiveTemplate(parsed.templateId as TemplateId);
+        if (parsed.selectedTheme) setActiveTemplate(normalizeTemplateId(parsed.selectedTheme));
+        else if (parsed.templateId) setActiveTemplate(normalizeTemplateId(parsed.templateId));
 
         if (parsed.font) setStoreFont(parsed.font);
         if (Array.isArray(parsed.categories) && parsed.categories.length > 0) setCategories(parsed.categories);
         if (parsed.paymentMethods) setPaymentMethods(prev => ({ ...prev, ...parsed.paymentMethods }));
         if (typeof parsed.isActive === 'boolean') setIsStoreActive(parsed.isActive);
-
-        setStoreData(parsed);
       } else if (parsedUser) {
         if (parsedUser.storeName) setStoreName(parsedUser.storeName);
         if (parsedUser.subdomain) {
@@ -207,11 +102,10 @@ export function StorePage() {
       if (activeVal !== null) setIsStoreActive(activeVal !== 'false');
     } catch (e) {}
 
-    // Also attempt to fetch latest server data
     fetchCloudStore(subdomain).then(record => {
       if (record) {
         if (record.name) setStoreName(record.name);
-        if (record.template_id) setActiveTemplate(record.template_id as TemplateId);
+        if (record.template_id) setActiveTemplate(normalizeTemplateId(record.template_id));
         if (Array.isArray(record.categories) && record.categories.length > 0) setCategories(record.categories);
         if (typeof record.is_active === 'boolean') setIsStoreActive(record.is_active);
       }
@@ -220,7 +114,6 @@ export function StorePage() {
 
   const fullDomain = `${subdomain}.za3em.shop`;
   const fullUrl = `https://${fullDomain}`;
-  const directHashUrl = `/#/store/${subdomain}`;
 
   // Toggle store active state
   const handleToggleStoreActive = async () => {
@@ -237,39 +130,35 @@ export function StorePage() {
     } catch {}
   };
 
-  // Add Category
-  const handleAddCategory = () => {
-    const cat = newCategoryInput.trim();
-    if (!cat) return;
-    if (categories.includes(cat)) {
-      alert('هذا القسم موجود بالفعل في متجرك.');
+  // Switch Active Theme
+  const handleApplyTheme = async (themeConfig: TemplateConfig) => {
+    if (themeConfig.isPro && !isMerchantPro()) {
+      setAttemptedProTheme(themeConfig);
+      setShowProUpgradeModal(true);
       return;
     }
-    setCategories([...categories, cat]);
-    setNewCategoryInput('');
+
+    setActiveTemplate(themeConfig.id);
+    try {
+      const raw = localStorage.getItem('zaeem_store_data') || '{}';
+      const parsed = JSON.parse(raw);
+      parsed.selectedTheme = themeConfig.id;
+      parsed.templateId = themeConfig.id;
+      localStorage.setItem('zaeem_store_data', JSON.stringify(parsed));
+      window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
+
+      await updateCloudStoreFullSettings({
+        subdomain,
+        templateId: themeConfig.id
+      });
+
+      setSaveSuccessAlert(true);
+      setTimeout(() => setSaveSuccessAlert(false), 3500);
+    } catch {}
   };
 
-  // Edit Category
-  const handleSaveEditCategory = (index: number) => {
-    if (!editingCategoryVal.trim()) return;
-    const updated = [...categories];
-    updated[index] = editingCategoryVal.trim();
-    setCategories(updated);
-    setEditingCategoryIdx(null);
-    setEditingCategoryVal('');
-  };
-
-  // Delete Category
-  const handleDeleteCategory = (index: number) => {
-    if (categories.length <= 1) {
-      alert('يجب الإبقاء على قسم واحد على الأقل في متجرك.');
-      return;
-    }
-    setCategories(categories.filter((_, i) => i !== index));
-  };
-
-  // Save All Changes (Subdomain, Name, Theme, Font, Categories, Payments)
-  const handleSaveAllChanges = async (e?: FormEvent) => {
+  // Save Settings
+  const handleSaveSettings = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     setIsSaving(true);
 
@@ -280,7 +169,6 @@ export function StorePage() {
     setStoreName(cleanName);
 
     try {
-      // 1. Local Storage update
       const stored = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store') || '{}';
       const parsed = JSON.parse(stored);
       parsed.selectedTheme = activeTemplate;
@@ -304,7 +192,6 @@ export function StorePage() {
         localStorage.setItem('zaeem_user', JSON.stringify(u));
       }
 
-      // 2. Neon PostgreSQL update
       await updateCloudStoreFullSettings({
         subdomain: cleanSub,
         previousSubdomain: subdomain,
@@ -316,7 +203,6 @@ export function StorePage() {
         isActive: isStoreActive
       });
 
-      // 3. Dispatch global sync event
       window.dispatchEvent(new CustomEvent('zaeem_store_updated'));
       setSaveSuccessAlert(true);
       setTimeout(() => setSaveSuccessAlert(false), 4000);
@@ -333,82 +219,64 @@ export function StorePage() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const storeProducts = getStoredProducts();
-  const storeCode = storeData?.storeCode || `ZAEEM-${subdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const currentActiveThemeConfig = TEMPLATES_MAP[activeTemplate] || TEMPLATES_MAP['store-sprout'] || TEMPLATES_MAP['store-classic'];
 
-  // Filtered Templates
-  const templateEntries = Object.entries(ALL_STORE_TEMPLATES).filter(([_, tpl]) => {
-    if (templateFilter === 'free') return !tpl.isPro;
-    if (templateFilter === 'pro') return tpl.isPro;
-    return true;
+  // Categories list for theme filtering
+  const categoryFilters = ['الكل', 'أزياء', 'تجميل', 'أطعمة', 'إلكترونيات', 'منزل', 'أطفال'];
+
+  const themeList = Object.values(TEMPLATES_MAP).filter(t => {
+    const matchSearch = t.name.toLowerCase().includes(themeSearch.toLowerCase()) ||
+      t.nameEn.toLowerCase().includes(themeSearch.toLowerCase()) ||
+      t.niche.toLowerCase().includes(themeSearch.toLowerCase());
+
+    const matchCategory = selectedCategoryTab === 'الكل' ||
+      t.categoryTag.includes(selectedCategoryTab) ||
+      (selectedCategoryTab === 'أزياء' && t.categoryTag.includes('أزياء')) ||
+      (selectedCategoryTab === 'تجميل' && t.categoryTag.includes('تجميل')) ||
+      (selectedCategoryTab === 'إلكترونيات' && t.categoryTag.includes('إلكترونيات')) ||
+      (selectedCategoryTab === 'منزل' && t.categoryTag.includes('منزل')) ||
+      (selectedCategoryTab === 'أطفال' && t.categoryTag.includes('أطفال'));
+
+    return matchSearch && matchCategory;
   });
 
   return (
-    <div className="space-y-7 rf-appear">
-      {/* Top Title Bar */}
+    <div className="space-y-7 rf-appear" dir="rtl">
+      
+      {/* 1. Header Bar with Direct Link to Theme Customizer */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-teal-700 dark:text-teal-400 mb-1">
-            <StoreIcon className="size-4" /> المتجر الإلكتروني
+            <StoreIcon className="size-4" /> قنوات البيع • المتجر الإلكتروني
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5 flex-wrap">
-            <span>إدارة وتخصيص المتجر الإلكتروني</span>
+            <span>تصاميم وقوالب المتجر الإلكتروني</span>
             <span className="text-xs font-mono font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 px-3.5 py-1 rounded-full border border-teal-300/50 flex items-center gap-1.5 dir-ltr">
               <span className={`size-2 rounded-full ${isStoreActive ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`} />
               {fullDomain}
             </span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            خصص الدومين الفرعي، الثيمات المجانية والمدفوعة، خط المتجر، حالة النشاط، الأقسام وخيارات الدفع مع حفظ فوري.
+            تصاميم كاملة جاهزة لمتجرك بالكامل. عاين الثيم مباشرةً، وطبّقه بنقرة واحدة، ثم خصصه في المحرّر المرئي.
           </p>
         </div>
 
-        {/* Quick Action Buttons */}
+        {/* Top Action Buttons */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* حالة المتجر (نشط / معطل) */}
-          <div className="flex items-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl shadow-sm">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1.5 ${
-              isStoreActive
-                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                : 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'
-            }`}>
-              <span className={`size-1.5 rounded-full ${isStoreActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-              {isStoreActive ? 'الموقع نشط' : 'الموقع معطل'}
-            </span>
-
-            <button
-              type="button"
-              dir="ltr"
-              onClick={handleToggleStoreActive}
-              className={`relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-300 ease-in-out focus:outline-none ${
-                isStoreActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-              role="switch"
-              aria-checked={isStoreActive}
-              title={isStoreActive ? 'اضغط لتعطيل المتجر مؤقتاً' : 'اضغط لتنشيط المتجر'}
-            >
-              <span
-                className={`pointer-events-none block size-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out ${
-                  isStoreActive ? 'translate-x-6' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
           <button
             type="button"
-            onClick={copyStoreLink}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-teal-700 dark:text-teal-300 hover:bg-teal-50 flex items-center gap-1.5 shadow-sm transition-colors"
+            onClick={() => setLocation('/theme-customizer')}
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-2 transition-transform hover:scale-105"
           >
-            {copiedLink ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
-            <span>{copiedLink ? 'تم نسخ الرابط' : 'نسخ الرابط'}</span>
+            <Sliders className="size-4" />
+            <span>محرر وتخصيص الثيم (Theme Customizer)</span>
           </button>
 
           <a
             href={fullUrl}
             target="_blank"
             rel="noreferrer"
-            className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+            className="px-4 py-2.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all"
           >
             <span>زيارة المتجر الحي</span>
             <ExternalLink className="size-3.5" />
@@ -420,703 +288,468 @@ export function StorePage() {
       {saveSuccessAlert && (
         <div className="p-4 rounded-2xl bg-emerald-950/90 border border-emerald-500/60 text-xs font-bold text-emerald-200 flex items-center gap-2.5 animate-bounce shadow-lg">
           <CheckCircle2 className="size-5 text-emerald-400 shrink-0" />
-          <span>تم حفظ كافة تعديلات المتجر، الدومين الفرعي، الثيم المختار، الخط والأقسام وطرق الدفع بنجاح في السيرفر! ✅</span>
+          <span>تم تطبيق القالب وحفظ إعدادات المتجر بنجاح على الدومين ({fullDomain})! ✅</span>
         </div>
       )}
 
-      {/* 🌟 تبويبات قسم المتجر وصفحات الهبوط */}
-      <div className="flex items-center gap-2.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700/80 w-full sm:w-auto">
+      {/* 2. Top Navigation Tabs (معرض الثيمات / إعدادات الدومين / صفحات الهبوط) */}
+      <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700/80 w-full sm:w-auto overflow-x-auto">
         <button
           type="button"
-          onClick={() => setActiveMainTab('store')}
-          className={`px-6 py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer flex-1 sm:flex-none ${
-            activeMainTab === 'store'
-              ? 'bg-teal-700 text-white shadow-md shadow-teal-700/25 scale-102'
-              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60'
+          onClick={() => setActiveMainTab('themes')}
+          className={`px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeMainTab === 'themes'
+              ? 'bg-teal-700 text-white shadow-md'
+              : 'text-slate-600 dark:text-slate-300 hover:text-white'
           }`}
         >
-          <StoreIcon className="size-4" />
-          <span>أولاً: إعدادات المتجر الإلكتروني والثيمات</span>
+          <Palette className="size-4" />
+          <span>معرض الثيمات الجاهزة</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('settings')}
+          className={`px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeMainTab === 'settings'
+              ? 'bg-teal-700 text-white shadow-md'
+              : 'text-slate-600 dark:text-slate-300 hover:text-white'
+          }`}
+        >
+          <Settings className="size-4" />
+          <span>إعدادات الدومين والخط والدفع</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveMainTab('landing')}
-          className={`px-6 py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer flex-1 sm:flex-none ${
+          className={`px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
             activeMainTab === 'landing'
-              ? 'bg-teal-700 text-white shadow-md shadow-teal-700/25 scale-102'
-              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60'
+              ? 'bg-teal-700 text-white shadow-md'
+              : 'text-slate-600 dark:text-slate-300 hover:text-white'
           }`}
         >
           <Sparkles className="size-4 text-amber-400" />
-          <span>ثانياً: قسم صفحة الهبوط (Landing Pages)</span>
+          <span>صفحات الهبوط (Landing Pages)</span>
         </button>
       </div>
 
-      {activeMainTab === 'landing' ? (
-        <LandingPageBuilderPage />
-      ) : (
-        <>
-          {/* Main Form & Configuration Panel */}
-          <form onSubmit={handleSaveAllChanges} className="space-y-6">
-        {/* ========================================================================= */}
-        {/* 1. اسم المتجر والدومين الفرعي                                           */}
-        {/* ========================================================================= */}
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
-                <Globe className="size-5" />
-              </span>
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  الدومين الفرعي واسم المتجر
+      {/* ========================================================================= */}
+      {/* VIEW 1: معرض الثيمات (Matching Baseet Screenshots 2, 3, 4, 5)             */}
+      {/* ========================================================================= */}
+      {activeMainTab === 'themes' && (
+        <div className="space-y-8 animate-fadeIn">
+          
+          {/* Active Applied Theme Card (Matching Screenshot 2) */}
+          <div className="rounded-3xl border border-teal-500/40 bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white p-6 md:p-8 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+              <div className="space-y-3 text-right">
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3.5 text-emerald-400" />
+                    الثيم الحالي المفعل
+                  </span>
+                  <span className="text-xs font-mono text-slate-400">{currentActiveThemeConfig.nameEn}</span>
+                </div>
+
+                <h2 className="text-2xl md:text-3xl font-black text-white">
+                  ثيم {currentActiveThemeConfig.name}
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  رابط متجرك الحصري المباشر على منصة الزعيم.
+
+                <p className="text-xs md:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                  {currentActiveThemeConfig.description}
                 </p>
+
+                <div className="pt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setLocation('/theme-customizer')}
+                    className="px-6 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs shadow-lg flex items-center gap-2 transition-transform hover:scale-105"
+                  >
+                    <Sliders className="size-4 text-teal-700" />
+                    <span>خصص هذا الثيم</span>
+                  </button>
+
+                  <a
+                    href={fullUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>معاينة على ({fullDomain})</span>
+                    <ExternalLink className="size-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Thumbnail of active theme */}
+              <div className="w-56 h-36 rounded-2xl overflow-hidden border-2 border-teal-500/50 shadow-2xl shrink-0 hidden sm:block">
+                <img
+                  src={currentActiveThemeConfig.image}
+                  alt={currentActiveThemeConfig.name}
+                  className="size-full object-cover"
+                />
               </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-5 py-2.5 bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
-            >
-              {isSaving ? <RefreshCw className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              <span>حفظ التعديلات</span>
-            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* اسم المتجر */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                اسم المتجر المختار <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-3.5 focus-within:border-teal-600 transition-colors">
-                <StoreIcon className="size-4 text-slate-400 shrink-0 ml-1.5" />
+          {/* Category Filter Pills & Search Input (Matching Screenshot 2) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            {/* Category Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full w-full sm:w-auto">
+              {categoryFilters.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategoryTab(cat)}
+                  className={`px-4 py-2 rounded-full text-xs font-black transition-all border shrink-0 ${
+                    selectedCategoryTab === cat
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-sm'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute right-3.5 top-2.5 size-4 text-slate-400" />
+              <input
+                type="text"
+                value={themeSearch}
+                onChange={(e) => setThemeSearch(e.target.value)}
+                placeholder="ابحث عن ثيم بالاسم أو النشاط..."
+                className="w-full h-10 pr-10 pl-4 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-teal-500 shadow-sm"
+              />
+            </div>
+          </div>
+
+          {/* Themes Showcase Grid (Dual Desktop+Mobile Mockup Frames matching Screenshots 3, 4, 5) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {themeList.map((t) => {
+              const isCurrent = activeTemplate === t.id;
+
+              return (
+                <div
+                  key={t.id}
+                  className={`rounded-3xl border bg-white dark:bg-slate-900 p-6 shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group ${
+                    isCurrent
+                      ? 'border-teal-500 ring-2 ring-teal-500/20'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700'
+                  }`}
+                >
+                  <div>
+                    {/* Dual Mockup Frame (Desktop + Mobile in frame matching Screenshots 3, 4, 5) */}
+                    <div className="rounded-2xl overflow-hidden bg-slate-950 p-4 border border-slate-800 relative shadow-inner min-h-[260px] flex items-center justify-center">
+                      
+                      {/* Live Preview / Applied Badge */}
+                      <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
+                        {isCurrent ? (
+                          <span className="px-3 py-1 rounded-full text-[10px] font-black bg-emerald-500 text-slate-950 shadow-md flex items-center gap-1">
+                            <CheckCircle2 className="size-3" /> مُطبّق
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewThemeModal(t)}
+                            className="px-3 py-1 rounded-full text-[10px] font-black bg-slate-900/90 text-emerald-400 border border-emerald-500/40 shadow-md flex items-center gap-1 hover:bg-emerald-500 hover:text-slate-950 transition-colors"
+                          >
+                            <span className="size-1.5 rounded-full bg-emerald-400 animate-ping" />
+                            <span>عرض مباشر</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Desktop Preview Frame */}
+                      <div className="w-full h-48 rounded-xl overflow-hidden relative shadow-2xl border border-slate-700">
+                        <img
+                          src={t.image}
+                          alt={t.name}
+                          className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                        
+                        {/* Domain Tag overlay */}
+                        <div className="absolute bottom-2 left-3 text-[10px] font-mono font-bold text-slate-300 bg-slate-950/80 px-2.5 py-0.5 rounded border border-white/10">
+                          {t.nameEn.toLowerCase().replace(/[^a-z0-9]/g, '')}.za3em.shop
+                        </div>
+                      </div>
+
+                      {/* Mobile floating mockup thumbnail */}
+                      <div className="absolute -bottom-2 right-4 w-24 h-40 rounded-2xl overflow-hidden border-2 border-slate-750 shadow-2xl bg-black hidden sm:block rotate-[-3deg] group-hover:rotate-0 transition-transform">
+                        <img
+                          src={t.image}
+                          alt={t.name}
+                          className="size-full object-cover"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Palette Dots & Tag */}
+                    <div className="mt-5 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        {t.palette.map((c, i) => (
+                          <span
+                            key={i}
+                            className="size-3 rounded-full border border-black/10 shadow-sm"
+                            style={{ backgroundColor: c }}
+                          />
+                        ))}
+                      </div>
+
+                      <span className="text-[11px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">
+                        {t.categoryTag}
+                      </span>
+                    </div>
+
+                    {/* Theme Names & Description */}
+                    <div className="mt-3 space-y-1.5 text-right">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-extrabold text-lg text-slate-900 dark:text-white">
+                          {t.name}
+                        </h3>
+                        <span className="text-xs font-mono font-bold text-slate-400">{t.nameEn}</span>
+                      </div>
+
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        {t.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons (استخدم الثيم / جرب على متجرك / تخصيص) */}
+                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleApplyTheme(t)}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-sm ${
+                        isCurrent
+                          ? 'bg-emerald-600 text-white shadow-emerald-600/20'
+                          : 'bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900'
+                      }`}
+                    >
+                      {isCurrent ? (
+                        <>
+                          <Check className="size-3.5" />
+                          <span>المفعل على متجرك</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>استخدم {t.name}</span>
+                          <ArrowLeft className="size-3.5" />
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPreviewThemeModal(t)}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors flex items-center gap-1.5"
+                    >
+                      <Eye className="size-3.5 text-teal-600" />
+                      <span>جرّب على متجرك</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleApplyTheme(t);
+                        setLocation('/theme-customizer');
+                      }}
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
+                      title="فتح في محرر الثيمات"
+                    >
+                      <Sliders className="size-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* VIEW 2: إعدادات الدومين والخط والدفع (Settings Panel)                     */}
+      {/* ========================================================================= */}
+      {activeMainTab === 'settings' && (
+        <form onSubmit={handleSaveSettings} className="space-y-6 animate-fadeIn">
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <span className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
+                  <Globe className="size-5" />
+                </span>
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    الدومين الفرعي واسم المتجر
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    رابط متجرك الحصري المباشر على منصة الزعيم.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-5 py-2.5 bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+              >
+                {isSaving ? <RefreshCw className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+                <span>حفظ التعديلات</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  اسم المتجر <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
-                  placeholder="مثال: متجر الزعيم للإلكترونيات"
-                  className="flex-1 h-11 bg-transparent text-sm font-bold text-slate-900 dark:text-white outline-none"
+                  className="w-full h-11 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-teal-500"
                 />
               </div>
-            </div>
 
-            {/* الدومين الفرعي */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                الدومين الفرعي المحجوز (Subdomain) <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-3.5 focus-within:border-teal-600 overflow-hidden transition-colors">
-                <span className="text-xs font-mono text-slate-400 select-none ml-1">https://</span>
-                <input
-                  type="text"
-                  required
-                  value={subdomainInput}
-                  onChange={(e) => setSubdomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  placeholder="alzaeem"
-                  dir="ltr"
-                  className="flex-1 h-11 bg-transparent text-sm font-mono font-bold text-teal-700 dark:text-teal-400 outline-none text-right"
-                />
-                <span className="text-xs font-mono font-bold text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-teal-950 px-2.5 py-1 rounded-lg select-none mr-1.5">
-                  .za3em.shop
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  الدومين الفرعي (Subdomain) <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-3.5 overflow-hidden">
+                  <span className="text-xs font-mono text-slate-400 select-none ml-1">https://</span>
+                  <input
+                    type="text"
+                    required
+                    value={subdomainInput}
+                    onChange={(e) => setSubdomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    dir="ltr"
+                    className="flex-1 h-11 bg-transparent text-sm font-mono font-bold text-teal-700 dark:text-teal-400 outline-none text-right"
+                  />
+                  <span className="text-xs font-mono font-bold text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-teal-950 px-2.5 py-1 rounded-lg select-none mr-1.5">
+                    .za3em.shop
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {/* ========================================================================= */}
+      {/* VIEW 3: صفحات الهبوط                                                      */}
+      {/* ========================================================================= */}
+      {activeMainTab === 'landing' && (
+        <LandingPageBuilderPage />
+      )}
+
+      {/* ========================================================================= */}
+      {/* LIVE THEME PREVIEW MODAL                                                  */}
+      {/* ========================================================================= */}
+      {previewThemeModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="w-full max-w-5xl h-[90vh] rounded-3xl border border-slate-800 bg-slate-900 flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95">
+            
+            {/* Modal Header */}
+            <div className="bg-[#121c2e] border-b border-slate-800 px-5 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="size-2.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="font-extrabold text-sm text-white">
+                  معاينة حية لقالب «{previewThemeModal.name}» على متجرك ({fullDomain})
                 </span>
               </div>
-            </div>
-          </div>
-        </div>
 
-        {/* ========================================================================= */}
-        {/* 2. الثيمات المجانية والمدفوعة الخاصة باشتراك برو                          */}
-        {/* ========================================================================= */}
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
-                <Palette className="size-5" />
-              </span>
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>ثيمات المتجر (المجانية والمدفوعة الخاصة باشتراك برو)</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  اختر المظهر الأنسب لنوع منتجاتك مع سلة شراء مدمجة وسرعة فائقة.
-                </p>
-              </div>
-            </div>
-
-            {/* Filter: All / Free / Pro */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setTemplateFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  templateFilter === 'all'
-                    ? 'bg-white dark:bg-slate-900 text-teal-800 dark:text-teal-300 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400'
-                }`}
-              >
-                جميع الثيمات ({Object.keys(ALL_STORE_TEMPLATES).length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setTemplateFilter('free')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  templateFilter === 'free'
-                    ? 'bg-white dark:bg-slate-900 text-teal-800 dark:text-teal-300 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400'
-                }`}
-              >
-                المجانية فقط
-              </button>
-              <button
-                type="button"
-                onClick={() => setTemplateFilter('pro')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                  templateFilter === 'pro'
-                    ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
-                    : 'text-amber-600 dark:text-amber-400'
-                }`}
-              >
-                <Crown className="size-3" />
-                <span>اشتراك برو (PRO)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Templates Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {templateEntries.map(([key, tpl]) => {
-              const isSelected = activeTemplate === tpl.id;
-
-              const onTryActivate = (e?: React.MouseEvent) => {
-                if (e) e.stopPropagation();
-                if (tpl.isPro && !isMerchantPro()) {
-                  setAttemptedProTheme(tpl);
-                  setShowProUpgradeModal(true);
-                  return;
-                }
-                setActiveTemplate(tpl.id);
-              };
-
-              return (
-                <div
-                  key={key}
-                  onClick={() => onTryActivate()}
-                  className={`p-4 rounded-3xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between group ${
-                    isSelected
-                      ? 'bg-teal-50/70 dark:bg-teal-950/50 border-teal-500 shadow-lg ring-2 ring-teal-500/30'
-                      : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md'
-                  }`}
-                >
-                  {/* Theme Thumbnail Preview */}
-                  <div className="h-40 rounded-2xl overflow-hidden mb-3 bg-slate-900 relative border border-slate-200/50 dark:border-slate-800">
-                    <img
-                      src={tpl.image}
-                      alt={tpl.name}
-                      className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-
-                    {/* Pro / Free Badge overlay */}
-                    <div className="absolute top-2.5 right-2.5">
-                      {tpl.isPro ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 flex items-center gap-1 shadow-lg">
-                          <Crown className="size-3" /> مدفوع (PRO)
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white shadow-lg">
-                          ثيم مجاني
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`size-2.5 rounded-full ${tpl.colorDot}`} />
-                        <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                          {tpl.name}
-                        </h4>
-                      </div>
-                      <span className="text-[10px] font-mono text-slate-400 font-bold">{tpl.nameEn}</span>
-                    </div>
-
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
-                      {tpl.niche}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-[10px] text-slate-400">{tpl.badge}</span>
-                    <button
-                      type="button"
-                      onClick={onTryActivate}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                        isSelected
-                          ? 'bg-teal-700 text-white font-black shadow-sm'
-                          : tpl.isPro && !isMerchantPro()
-                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-slate-950'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
-                    >
-                      {isSelected ? (
-                        <>
-                          <Check className="size-3.5" />
-                          <span>المفعل حالياً</span>
-                        </>
-                      ) : tpl.isPro && !isMerchantPro() ? (
-                        <>
-                          <Crown className="size-3.5" />
-                          <span>تفعيل (PRO)</span>
-                        </>
-                      ) : (
-                        'تفعيل هذا الثيم'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* PRO Upgrade Modal inside StorePage */}
-          {showProUpgradeModal && attemptedProTheme && (
-            <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-              <div className="max-w-md w-full rounded-3xl border border-amber-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95 relative">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowProUpgradeModal(false)}
-                  className="absolute top-4 left-4 text-slate-400 hover:text-white"
+                  type="button"
+                  onClick={() => {
+                    handleApplyTheme(previewThemeModal);
+                    setPreviewThemeModal(null);
+                  }}
+                  className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow transition-all"
+                >
+                  تطبيق هذا الثيم الآن
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewThemeModal(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white"
                 >
                   <X className="size-5" />
                 </button>
-
-                <div className="size-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 grid place-items-center mx-auto shadow-lg">
-                  <Crown className="size-8" />
-                </div>
-
-                <div className="space-y-1">
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-950 border border-amber-700 text-amber-300 inline-block">
-                    ثيم مدفوع باشتراك PRO
-                  </span>
-                  <h3 className="font-extrabold text-xl text-white pt-2">
-                    قالب {attemptedProTheme.name}
-                  </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    هذا الثيم متاح حصرياً للمتاجر المشتركة في باقة PRO. قم بترقية اشتراكك للاستفادة من التصاميم المتقدمة ونسب التحويل العالية.
-                  </p>
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <a
-                    href="#/subscriptions"
-                    onClick={() => setShowProUpgradeModal(false)}
-                    className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105"
-                  >
-                    <Crown className="size-4" />
-                    <span>ترقية الباقة إلى PRO الآن</span>
-                  </a>
-
-                  <button
-                    onClick={() => setShowProUpgradeModal(false)}
-                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all"
-                  >
-                    إلغاء
-                  </button>
-                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* ========================================================================= */}
-        {/* 3. خط المتجر (Store Typography)                                          */}
-        {/* ========================================================================= */}
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm space-y-5">
-          <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <span className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
-              <Type className="size-5" />
-            </span>
-            <div>
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
-                خط المتجر والخطوط العربية (Typography)
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                اختر الخط المعتمد لعناوين ونصوص متجرك الإلكتروني.
-              </p>
+            {/* Modal Frame Body */}
+            <div className="flex-1 overflow-y-auto bg-white">
+              <StoreTemplates
+                storeName={storeName}
+                subdomain={subdomain}
+                activeTemplateId={previewThemeModal.id}
+                standalone={true}
+              />
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {STORE_FONTS.map((f) => {
-              const isSelected = storeFont === f.id;
-
-              return (
-                <div
-                  key={f.id}
-                  onClick={() => setStoreFont(f.id)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-teal-50/70 dark:bg-teal-950/50 border-teal-500 ring-2 ring-teal-500/20 shadow-sm'
-                      : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                      {f.name}
-                    </span>
-                    {isSelected && (
-                      <span className="size-5 rounded-full bg-teal-700 text-white grid place-items-center">
-                        <Check className="size-3" />
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-500">{f.desc}</p>
-                  <div
-                    style={{ fontFamily: f.id }}
-                    className="mt-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 text-center"
-                  >
-                    تجربة الخط: تسوق أرقى المنتجات مع الشحن السريع
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
+      )}
 
-        {/* ========================================================================= */}
-        {/* 4. أقسام المتجر والتصنيفات (Categories Management)                       */}
-        {/* ========================================================================= */}
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
-                <Tag className="size-5" />
+      {/* PRO UPGRADE MODAL */}
+      {showProUpgradeModal && attemptedProTheme && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="max-w-md w-full rounded-3xl border border-amber-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95 relative">
+            <button
+              onClick={() => setShowProUpgradeModal(false)}
+              className="absolute top-4 left-4 text-slate-400 hover:text-white"
+            >
+              <X className="size-5" />
+            </button>
+
+            <div className="size-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 grid place-items-center mx-auto shadow-lg">
+              <Crown className="size-8" />
+            </div>
+
+            <div className="space-y-1">
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-950 border border-amber-700 text-amber-300 inline-block">
+                ثيم مدفوع باشتراك PRO
               </span>
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  أقسام وتصنيفات المتجر (Categories)
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  أضف وعدل الأقسام التي تظهر في شريط التنقل لتصنيف المنتجات.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Add Category Input */}
-          <div className="flex gap-2 max-w-md">
-            <input
-              type="text"
-              value={newCategoryInput}
-              onChange={(e) => setNewCategoryInput(e.target.value)}
-              placeholder="اكتب اسم القسم الجديد (مثال: أزياء نسائية)"
-              className="flex-1 h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs outline-none focus:border-teal-600"
-            />
-            <button
-              type="button"
-              onClick={handleAddCategory}
-              className="px-4 h-11 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs rounded-xl flex items-center gap-1 shadow-sm transition-all"
-            >
-              <Plus className="size-4" />
-              <span>إضافة قسم</span>
-            </button>
-          </div>
-
-          {/* Categories List */}
-          <div className="flex flex-wrap gap-2 pt-2">
-            {categories.map((cat, idx) => (
-              <div
-                key={idx}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200"
-              >
-                {editingCategoryIdx === idx ? (
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      value={editingCategoryVal}
-                      onChange={(e) => setEditingCategoryVal(e.target.value)}
-                      className="h-7 px-2 rounded border border-teal-500 bg-white dark:bg-slate-900 text-xs outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleSaveEditCategory(idx)}
-                      className="p-1 rounded text-emerald-600 hover:bg-emerald-50"
-                    >
-                      <Check className="size-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <span>{cat}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingCategoryIdx(idx);
-                        setEditingCategoryVal(cat);
-                      }}
-                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
-                      title="تعديل اسم القسم"
-                    >
-                      <Edit2 className="size-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCategory(idx)}
-                      className="p-1 text-slate-400 hover:text-red-500"
-                      title="حذف القسم"
-                    >
-                      <Trash2 className="size-3" />
-                    </button>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ========================================================================= */}
-        {/* 5. خيارات وطرق الدفع في المتجر                                           */}
-        {/* ========================================================================= */}
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm space-y-5">
-          <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <span className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
-              <Wallet className="size-5" />
-            </span>
-            <div>
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
-                خيارات وطرق الدفع المتاحة لزبائنك
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                فعل وسائل الدفع التي ترغب باستقبال أموال الطلبات من خلالها.
+              <h3 className="font-extrabold text-xl text-white pt-2">
+                قالب {attemptedProTheme.name}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                هذا الثيم متاح حصرياً للمتاجر المشتركة في باقة PRO. قم بترقية اشتراكك للاستفادة من التصاميم المتقدمة ونسب التحويل العالية.
               </p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* 1. COD */}
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 flex items-start justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="size-4 text-emerald-600" />
-                  <span className="font-extrabold text-xs text-slate-900 dark:text-white">
-                    الدفع عند الاستلام نقداً (Cash on Delivery)
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  الخيار الأوسع انتشاراً في العراق، تحصيل المبالغ وتصفيتها أسبوعياً.
-                </p>
-              </div>
-
-              <input
-                type="checkbox"
-                checked={paymentMethods.cod}
-                onChange={(e) => setPaymentMethods({ ...paymentMethods, cod: e.target.checked })}
-                className="size-5 accent-teal-600 cursor-pointer rounded"
-              />
-            </div>
-
-            {/* 2. Zain Cash */}
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="size-4 text-purple-600" />
-                    <span className="font-extrabold text-xs text-slate-900 dark:text-white">
-                      محفظة زين كاش العراق (Zain Cash)
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    استلام الدفع الإلكتروني المباشر من الزبائن على رقم محفظتك.
-                  </p>
-                </div>
-
-                <input
-                  type="checkbox"
-                  checked={paymentMethods.zainCash}
-                  onChange={(e) => setPaymentMethods({ ...paymentMethods, zainCash: e.target.checked })}
-                  className="size-5 accent-teal-600 cursor-pointer rounded"
-                />
-              </div>
-
-              {paymentMethods.zainCash && (
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                    رقم هاتف محفظة زين كاش لاستلام التحويلات:
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentMethods.zainCashPhone}
-                    onChange={(e) => setPaymentMethods({ ...paymentMethods, zainCashPhone: e.target.value })}
-                    placeholder="07801234567"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono outline-none focus:border-teal-600"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* 3. Qi Card & Mastercard */}
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 flex items-start justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="size-4 text-blue-600" />
-                  <span className="font-extrabold text-xs text-slate-900 dark:text-white">
-                    بطاقات ماستركارد وكي كارد (Qi Card / Visa)
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  بوابة الدفع الإلكتروني المصرفية للبطاقات المحلية والدولية.
-                </p>
-              </div>
-
-              <input
-                type="checkbox"
-                checked={paymentMethods.qiCard}
-                onChange={(e) => setPaymentMethods({ ...paymentMethods, qiCard: e.target.checked })}
-                className="size-5 accent-teal-600 cursor-pointer rounded"
-              />
-            </div>
-
-            {/* 4. AsiaHawala */}
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="size-4 text-amber-600" />
-                    <span className="font-extrabold text-xs text-slate-900 dark:text-white">
-                      آسيابوالة / تحويل رصيد مباشر (AsiaHawala)
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    تحويل مباشر إلى رقم آسياسيل أو محفظة آسيابوالة.
-                  </p>
-                </div>
-
-                <input
-                  type="checkbox"
-                  checked={paymentMethods.asiaHawala}
-                  onChange={(e) => setPaymentMethods({ ...paymentMethods, asiaHawala: e.target.checked })}
-                  className="size-5 accent-teal-600 cursor-pointer rounded"
-                />
-              </div>
-
-              {paymentMethods.asiaHawala && (
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                    رقم هاتف التحويل لـ آسيابوالة:
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentMethods.asiaHawalaPhone}
-                    onChange={(e) => setPaymentMethods({ ...paymentMethods, asiaHawalaPhone: e.target.value })}
-                    placeholder="07701234567"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono outline-none focus:border-teal-600"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Global Save Button */}
-        <div className="flex items-center justify-end gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="px-8 h-12 bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-sm rounded-xl shadow-lg flex items-center gap-2 transition-all hover:scale-105 cursor-pointer"
-          >
-            {isSaving ? <RefreshCw className="size-4 animate-spin" /> : <Save className="size-4" />}
-            <span>حفظ وتطبيق التعديلات على المتجر والسيرفر</span>
-          </button>
-        </div>
-      </form>
-
-      {/* ========================================================================= */}
-      {/* 6. المعاينة الحية للمتجر بالقالب والخط المختار                          */}
-      {/* ========================================================================= */}
-      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Eye className="size-5 text-teal-700 dark:text-teal-400" />
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-              المعاينة الحية للمتجر ({ALL_STORE_TEMPLATES[activeTemplate]?.name || activeTemplate}) — بخط {storeFont}
-            </h3>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Viewport switcher: Desktop vs Mobile */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setPreviewViewport('desktop')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                  previewViewport === 'desktop'
-                    ? 'bg-white dark:bg-slate-900 text-teal-800 dark:text-teal-300 shadow-sm'
-                    : 'text-slate-500'
-                }`}
+            <div className="space-y-2 pt-2">
+              <a
+                href="#/subscriptions"
+                onClick={() => setShowProUpgradeModal(false)}
+                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105"
               >
-                <Monitor className="size-3.5" />
-                <span>حاسوب</span>
-              </button>
+                <Crown className="size-4" />
+                <span>ترقية الباقة إلى PRO الآن</span>
+              </a>
+
               <button
-                type="button"
-                onClick={() => setPreviewViewport('mobile')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                  previewViewport === 'mobile'
-                    ? 'bg-white dark:bg-slate-900 text-teal-800 dark:text-teal-300 shadow-sm'
-                    : 'text-slate-500'
-                }`}
+                onClick={() => setShowProUpgradeModal(false)}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all"
               >
-                <Smartphone className="size-3.5" />
-                <span>موبايل</span>
+                إلغاء
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setShowLivePreview(!showLivePreview)}
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50"
-            >
-              {showLivePreview ? 'إخفاء المعاينة' : 'إظهار المعاينة'}
-            </button>
           </div>
         </div>
+      )}
 
-        {showLivePreview && (
-          <div
-            style={{ fontFamily: storeFont }}
-            className={`mx-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-2xl transition-all duration-300 ${
-              previewViewport === 'mobile' ? 'max-w-sm' : 'w-full'
-            }`}
-          >
-            {/* If Inactive Notice */}
-            {!isStoreActive && (
-              <div className="p-3 bg-rose-500 text-white text-xs font-bold text-center flex items-center justify-center gap-2">
-                <span className="size-2 rounded-full bg-white animate-pulse" />
-                <span>المتجر معطل حالياً (تحت الصيانة) ولن يظهر للزبائن إلا بعد تفعيله</span>
-              </div>
-            )}
-
-            <StoreTemplates
-              storeName={storeName}
-              subdomain={subdomain}
-              activeTemplateId={activeTemplate}
-              onTemplateChange={(tpl) => setActiveTemplate(tpl)}
-              customProduct={storeData?.product}
-              storeCode={storeCode}
-              logoUrl={storeData?.logoUrl}
-            />
-          </div>
-        )}
-      </div>
-    </>
-  )}
-</div>
-);
+    </div>
+  );
 }
+
+export default StorePage;

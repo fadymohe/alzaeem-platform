@@ -7,7 +7,7 @@ import {
 import { formatIQD, IRAQ_GOVERNORATES } from '../../data/iraqData';
 import { getStoredProducts, addStoredOrder, type StoreProduct } from '../../data/storeState';
 
-// Import 8 theme components
+// Import All 12 modular theme components
 import { StoreClassicTheme } from './store-classic';
 import { StoreAuritTheme } from './store-aurit';
 import { StoreNovaTheme } from './store-nova';
@@ -16,8 +16,20 @@ import { StoreNovatrendTheme } from './store-novatrend';
 import { StoreGizmoTheme } from './store-gizmo';
 import { StoreSneakTheme } from './store-sneak';
 import { StoreNexoraTheme } from './store-nexora';
+import { StoreSproutTheme } from './store-sprout';
+import { StoreWardrobeTheme } from './store-wardrobe';
+import { StoreStrideTheme } from './store-stride';
+import { StoreChicTheme } from './store-chic';
+import { StoreManeTheme } from './store-mane';
+import { StoreLoftoraTheme } from './store-loftora';
 
 export type TemplateId =
+  | 'store-sprout'
+  | 'store-wardrobe'
+  | 'store-stride'
+  | 'store-chic'
+  | 'store-mane'
+  | 'store-loftora'
   | 'store-classic'
   | 'store-aurit'
   | 'store-nova'
@@ -27,6 +39,12 @@ export type TemplateId =
   | 'store-sneak'
   | 'store-nexora'
   // Legacy backward-compatible aliases
+  | 'sprout'
+  | 'wardrobe'
+  | 'stride'
+  | 'chic'
+  | 'mane'
+  | 'loftora'
   | 'shoppingcart.1.2.7'
   | 'volt'
   | 'rose'
@@ -39,117 +57,226 @@ export interface TemplateConfig {
   name: string;
   nameEn: string;
   niche: string;
+  categoryTag: string;
   badge: string;
   isPro: boolean;
   image: string;
   colorDot: string;
-  bgClass?: string;
-  cardClass?: string;
-  headerClass?: string;
-  accentBtnClass?: string;
-  accentTextClass?: string;
-  badgeClass?: string;
-  heroBannerTitle?: string;
-  heroBannerSubtitle?: string;
-  heroImage?: string;
+  palette: string[];
+  description: string;
 }
 
-// 8 Theme Definitions (3 Free, 5 PRO)
+// Complete Themes Definitions (Matching Baseet reference screenshots & PRO catalog)
 export const TEMPLATES_MAP: Record<string, TemplateConfig> = {
-  'store-classic': {
-    id: 'store-classic',
-    name: 'كلاسيك الفاخر',
-    nameEn: 'Store Classic',
-    niche: 'عطور ومقتنيات فاخرة وتراثية',
-    badge: 'ثيم كلاسيكي عربي',
+  'store-sprout': {
+    id: 'store-sprout',
+    name: 'سبراوت',
+    nameEn: 'Sprout',
+    niche: 'أزياء ملابس أطفال بروح الحديقة',
+    categoryTag: 'أزياء أطفال',
+    badge: 'ثيم أطفال وعائلة',
     isPro: false,
     image: '/templates/store-classic.jpg',
-    colorDot: 'bg-amber-500'
+    colorDot: 'bg-[#588157]',
+    palette: ['#344e41', '#588157', '#a3b18a', '#dad7cd'],
+    description: 'واجهة ملابس أطفال بروح الحديقة — زيتوني وعاجي، وواجهة كولاج عائمة، وشبكة منتجات تحيط بقطعة مميزة.'
   },
-  'store-aurit': {
-    id: 'store-aurit',
-    name: 'أوريت بوتيك',
-    nameEn: 'Store Aurit',
-    niche: 'أزياء عصرية ومستلزمات حياة يومية',
-    badge: 'بوتيك عصري',
+  'store-wardrobe': {
+    id: 'store-wardrobe',
+    name: 'واردروب',
+    nameEn: 'Wardrobe',
+    niche: 'أزياء وملابس كاجوال يومية',
+    categoryTag: 'أزياء',
+    badge: 'تصميم مينيمال أحادي',
     isPro: false,
     image: '/templates/store-aurit.jpg',
-    colorDot: 'bg-teal-400'
+    colorDot: 'bg-black',
+    palette: ['#000000', '#333333', '#888888', '#e63946'],
+    description: 'واجهة ملابس تبدأ بالمنتجات مباشرة بلا واجهة رئيسية — فسيفساء بانرات فوق شريط المزايا، ثم صفوف طويلة سهلة التصفح. أحادية اللون تماماً: الأحمر للتخفيضات فقط.'
+  },
+  'store-stride': {
+    id: 'store-stride',
+    name: 'سترايد',
+    nameEn: 'Stride',
+    niche: 'أحذية رياضية وسنيكرز وأناقة',
+    categoryTag: 'أزياء',
+    badge: 'متجر أحذية كثيف',
+    isPro: true,
+    image: '/templates/store-sneak.png',
+    colorDot: 'bg-[#0052cc]',
+    palette: ['#071322', '#0052cc', '#00c8ff', '#ffffff'],
+    description: 'واجهة متجر أحذية، وأكثر الصفحات كثافة في المكتبة — واجهة مائلة مقسمة، ثم جدار ماركات، ثم بانرات ومقاطع نصية متتابعة. خط عريض جداً بلون كوبالت عميق.'
+  },
+  'store-chic': {
+    id: 'store-chic',
+    name: 'شيك',
+    nameEn: 'Chic',
+    niche: 'بوتيك أزياء نسائية وموضة راقية',
+    categoryTag: 'أزياء',
+    badge: 'واجهة مجلات وبوتيك',
+    isPro: true,
+    image: '/templates/store-nova.jpg',
+    colorDot: 'bg-[#540b0e]',
+    palette: ['#000000', '#ffffff', '#fff0f3', '#540b0e'],
+    description: 'واجهة بوتيك تبدأ بشريط متحرك فوق الطية، ثم واجهة بأسلوب المجلات ومجموعتان مميزتان تحيطان بالصفحة. خط عريض عالي التباين على أبيض بلمسة وردية عميقة.'
+  },
+  'store-mane': {
+    id: 'store-mane',
+    name: 'مين',
+    nameEn: 'Mane',
+    niche: 'صالون ومستحضرات تجميل وعناية',
+    categoryTag: 'تجميل',
+    badge: 'صالون وعناية متقدمة',
+    isPro: true,
+    image: '/templates/store-novatrend.png',
+    colorDot: 'bg-[#7209b7]',
+    palette: ['#240046', '#7209b7', '#f72585', '#ffffff'],
+    description: 'واجهة صالون مبنية على فكرة التحول — شريط فتات فوق الواجهة، وصور بورتريه متدرجة، وشريط مقارنة قبل/بعد في القلب. أرجواني عميق على أبيض.'
+  },
+  'store-loftora': {
+    id: 'store-loftora',
+    name: 'لوفتورا',
+    nameEn: 'Loftora',
+    niche: 'ديكور منزلي وأثاث وتحف',
+    categoryTag: 'منزل',
+    badge: 'ديكور وطين وبلوط',
+    isPro: false,
+    image: '/templates/store-classic.jpg',
+    colorDot: 'bg-[#8b5a2b]',
+    palette: ['#2b2927', '#8b5a2b', '#d4b996', '#f7f5f0'],
+    description: 'واجهة ديكور منزلي مختارة — واجهة بمشهد غرفة، وفسيفساء بانرات بأحجام غير متساوية، وألوان حجرية وطينية بلمسة بلوط.'
   },
   'store-nova': {
     id: 'store-nova',
-    name: 'نوفا الملكي',
-    nameEn: 'Store Nova',
-    niche: 'مستحضرات تجميل وأزياء نسائية راقية',
-    badge: 'تصميم أوروبي فاخر',
+    name: 'إيشوب كيت (نوفا)',
+    nameEn: 'eShopkit Marketplace',
+    niche: 'إلكترونيات وأجهزة ذكية وملحقات',
+    categoryTag: 'إلكترونيات',
+    badge: 'ماركت بليس متكامل',
     isPro: false,
     image: '/templates/store-nova.jpg',
-    colorDot: 'bg-purple-400'
+    colorDot: 'bg-purple-600',
+    palette: ['#581c87', '#9333ea', '#f3e8ff', '#ffffff'],
+    description: 'واجهة ماركت بليس إلكتروني تقني شامل مع شريط علوي بنفسجي، وبادج عروض فلاش، وبطاقات ترويجية جانبية لزيادة التحويل.'
   },
   'store-brick': {
     id: 'store-brick',
-    name: 'بريك إندستريال',
-    nameEn: 'Store Brick',
-    niche: 'معدات وأدوات قوية وإلكترونيات صناعية',
-    badge: 'قوة وتحمل عالي',
+    name: 'شوب واي (بريك)',
+    nameEn: 'ShopWay Mega Store',
+    niche: 'معدات صناعية وميجا ستور شامل',
+    categoryTag: 'إلكترونيات',
+    badge: 'ميجا ستور متين',
     isPro: true,
     image: '/templates/store-brick.jpg',
-    colorDot: 'bg-orange-500'
+    colorDot: 'bg-orange-500',
+    palette: ['#111a28', '#ea580c', '#fbbf24', '#ffffff'],
+    description: 'واجهة متجر شامل باللون الكحلي والبرتقالي، تحتوي على قائمة أقسام عمودية بشارات Hot وNew، ومربع العروض الأسبوعية الحصرية.'
+  },
+  'store-aurit': {
+    id: 'store-aurit',
+    name: 'شوب ويل (أوريت)',
+    nameEn: 'ShopWell Mega Store',
+    niche: 'أزياء وإلكترونيات وسلع استهلاكية',
+    categoryTag: 'أزياء',
+    badge: 'ميجا ستور أزرق',
+    isPro: false,
+    image: '/templates/store-aurit.jpg',
+    colorDot: 'bg-blue-600',
+    palette: ['#0f172a', '#2563eb', '#38bdf8', '#f8fafc'],
+    description: 'واجهة ميجا ستور أزرق حديث مع شريط إعلانات أكواد الخصم، وقائمة تسوق حسب الأقسام، ودوائر المنتجات الأكثر طلباً.'
+  },
+  'store-classic': {
+    id: 'store-classic',
+    name: 'بوتيجا (كلاسيك)',
+    nameEn: 'Botiga Minimalist',
+    niche: 'عطور ومستحضرات فاخرة وتراثية',
+    categoryTag: 'تجميل',
+    badge: 'مينيمال فاخر',
+    isPro: false,
+    image: '/templates/store-classic.jpg',
+    colorDot: 'bg-amber-600',
+    palette: ['#1c1917', '#d97706', '#fef3c7', '#ffffff'],
+    description: 'واجهة مينيمال ناصعة البياض مع هيدر مركزي أنيق وشبكة مقتنيات وتشكيلات حصرية مناسبة للعطور ومستحضرات التجميل الراقية.'
   },
   'store-novatrend': {
     id: 'store-novatrend',
     name: 'نوفا تريند',
-    nameEn: 'Store NovaTrend',
-    niche: 'تريندات شبابية وموضة الشارع العصرية',
+    nameEn: 'NovaTrend Youth',
+    niche: 'تريندات شبابية وموضة الشارع',
+    categoryTag: 'أزياء',
     badge: 'تريند شبابي',
     isPro: true,
     image: '/templates/store-novatrend.png',
-    colorDot: 'bg-pink-500'
+    colorDot: 'bg-pink-500',
+    palette: ['#0f0c1b', '#ec4899', '#f43f5e', '#ffffff'],
+    description: 'واجهة مخصصة لصيحات الموضة الجريئة والتريندات الشبابية مع خلفيات متدرجة داكنة.'
   },
   'store-gizmo': {
     id: 'store-gizmo',
     name: 'جيزمو سايبر تك',
-    nameEn: 'Store Gizmo',
+    nameEn: 'Gizmo Cyber Tech',
     niche: 'إلكترونيات وأجهزة ذكية وملحقات تقنية',
+    categoryTag: 'إلكترونيات',
     badge: 'سايبر تك متطور',
     isPro: true,
     image: '/templates/store-gizmo.png',
-    colorDot: 'bg-cyan-400'
+    colorDot: 'bg-cyan-400',
+    palette: ['#070d18', '#06b6d4', '#3b82f6', '#ffffff'],
+    description: 'تصميم مستقبلي بتقنية السايبر للإلكترونيات والأجهزة الذكية مع تأثيرات النيون.'
   },
   'store-sneak': {
     id: 'store-sneak',
     name: 'سنيك سبورت',
-    nameEn: 'Store Sneak',
+    nameEn: 'Sneak Athletic',
     niche: 'سنيكرز وملابس رياضية حيوية',
+    categoryTag: 'أزياء',
     badge: 'رياضة وحيوية',
     isPro: true,
     image: '/templates/store-sneak.png',
-    colorDot: 'bg-red-500'
+    colorDot: 'bg-red-500',
+    palette: ['#0d0707', '#dc2626', '#f97316', '#ffffff'],
+    description: 'واجهة رياضية ديناميكية لعشاق السنيكرز والملابس الرياضية باللونين الأحمر والأسود.'
   },
   'store-nexora': {
     id: 'store-nexora',
     name: 'نيكسورا الملكي',
-    nameEn: 'Store Nexora',
+    nameEn: 'Nexora Royal VIP',
     niche: 'فخامة مطلقة وأجهزة ذكية وإكسسوارات VIP',
+    categoryTag: 'إلكترونيات',
     badge: 'فخامة VIP',
     isPro: true,
     image: '/templates/store-nexora.png',
-    colorDot: 'bg-indigo-500'
+    colorDot: 'bg-indigo-500',
+    palette: ['#080816', '#6366f1', '#f59e0b', '#ffffff'],
+    description: 'واجهة ملكية استثنائية لأصحاب المنتجات الفاخرة وعالية القيمة بدرجات الإنديجو والذهبي.'
   },
 };
 
-// Helper: Normalize legacy or unknown template IDs to 8 primary IDs
+// Helper: Normalize legacy or unknown template IDs
 export function normalizeTemplateId(id?: string): TemplateId {
-  if (!id) return 'store-classic';
+  if (!id) return 'store-sprout';
   const clean = id.toLowerCase().trim();
 
   if (TEMPLATES_MAP[clean]) {
     return clean as TemplateId;
   }
 
-  // Backward-compatibility mapping
   switch (clean) {
+    case 'sprout':
+      return 'store-sprout';
+    case 'wardrobe':
+      return 'store-wardrobe';
+    case 'stride':
+      return 'store-stride';
+    case 'chic':
+      return 'store-chic';
+    case 'mane':
+      return 'store-mane';
+    case 'loftora':
+      return 'store-loftora';
     case 'shoppingcart.1.2.7':
+    case 'classic':
+    case 'sepia':
       return 'store-classic';
     case 'volt':
       return 'store-gizmo';
@@ -158,13 +285,10 @@ export function normalizeTemplateId(id?: string): TemplateId {
       return 'store-nova';
     case 'nitro':
       return 'store-sneak';
-    case 'sepia':
-    case 'classic':
-      return 'store-classic';
     case 'oret':
       return 'store-aurit';
     default:
-      return 'store-classic';
+      return 'store-sprout';
   }
 }
 
@@ -194,26 +318,16 @@ export interface StoreTemplatesProps {
   activeTemplateId?: TemplateId;
   standalone?: boolean;
   onTemplateChange?: (id: TemplateId) => void;
-  customProduct?: {
-    id?: number | string;
-    title?: string;
-    name?: string;
-    description?: string;
-    price: number;
-    compareAtPrice?: number;
-    imageUrl?: string;
-    image?: string;
-    category?: string;
-  };
+  customProduct?: any;
   products?: any[];
   storeCode?: string;
   logoUrl?: string;
 }
 
 export function StoreTemplates({
-  storeName = 'متجر الزعيم الذهبي',
-  subdomain = 'fady',
-  activeTemplateId = 'store-classic',
+  storeName = 'متجر الزعيم',
+  subdomain = 'alzaeem',
+  activeTemplateId = 'store-sprout',
   standalone = false,
   onTemplateChange,
   customProduct,
@@ -248,84 +362,14 @@ export function StoreTemplates({
 
   const baseProducts = getStoredProducts();
 
-  // Normalize incoming props.products if supplied
-  const incomingList: StoreProduct[] = Array.isArray(products) && products.length > 0
-    ? products.map((p: any, idx: number) => ({
-        id: p.id || (idx + 1),
-        name: p.name || p.title || `منتج ${idx + 1}`,
-        sku: p.sku || `PRD-${idx + 1}`,
-        price: Number(p.price) || 45000,
-        compareAtPrice: p.compareAtPrice ? Number(p.compareAtPrice) : Math.round((Number(p.price) || 45000) * 1.3),
-        imageUrl: p.imageUrl || p.image || '',
-        images: Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.imageUrl || p.image ? [p.imageUrl || p.image] : []),
-        category: p.category || 'عام',
-        stock: p.stock !== undefined ? Number(p.stock) : 20,
-        lowStockThreshold: p.lowStockThreshold || 3,
-        status: p.status || 'active',
-        description: p.description || '',
-      }))
+  const productsList: StoreProduct[] = Array.isArray(products) && products.length > 0
+    ? products
+    : baseProducts.length > 0
+    ? baseProducts
     : [];
-
-  let productsList: StoreProduct[] = [];
-  if (incomingList.length > 0) {
-    productsList = [...incomingList];
-    if (customProduct && (customProduct.title || customProduct.name)) {
-      const cName = (customProduct.title || customProduct.name || '').trim();
-      if (!productsList.some(p => p.name === cName)) {
-        productsList.unshift({
-          id: typeof customProduct.id === 'number' ? customProduct.id : 999,
-          name: cName,
-          sku: 'PRD-999',
-          price: Number(customProduct.price) || 45000,
-          compareAtPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
-          imageUrl: customProduct.imageUrl || (customProduct as any).image || '',
-          category: customProduct.category || 'المنتجات المميزة',
-          stock: 35,
-          lowStockThreshold: 5,
-          status: 'active',
-          description: customProduct.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'
-        });
-      }
-    }
-  } else if (baseProducts.length > 0) {
-    productsList = [...baseProducts];
-    if (customProduct && (customProduct.title || customProduct.name)) {
-      const cName = (customProduct.title || customProduct.name || '').trim();
-      if (!productsList.some(p => p.name === cName)) {
-        productsList.unshift({
-          id: typeof customProduct.id === 'number' ? customProduct.id : 999,
-          name: cName,
-          sku: 'PRD-999',
-          price: Number(customProduct.price) || 45000,
-          compareAtPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
-          imageUrl: customProduct.imageUrl || (customProduct as any).image || '',
-          category: customProduct.category || 'المنتجات المميزة',
-          stock: 35,
-          lowStockThreshold: 5,
-          status: 'active',
-          description: customProduct.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'
-        });
-      }
-    }
-  } else if (customProduct && (customProduct.title || customProduct.name)) {
-    productsList = [{
-      id: typeof customProduct.id === 'number' ? customProduct.id : 999,
-      name: customProduct.title || customProduct.name || 'المنتج المختار',
-      sku: 'PRD-999',
-      price: Number(customProduct.price) || 45000,
-      compareAtPrice: Number(customProduct.compareAtPrice) || Math.round((Number(customProduct.price) || 45000) * 1.3),
-      imageUrl: customProduct.imageUrl || (customProduct as any).image || '',
-      category: customProduct.category || 'المنتجات المميزة',
-      stock: 35,
-      lowStockThreshold: 5,
-      status: 'active',
-      description: customProduct.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'
-    }];
-  }
 
   const fullDomain = `${subdomain}.za3em.shop`;
 
-  // Theme Activation logic with PRO verification
   const handleSelectTheme = (id: TemplateId) => {
     const normId = normalizeTemplateId(id);
     const themeConfig = TEMPLATES_MAP[normId];
@@ -355,7 +399,6 @@ export function StoreTemplates({
     e.preventDefault();
     if (!custName || !custPhone || !selectedProductModal) return;
 
-    // Save order to merchant dashboard with sequential order0001, order0002... and auto-dispatch
     const stored = addStoredOrder({
       customerName: custName.trim(),
       customerPhone: custPhone.trim(),
@@ -408,6 +451,30 @@ export function StoreTemplates({
   // Render matching theme component
   const renderThemeComponent = () => {
     switch (currentThemeId) {
+      case 'store-sprout':
+      case 'sprout':
+        return <StoreSproutTheme {...themeProps} />;
+
+      case 'store-wardrobe':
+      case 'wardrobe':
+        return <StoreWardrobeTheme {...themeProps} />;
+
+      case 'store-stride':
+      case 'stride':
+        return <StoreStrideTheme {...themeProps} />;
+
+      case 'store-chic':
+      case 'chic':
+        return <StoreChicTheme {...themeProps} />;
+
+      case 'store-mane':
+      case 'mane':
+        return <StoreManeTheme {...themeProps} />;
+
+      case 'store-loftora':
+      case 'loftora':
+        return <StoreLoftoraTheme {...themeProps} />;
+
       case 'store-classic':
       case 'shoppingcart.1.2.7':
         return <StoreClassicTheme {...themeProps} />;
@@ -439,15 +506,13 @@ export function StoreTemplates({
         return <StoreNexoraTheme {...themeProps} />;
 
       default:
-        return <StoreClassicTheme {...themeProps} />;
+        return <StoreSproutTheme {...themeProps} />;
     }
   };
 
   return (
     <div className="relative min-h-[100dvh]">
-      {/* ========================================================================= */}
-      {/* TOP LIVE TEMPLATE SWITCHER BAR (Merchant Control) */}
-      {/* ========================================================================= */}
+      {/* Live Switcher Bar for Merchant Testing */}
       {!standalone && (
         <div className="bg-slate-950 text-white border-b border-slate-800 px-4 py-2.5 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 shadow-xl">
           <div className="flex items-center gap-3">
@@ -457,7 +522,6 @@ export function StoreTemplates({
             </span>
           </div>
 
-          {/* 8 Theme Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
             {(Object.keys(TEMPLATES_MAP) as TemplateId[]).map((tId) => {
               const t = TEMPLATES_MAP[tId];
@@ -473,7 +537,7 @@ export function StoreTemplates({
                       : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-600'
                   }`}
                 >
-                  <img src={t.image} alt={t.name} className="size-4 rounded-full object-cover" />
+                  <span className={`size-2.5 rounded-full ${t.colorDot}`} />
                   <span>{t.name}</span>
                   {t.isPro ? (
                     <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-500 text-slate-950 flex items-center gap-0.5">
@@ -492,9 +556,7 @@ export function StoreTemplates({
       {/* RENDER THE SELECTED THEME VIEW */}
       {renderThemeComponent()}
 
-      {/* ========================================================================= */}
       {/* PRO UPGRADE MODAL */}
-      {/* ========================================================================= */}
       {showProModal && selectedProTheme && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="max-w-md w-full rounded-3xl border border-amber-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95 relative">
@@ -521,21 +583,6 @@ export function StoreTemplates({
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-right space-y-2">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                <Check className="size-4" />
-                <span>تصاميم احترافية حصرية بنسبة تحويل مبيعات أعلى</span>
-              </div>
-              <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                <Check className="size-4" />
-                <span>دومين مخصص وسرعة فائقة في معالجة الطلبات</span>
-              </div>
-              <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                <Check className="size-4" />
-                <span>ربط لوجستي مباشر مع خصومات شحن حصرية</span>
-              </div>
-            </div>
-
             <div className="space-y-2 pt-2">
               <a
                 href="#/subscriptions"
@@ -557,9 +604,7 @@ export function StoreTemplates({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* ORDER/CHECKOUT MODAL */}
-      {/* ========================================================================= */}
+      {/* COD CHECKOUT MODAL */}
       {selectedProductModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="max-w-md w-full rounded-3xl border border-slate-800 bg-slate-900 p-6 text-right space-y-4 shadow-2xl relative">
@@ -646,9 +691,7 @@ export function StoreTemplates({
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* ORDER SUCCESS POPUP */}
-      {/* ========================================================================= */}
       {orderSuccessModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="max-w-md w-full rounded-3xl border border-emerald-500/50 bg-slate-900 p-6 sm:p-7 text-center space-y-4 shadow-2xl animate-in zoom-in-95">

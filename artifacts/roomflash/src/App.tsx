@@ -34,6 +34,7 @@ import { DynamicStoreLanding } from './pages/DynamicStoreLanding';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { SettingsPage } from './pages/Settings';
 import { SupportPage } from './pages/Support';
+import { ThemeCustomizerPage } from './pages/ThemeCustomizer';
 import { supabase } from './utils/supabase';
 
 
@@ -164,6 +165,7 @@ function ProtectedRoutes() {
         <Route path="/subscriptions" component={SubscriptionsPage} />
         <Route path="/marketing" component={MarketingPage} />
         <Route path="/store" component={StorePage} />
+        <Route path="/theme-customizer" component={ThemeCustomizerPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/support" component={SupportPage} />
         <Route><Redirect to="/dashboard" /></Route>
