@@ -37,6 +37,7 @@ export interface StoreOrder {
   nearestLandmark?: string;
   notes?: string;
   subdomain?: string;
+  merchantId?: string;
   items?: Array<{ productName: string; quantity: number; unitPrice: number }>;
 }
 
