@@ -242,13 +242,12 @@ export function OnboardingPage() {
     message: 'الدومين متاح ومحجوز لحسابك فوراً'
   });
 
-  // Product Selection & Customization
-  const [productMode, setProductMode] = useState<'preset' | 'custom'>('preset');
-  const [productName, setProductName] = useState('عطر تاج الفخامة الفرنسي الملكي');
-  const [productPrice, setProductPrice] = useState('45000');
-  const [productCategory, setProductCategory] = useState('عطور فرنسية');
-  const [productImage, setProductImage] = useState(SAMPLE_PRODUCTS[0].image);
-  const [productAdded, setProductAdded] = useState(true);
+  // Product Selection & Customization (Manual Addition Only)
+  const [productName, setProductName] = useState('');
+  const [productPrice, setProductPrice] = useState('');
+  const [productCategory, setProductCategory] = useState('عام');
+  const [productImage, setProductImage] = useState('');
+  const [productAdded, setProductAdded] = useState(false);
 
   // Interactive Live Preview Controls
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
@@ -365,19 +364,26 @@ export function OnboardingPage() {
     } catch {}
   }, []);
 
-  // Quick 1-Click Auto Pilot Filler
+  // Quick 1-Click Auto Pilot Filler (Random Unique Subdomain Every Time)
   const handleUseDefaultSample = () => {
-    setStoreName('متجر الفخامة العراقي');
-    setSubdomain('fakhama.za3em.shop');
-    setSlogan('وجهتك الأولى للتسوق الراقي والشحن السريع لجميع محافظات العراق');
-    setSelectedNiche('perfumes');
-    setSelectedTheme('store-classic');
-    setCategories(['عطور رجالي', 'عطور نسائي', 'بخور ومباخر ملكية']);
-    setProductName(SAMPLE_PRODUCTS[0].name);
-    setProductPrice(SAMPLE_PRODUCTS[0].price);
-    setProductCategory('عطور رجالي');
-    setProductImage(SAMPLE_PRODUCTS[0].image);
-    setProductAdded(true);
+    const samples = [
+      { name: 'متجر الفخامة العراقي', subPrefix: 'fakhama', niche: 'perfumes', theme: 'store-classic', cats: ['عطور رجالي', 'عطور نسائي', 'بخور ومباخر'] },
+      { name: 'متجر شوب ويل بغداد', subPrefix: 'shopwell', niche: 'fashion', theme: 'store-aurit', cats: ['أزياء رجالي', 'أحذية رياضية', 'حقائب'] },
+      { name: 'متجر نوفا تك العراق', subPrefix: 'novatech', niche: 'electronics', theme: 'store-nova', cats: ['ساعات ذكية', 'سماعات صوتية', 'شواحن'] },
+      { name: 'بوتيك بلاد الرافدين', subPrefix: 'mesopotamia', niche: 'perfumes', theme: 'store-classic', cats: ['عطور ملكية', 'عود كمبودي', 'مستحضرات فاخرة'] },
+      { name: 'تريندات العراق شوب', subPrefix: 'iraq-trend', niche: 'general', theme: 'store-aurit', cats: ['الأكثر طلباً', 'عروض التوفير', 'إلكترونيات'] }
+    ];
+    const picked = samples[Math.floor(Math.random() * samples.length)];
+    const randNum = Math.floor(1000 + Math.random() * 9000);
+    const uniqueSub = `${picked.subPrefix}-${randNum}`;
+
+    setStoreName(picked.name);
+    setSubdomain(`${uniqueSub}.za3em.shop`);
+    setSlogan('أفضل المنتجات المختارة بعناية والشحن السريع لجميع محافظات العراق مع الدفع عند الاستلام');
+    setSelectedNiche(picked.niche);
+    setSelectedTheme(picked.theme);
+    setCategories(picked.cats);
+    setProductCategory(picked.cats[0] || 'عام');
     setCurrentStep(5);
   };
 
@@ -405,12 +411,12 @@ export function OnboardingPage() {
     setCategories(categories.filter(c => c !== catToRemove));
   };
 
-  const handlePickSampleProduct = (sample: typeof SAMPLE_PRODUCTS[0]) => {
-    setProductName(sample.name);
-    setProductPrice(sample.price);
-    setProductCategory(sample.category);
-    setProductImage(sample.image);
-    setProductAdded(true);
+  // External live preview router for templates (e.g. nova.za3em.shop, classic.za3em.shop, aurit.za3em.shop)
+  const handlePreviewTemplateExternal = (templateId: string) => {
+    const cleanId = templateId.replace('store-', '').toLowerCase();
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1'));
+    const targetUrl = isLocal ? `/#/store/${cleanId}` : `https://${cleanId}.za3em.shop`;
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
   // Permanent Base64 Image Reader with Automatic Canvas Compression (Prevents broken blob URLs & huge payloads)
@@ -732,40 +738,58 @@ export function OnboardingPage() {
 
   return (
     <main dir="rtl" className="min-h-[100dvh] bg-[#0b0f19] text-slate-200 font-sans select-none flex flex-col relative overflow-x-hidden">
-      {/* Background Soft Glows */}
-      <div className="fixed top-0 right-1/4 -z-10 size-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-0 left-1/4 -z-10 size-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Background Soft Glows (Teal & Emerald Homepage Palette) */}
+      <div className="fixed top-0 right-1/4 -z-10 size-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed bottom-0 left-1/4 -z-10 size-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* ========================================================================= */}
-      {/* 1️⃣ TOP HEADER */}
+      {/* 1️⃣ TOP HEADER: Store Identity & Dynamic Brand Logo */}
       {/* ========================================================================= */}
       <header className="border-b border-slate-800 bg-[#0f172a]/95 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Logo showSubtitle={false} inverse />
-          <div className="h-5 w-px bg-slate-800 hidden sm:block" />
-          <div className="hidden sm:block text-right">
-            <h1 className="text-xs font-black text-white flex items-center gap-1.5">
-              <Shield className="size-3.5 text-blue-400" />
-              مركز إعداد المتجر والقوالب المعتمدة — منصة الزعيم
+        <div className="flex items-center gap-3.5">
+          {/* Dynamic Store Icon / Uploaded Logo */}
+          <div className="relative size-10 rounded-xl overflow-hidden shadow-md border border-teal-500/40 bg-slate-900 grid place-items-center shrink-0">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={storeName || 'شعار المتجر'}
+                className="size-full object-cover"
+              />
+            ) : (
+              <span className="text-base font-black text-teal-400">
+                {(storeName || 'م').charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+
+          <div className="h-6 w-px bg-slate-800 hidden sm:block" />
+
+          {/* Store Name & Store Subtitle */}
+          <div className="text-right">
+            <h1 className="text-sm font-black text-white flex items-center gap-1.5 leading-tight">
+              <span>{storeName || 'متجري الإلكتروني'}</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                متجر إلكتروني
+              </span>
             </h1>
-            <p className="text-[10px] text-slate-400">اختر قالب متجرك واربطه بدومينك وأطلقه على الإنترنت فوراً</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">مركز تخصيص وإطلاق متجرك الإلكتروني على الإنترنت</p>
           </div>
         </div>
 
-        {/* Action Button: Ready Template (Blue Theme) */}
+        {/* Action Button: Ready Template (Teal & Emerald Theme) */}
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleUseDefaultSample}
-            className="flex items-center gap-2 rounded-xl border border-blue-500/40 bg-blue-600 hover:bg-blue-500 px-4 py-1.5 text-xs font-black text-white transition-all shadow-lg shadow-blue-600/25 hover:scale-[1.02] cursor-pointer"
+            className="flex items-center gap-2 rounded-xl border border-teal-500/40 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 px-4 py-2 text-xs font-black text-white transition-all shadow-lg shadow-teal-600/25 hover:scale-[1.02] cursor-pointer"
           >
-            <Wand2 className="size-3.5 text-blue-200" />
+            <Wand2 className="size-3.5 text-teal-200" />
             <span>نموذج جاهز بنقرة واحدة</span>
           </button>
 
           {/* Step Counter Pill */}
-          <div className="flex items-center gap-2.5 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-1 text-xs">
-            <span className="font-mono font-black text-blue-400 text-[11px]">
+          <div className="flex items-center gap-2.5 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-1.5 text-xs">
+            <span className="font-mono font-black text-teal-400 text-[11px]">
               {currentStep * 20}%
             </span>
             <span className="text-[10px] font-bold text-slate-400 hidden sm:inline">
@@ -777,11 +801,11 @@ export function OnboardingPage() {
 
       {/* Existing Store Notification Banner */}
       {existingStoreInfo.hasStore && (
-        <div className="bg-gradient-to-r from-blue-950/90 via-slate-900 to-indigo-950/90 border-b border-blue-500/30 px-4 md:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2.5 text-blue-200">
-            <CheckCircle2 className="size-4 text-blue-400 shrink-0" />
+        <div className="bg-gradient-to-r from-teal-950/90 via-slate-900 to-emerald-950/90 border-b border-teal-500/30 px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 text-teal-200">
+            <CheckCircle2 className="size-4 text-teal-400 shrink-0" />
             <span>
-              لديك متجر نشط محفوظ: <strong>{existingStoreInfo.storeName}</strong> (رمز المتجر: <code className="font-mono text-white bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700">{existingStoreInfo.storeCode}</code>).
+              لديك متجر نشط محفوظ: <strong>{existingStoreInfo.storeName}</strong> (رمز المتجر: <code className="font-mono text-white bg-teal-900/60 px-2 py-0.5 rounded border border-teal-700">{existingStoreInfo.storeCode}</code>).
             </span>
           </div>
           <button
@@ -790,10 +814,10 @@ export function OnboardingPage() {
               window.location.hash = '#/dashboard';
               setLocation('/dashboard');
             }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs transition-colors cursor-pointer shadow-md"
+            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-lg shadow-teal-500/25 hover:scale-105"
           >
             <span>الانتقال المباشر إلى لوحة التحكم</span>
-            <ChevronLeft className="size-3.5" />
+            <ChevronLeft className="size-4 text-slate-950" />
           </button>
         </div>
       )}
@@ -820,7 +844,7 @@ export function OnboardingPage() {
                 onClick={() => setCurrentStep(item.step)}
                 className={`flex-1 flex items-center gap-2.5 p-2 rounded-2xl transition-all cursor-pointer text-right ${
                   isCurrent
-                    ? 'bg-blue-950/60 border border-blue-500/40 text-white shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30'
+                    ? 'bg-teal-950/60 border border-teal-500/40 text-white shadow-md shadow-teal-950/40 ring-1 ring-teal-500/30'
                     : isCompleted
                     ? 'bg-slate-900/50 text-slate-300 hover:bg-slate-900 border border-slate-800/60'
                     : 'text-slate-500 hover:text-slate-400 opacity-60'
@@ -828,16 +852,16 @@ export function OnboardingPage() {
               >
                 <span className={`size-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                   isCurrent
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm'
                     : isCompleted
-                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
                     : 'bg-slate-800 text-slate-400'
                 }`}>
                   {isCompleted ? <Check className="size-3.5 stroke-[3]" /> : item.step}
                 </span>
 
                 <div className="overflow-hidden">
-                  <p className={`text-xs font-black truncate leading-tight ${isCurrent ? 'text-blue-300' : 'text-slate-200'}`}>
+                  <p className={`text-xs font-black truncate leading-tight ${isCurrent ? 'text-teal-300' : 'text-slate-200'}`}>
                     {item.title}
                   </p>
                   <p className="text-[10px] text-slate-400 truncate mt-0.5">
@@ -863,7 +887,7 @@ export function OnboardingPage() {
             <div className="rounded-3xl border border-slate-800 bg-[#0f172a]/95 backdrop-blur-xl p-6 md:p-8 space-y-6 shadow-2xl animate-fadeIn text-right">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
-                  <span className="text-[10px] font-black text-blue-400 bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-800/40">
+                  <span className="text-[10px] font-black text-teal-400 bg-teal-950/60 px-2.5 py-1 rounded-full border border-teal-800/40">
                     الخطوة 1 من 5 • هوية المتجر
                   </span>
                   <h2 className="text-xl font-black text-white mt-2">
@@ -873,7 +897,7 @@ export function OnboardingPage() {
                     هذا الدومين هو الرابط الحقيقي المباشر لمتجرك على الإنترنت.
                   </p>
                 </div>
-                <div className="size-12 rounded-2xl bg-blue-500/10 text-blue-400 grid place-items-center border border-blue-500/20">
+                <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center border border-teal-500/20">
                   <Globe className="size-6" />
                 </div>
               </div>
@@ -892,7 +916,7 @@ export function OnboardingPage() {
                     setSubdomain(`${clean}.za3em.shop`);
                   }}
                   placeholder="مثال: متجر الفخامة العراقي"
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all"
                 />
 
                 {/* Quick Name Suggestions */}
@@ -928,9 +952,9 @@ export function OnboardingPage() {
 
                 <div className={`flex items-center rounded-2xl border bg-slate-950 px-4 py-3 transition-all ${
                   subdomainCheck.status === 'checking'
-                    ? 'border-blue-500/60 ring-2 ring-blue-500/10'
+                    ? 'border-teal-500/60 ring-2 ring-teal-500/10'
                     : subdomainCheck.status === 'available'
-                    ? 'border-blue-500/80 ring-2 ring-blue-500/20'
+                    ? 'border-teal-500/80 ring-2 ring-teal-500/20'
                     : 'border-rose-500/80 ring-2 ring-rose-500/20'
                 }`}>
                   <input
@@ -951,12 +975,12 @@ export function OnboardingPage() {
                   <div className="shrink-0 flex items-center pr-2 border-r border-slate-800 mr-1">
                     {subdomainCheck.status === 'checking' && (
                       <span title="جاري الفحص...">
-                        <RefreshCw className="size-4 text-blue-400 animate-spin" />
+                        <RefreshCw className="size-4 text-teal-400 animate-spin" />
                       </span>
                     )}
                     {subdomainCheck.status === 'available' && (
                       <span title="متاح للحجز">
-                        <CheckCircle2 className="size-4 text-blue-400" />
+                        <CheckCircle2 className="size-4 text-emerald-400" />
                       </span>
                     )}
                     {subdomainCheck.status === 'unavailable' && (
@@ -971,14 +995,14 @@ export function OnboardingPage() {
                 <div className="space-y-1.5 pt-0.5">
                   <div className="flex items-center justify-between text-xs">
                     {subdomainCheck.status === 'checking' && (
-                      <span className="text-blue-400 font-bold flex items-center gap-1.5 text-[11px]">
+                      <span className="text-teal-400 font-bold flex items-center gap-1.5 text-[11px]">
                         <RefreshCw className="size-3 animate-spin" />
                         <span>{subdomainCheck.message}</span>
                       </span>
                     )}
 
                     {subdomainCheck.status === 'available' && (
-                      <span className="text-blue-400 font-bold flex items-center gap-1.5 text-[11px]">
+                      <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-[11px]">
                         <CheckCircle2 className="size-3.5" />
                         <span>{subdomainCheck.message}</span>
                       </span>
@@ -1005,7 +1029,7 @@ export function OnboardingPage() {
                             key={sug}
                             type="button"
                             onClick={() => setSubdomain(`${sug}.za3em.shop`)}
-                            className="px-2.5 py-1 rounded-lg bg-blue-950/60 hover:bg-blue-900/80 text-blue-300 font-mono text-[11px] border border-blue-800/60 transition-colors cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-teal-950/60 hover:bg-teal-900/80 text-teal-300 font-mono text-[11px] border border-teal-800/60 transition-colors cursor-pointer"
                           >
                             {sug}.za3em.shop +
                           </button>
@@ -1026,7 +1050,7 @@ export function OnboardingPage() {
                   value={slogan}
                   onChange={(e) => setSlogan(e.target.value)}
                   placeholder="مثال: أفضل المنتجات بأسعار منافسة والتوصيل السريع لجميع محافظات العراق"
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-xs text-white focus:border-blue-500 focus:outline-none transition-all"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-xs text-white focus:border-teal-500 focus:outline-none transition-all"
                 />
               </div>
 
@@ -1037,7 +1061,7 @@ export function OnboardingPage() {
                   <label className="text-xs font-bold text-slate-300 block">
                     شعار المتجر (Logo) — اختياري
                   </label>
-                  <div className="relative rounded-2xl border border-slate-800 bg-slate-950 p-3 flex items-center gap-3 hover:border-blue-500/50 transition-colors">
+                  <div className="relative rounded-2xl border border-slate-800 bg-slate-950 p-3 flex items-center gap-3 hover:border-teal-500/50 transition-colors">
                     <input
                       type="file"
                       accept="image/*"
@@ -1075,7 +1099,7 @@ export function OnboardingPage() {
                   <label className="text-xs font-bold text-slate-300 block">
                     بنر المتجر الترويجي (Banner) — اختياري
                   </label>
-                  <div className="relative rounded-2xl border border-slate-800 bg-slate-950 p-3 flex items-center gap-3 hover:border-blue-500/50 transition-colors">
+                  <div className="relative rounded-2xl border border-slate-800 bg-slate-950 p-3 flex items-center gap-3 hover:border-teal-500/50 transition-colors">
                     <input
                       type="file"
                       accept="image/*"
@@ -1116,7 +1140,7 @@ export function OnboardingPage() {
             <div className="rounded-3xl border border-slate-800 bg-[#0f172a]/95 backdrop-blur-xl p-6 md:p-8 space-y-6 shadow-2xl animate-fadeIn text-right">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
-                  <span className="text-[10px] font-black text-blue-400 bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-800/40">
+                  <span className="text-[10px] font-black text-teal-400 bg-teal-950/60 px-2.5 py-1 rounded-full border border-teal-800/40">
                     الخطوة 2 من 5 • تخصص المتجر
                   </span>
                   <h2 className="text-xl font-black text-white mt-2">
@@ -1126,7 +1150,7 @@ export function OnboardingPage() {
                     اختر نشاطك التجاري ليتم تخصيص الأقسام والقالب المناسب لمتجرك تلقائياً.
                   </p>
                 </div>
-                <div className="size-12 rounded-2xl bg-blue-500/10 text-blue-400 grid place-items-center border border-blue-500/20">
+                <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center border border-teal-500/20">
                   <Tag className="size-6" />
                 </div>
               </div>
@@ -1148,14 +1172,14 @@ export function OnboardingPage() {
                         onClick={() => handleSelectNiche(niche.id)}
                         className={`flex flex-col items-start justify-between p-4 rounded-2xl border text-right transition-all cursor-pointer h-28 ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-950/50 text-white shadow-lg shadow-blue-950/50 ring-2 ring-blue-500/40 scale-[1.02]'
+                            ? 'border-teal-500 bg-teal-950/50 text-white shadow-lg shadow-teal-950/50 ring-2 ring-teal-500/40 scale-[1.02]'
                             : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 hover:text-white'
                         }`}
                       >
                         <div className="flex items-center justify-between w-full">
-                          <Icon className={`size-5 ${isSelected ? 'text-blue-400' : 'text-slate-400'}`} />
+                          <Icon className={`size-5 ${isSelected ? 'text-teal-400' : 'text-slate-400'}`} />
                           {isSelected && (
-                            <span className="size-4 rounded-full bg-blue-600 text-white grid place-items-center text-[9px] font-black">
+                            <span className="size-4 rounded-full bg-teal-600 text-white grid place-items-center text-[9px] font-black">
                               ✓
                             </span>
                           )}
@@ -1176,7 +1200,7 @@ export function OnboardingPage() {
                   <label className="text-xs font-black text-slate-200 block">
                     أقسام وتصنيفات المتجر (يمكنك التعديل والحذف والإضافة):
                   </label>
-                  <span className="text-[10px] text-blue-400 font-bold">{categories.length} أقسام محددة</span>
+                  <span className="text-[10px] text-teal-400 font-bold">{categories.length} أقسام محددة</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -1205,12 +1229,12 @@ export function OnboardingPage() {
                     onChange={(e) => setNewCatInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } }}
                     placeholder="اكتب اسم قسم جديد واضغط إضافة..."
-                    className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-xs text-white focus:border-blue-500 focus:outline-none"
+                    className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-xs text-white focus:border-teal-500 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={handleAddCategory}
-                    className="rounded-xl bg-blue-600 hover:bg-blue-500 px-5 text-xs font-bold text-white transition-colors cursor-pointer"
+                    className="rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 px-5 text-xs font-bold text-white transition-colors cursor-pointer shadow-md"
                   >
                     + إضافة
                   </button>
@@ -1268,7 +1292,7 @@ export function OnboardingPage() {
                               {tmpl.badge}
                             </span>
                             {isSelected && (
-                              <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center gap-1 shadow-lg">
+                              <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white text-[10px] font-black flex items-center gap-1 shadow-lg shadow-teal-600/30">
                                 <Check className="size-3 stroke-[3]" /> مفعّل لمتجرك
                               </span>
                             )}
@@ -1276,7 +1300,7 @@ export function OnboardingPage() {
 
                           <div className="absolute bottom-2 right-2.5 left-2.5 text-right">
                             <h4 className="text-sm font-black text-white">{tmpl.name}</h4>
-                            <p className="text-[10px] text-blue-300 font-bold">{tmpl.categoryTitle}</p>
+                            <p className="text-[10px] text-teal-300 font-bold">{tmpl.categoryTitle}</p>
                           </div>
                         </div>
 
@@ -1301,17 +1325,34 @@ export function OnboardingPage() {
                           {isSelected ? '✓ الثيم المختار' : 'اضغط للتطبيق'}
                         </span>
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewModalTemplate(tmpl);
-                          }}
-                          className="flex items-center gap-1 text-[11px] font-bold text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Eye className="size-3 text-blue-400" />
-                          <span>معاينة حية</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {/* Live External Preview Link (e.g. nova.za3em.shop) */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePreviewTemplateExternal(tmpl.id);
+                            }}
+                            className="flex items-center gap-1 text-[11px] font-bold text-teal-300 hover:text-white bg-teal-950/60 hover:bg-teal-900 border border-teal-800/60 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-sm"
+                            title={`فتح المعاينة الحية للقالب على دومين ${tmpl.id.replace('store-', '')}.za3em.shop`}
+                          >
+                            <ExternalLink className="size-3 text-teal-400" />
+                            <span>معاينة خارجية</span>
+                          </button>
+
+                          {/* Quick Modal Preview */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewModalTemplate(tmpl);
+                            }}
+                            className="flex items-center gap-1 text-[11px] font-bold text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                            title="معاينة تفاصيل الثيم"
+                          >
+                            <Eye className="size-3 text-slate-400" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1327,88 +1368,28 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* STEP 4: First Product & Customization */}
+          {/* STEP 4: First Product & Customization (Manual Addition Only) */}
           {currentStep === 4 && (
             <div className="rounded-3xl border border-slate-800 bg-[#0f172a]/95 backdrop-blur-xl p-6 md:p-8 space-y-6 shadow-2xl animate-fadeIn text-right">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
-                  <span className="text-[10px] font-black text-blue-400 bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-800/40">
-                    الخطوة 4 من 5 • أول منتج حقيقي
+                  <span className="text-[10px] font-black text-teal-400 bg-teal-950/60 px-2.5 py-1 rounded-full border border-teal-800/40">
+                    الخطوة 4 من 5 • إضافة منتجك الأول
                   </span>
                   <h2 className="text-xl font-black text-white mt-2">
-                    أضف أو اختر منتجاً لمتجرك
+                    أضف منتجك الأول يدوياً لمتجرك
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
-                    يمكنك اختيار منتج جاهز من مكتبة المنصة أو تخصيص منتجك الخاص مع رفع صورته.
+                    أدخل بيانات منتجك الحقيقي وسعره وصورته ليتم نشره في متجرك فوراً.
                   </p>
                 </div>
-                <div className="size-12 rounded-2xl bg-blue-500/10 text-blue-400 grid place-items-center border border-blue-500/20">
+                <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center border border-teal-500/20">
                   <Package className="size-6" />
                 </div>
               </div>
 
-              {/* Toggle Mode: Preset vs Custom */}
-              <div className="flex items-center gap-2 p-1 rounded-2xl bg-slate-950 border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setProductMode('preset')}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    productMode === 'preset'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  اختيار من المنتجات الجاهزة
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProductMode('custom');
-                    setProductName('');
-                    setProductPrice('');
-                  }}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    productMode === 'custom'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  تخصيص منتج جديد خاص بي
-                </button>
-              </div>
-
-              {/* Preset Mode: Library Grid */}
-              {productMode === 'preset' && (
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-300 block">
-                    اختر منتجاً جاهزاً لمتجرك:
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    {SAMPLE_PRODUCTS.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handlePickSampleProduct(item)}
-                        className={`p-2.5 rounded-xl border text-right transition-all flex items-center gap-2.5 cursor-pointer ${
-                          productName === item.name
-                            ? 'border-blue-500 bg-blue-950/60 text-white ring-1 ring-blue-500/40'
-                            : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 hover:text-white'
-                        }`}
-                      >
-                        <img src={item.image} alt={item.name} className="size-11 rounded-lg object-cover shrink-0 border border-slate-800" />
-                        <div className="overflow-hidden">
-                          <p className="text-[11px] font-bold truncate leading-tight">{item.name}</p>
-                          <p className="text-[10px] text-blue-400 font-mono mt-0.5">{formatIQD(Number(item.price))}</p>
-                          <span className="text-[9px] text-slate-500 block truncate">{item.category}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Product Form */}
-              <div className="space-y-4 pt-2 border-t border-slate-800">
+              <div className="space-y-4 pt-1">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1 text-right">
                     <label className="text-xs font-bold text-slate-300 block">اسم المنتج *</label>
@@ -1416,8 +1397,8 @@ export function OnboardingPage() {
                       type="text"
                       value={productName}
                       onChange={(e) => { setProductName(e.target.value); setProductAdded(true); }}
-                      placeholder="مثال: عطر الفخامة الملكي"
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-xs text-white focus:border-blue-500 focus:outline-none"
+                      placeholder="مثال: ساعة لومينور الفاخرة أو عطر خاص"
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-xs text-white focus:border-teal-500 focus:outline-none"
                     />
                   </div>
 
@@ -1427,8 +1408,8 @@ export function OnboardingPage() {
                       type="number"
                       value={productPrice}
                       onChange={(e) => { setProductPrice(e.target.value); setProductAdded(true); }}
-                      placeholder="45000"
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-xs text-white font-mono focus:border-blue-500 focus:outline-none"
+                      placeholder="مثال: 35000"
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-xs text-white font-mono focus:border-teal-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1438,7 +1419,7 @@ export function OnboardingPage() {
                   <select
                     value={productCategory}
                     onChange={(e) => setProductCategory(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-xs text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-xs text-white focus:border-teal-500 focus:outline-none"
                   >
                     {categories.map((c, i) => (
                       <option key={i} value={c}>{c}</option>
@@ -1447,7 +1428,7 @@ export function OnboardingPage() {
                 </div>
 
                 {/* Permanent Image Upload */}
-                <div className="relative rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950 p-4 text-center hover:border-blue-500/50 transition-colors">
+                <div className="relative rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950 p-4 text-center hover:border-teal-500/50 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
@@ -1455,27 +1436,43 @@ export function OnboardingPage() {
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   <div className="flex items-center justify-center gap-3">
-                    <img src={productImage} alt="Product" className="size-14 rounded-xl object-cover border border-slate-700" />
+                    {productImage ? (
+                      <img src={productImage} alt="Product" className="size-16 rounded-xl object-cover border border-teal-500/50 shadow-md" />
+                    ) : (
+                      <div className="size-16 rounded-xl bg-slate-900 border border-slate-800 grid place-items-center text-slate-500">
+                        <Upload className="size-6" />
+                      </div>
+                    )}
                     <div className="text-right">
-                      <p className="text-xs font-bold text-white">اضغط لرفع وتحديث صورة المنتج</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">يتم حفظ الصورة بصيغة دائمة وثابتة في قاعدة البيانات</p>
+                      <p className="text-xs font-bold text-white">
+                        {productImage ? 'اضغط لتغيير صورة المنتج' : 'اضغط لرفع صورة المنتج'}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">يتم حفظ الصورة بصيغة دائمة وثابتة في المتجر</p>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Free 5 Shipments Celebration Card */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-950/40 via-slate-900 to-indigo-950/40 border border-blue-500/30 text-right flex items-start gap-3.5">
-                <div className="size-10 rounded-xl bg-blue-500/20 text-blue-400 grid place-items-center shrink-0 border border-blue-500/30">
-                  <Gift className="size-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-blue-300">
-                    هدية مجانية لمتجرك: 5 شحنات مجانية بالكامل
-                  </h4>
-                  <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                    تم تفعيل رصيد 5 شحنات مجانية مع أسطول شركة الزعيم للشحن في العراق (توصيل لكافة المحافظات مع تحصيل الدفع عند الاستلام).
-                  </p>
+                {/* Prominent Add/Save Product Button replacing the free gift card */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!productName.trim()) {
+                        alert('يرجى كتابة اسم المنتج أولاً');
+                        return;
+                      }
+                      if (!productPrice) {
+                        alert('يرجى تحديد سعر المنتج بالدينار العراقي');
+                        return;
+                      }
+                      setProductAdded(true);
+                      alert('✓ تم حفظ المنتج بنجاح وتحديث المعاينة الحية لمتجرك!');
+                    }}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-sm shadow-xl shadow-teal-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                  >
+                    <Package className="size-4" />
+                    <span>+ إضافة وحفظ المنتج بالمتجر</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1483,20 +1480,20 @@ export function OnboardingPage() {
 
           {/* STEP 5: Final Review & Live Internet Launch */}
           {currentStep === 5 && (
-            <div className="rounded-3xl border border-blue-500/40 bg-gradient-to-br from-[#0f172a] via-[#0d1424] to-slate-950 p-6 md:p-8 space-y-6 shadow-2xl animate-fadeIn text-right">
+            <div className="rounded-3xl border border-teal-500/40 bg-gradient-to-br from-[#0f172a] via-[#0d1424] to-slate-950 p-6 md:p-8 space-y-6 shadow-2xl animate-fadeIn text-right">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
-                  <span className="text-[10px] font-black text-blue-400 bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-800/40">
+                  <span className="text-[10px] font-black text-teal-400 bg-teal-950/60 px-2.5 py-1 rounded-full border border-teal-800/40">
                     الخطوة الأخيرة • الربط والإطلاق الفوري
                   </span>
                   <h2 className="text-xl font-black text-white mt-2">
                     متجرك جاهز للربط بالدومين والإطلاق أونلاين
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
-                    بمجرد النقر سيتم ربط القالب المختار (<span className="text-blue-300 font-bold">{activeTheme.name}</span>) بالدومين والرمز التعريفي وإطلاقه مباشرة.
+                    بمجرد النقر سيتم ربط القالب المختار (<span className="text-teal-300 font-bold">{activeTheme.name}</span>) بالدومين والرمز التعريفي وإطلاقه مباشرة.
                   </p>
                 </div>
-                <div className="size-12 rounded-2xl bg-blue-500/10 text-blue-400 grid place-items-center border border-blue-500/20">
+                <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center border border-teal-500/20">
                   <Sparkles className="size-6" />
                 </div>
               </div>
@@ -1510,18 +1507,18 @@ export function OnboardingPage() {
 
                 <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold block">الدومين الفرعي المباشر</span>
-                  <span className="font-mono font-bold text-sm text-blue-400 truncate block">{subdomain}</span>
+                  <span className="font-mono font-bold text-sm text-teal-400 truncate block">{subdomain}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold block">الرمز التعريفي للمتجر (Store Code)</span>
-                  <span className="font-mono font-bold text-sm text-indigo-400 block">{storeCode}</span>
+                  <span className="font-mono font-bold text-sm text-emerald-400 block">{storeCode}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold block">قالب المتجر المختار</span>
                   <span className="font-bold text-white flex items-center gap-1.5">
-                    <span className="size-2.5 rounded-full bg-blue-500" />
+                    <span className="size-2.5 rounded-full bg-teal-500" />
                     {activeTheme.name}
                   </span>
                 </div>
@@ -1529,21 +1526,21 @@ export function OnboardingPage() {
                 <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1 sm:col-span-2">
                   <span className="text-[10px] text-slate-400 font-bold block">المنتج المعروض للبيع</span>
                   <span className="font-bold text-white truncate block">
-                    {productName || 'منتج المتجر'} ({formatIQD(Number(productPrice) || 45000)})
+                    {productName ? `${productName} (${formatIQD(Number(productPrice) || 0)})` : 'لم تتم إضافة منتج بعد (يمكن إضافته لاحقاً)'}
                   </span>
                 </div>
               </div>
 
               {/* Logistics & Free Shipments Badge */}
-              <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-800/60 flex items-center justify-between text-xs text-blue-200">
+              <div className="p-4 rounded-2xl bg-teal-950/40 border border-teal-800/60 flex items-center justify-between text-xs text-teal-200">
                 <div className="flex items-center gap-3">
-                  <Truck className="size-5 text-blue-400 shrink-0" />
+                  <Truck className="size-5 text-teal-400 shrink-0" />
                   <div>
-                    <span className="font-black block text-blue-300">أسطول الزعيم للشحن مفعل تلقائياً</span>
-                    <span className="text-[11px] text-blue-300/80">رصيدك: 5 شحنات مجانية + توصيل لجميع المحافظات الـ 18</span>
+                    <span className="font-black block text-teal-300">أسطول الزعيم للشحن مفعل تلقائياً</span>
+                    <span className="text-[11px] text-teal-300/80">رصيدك: 5 شحنات مجانية + توصيل لجميع المحافظات الـ 18</span>
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-blue-600 text-white text-[10px] font-black shrink-0">
+                <span className="px-2.5 py-1 rounded-full bg-teal-600 text-white text-[10px] font-black shrink-0 shadow-sm">
                   مؤكد
                 </span>
               </div>
@@ -1560,7 +1557,7 @@ export function OnboardingPage() {
                 type="button"
                 disabled={isLaunching || subdomainCheck.status === 'unavailable' || subdomainCheck.status === 'checking'}
                 onClick={handleCompleteAndLaunch}
-                className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 py-4 text-sm font-black text-white shadow-2xl shadow-blue-600/30 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 py-4 text-sm font-black text-white shadow-2xl shadow-teal-600/30 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLaunching ? (
                   <>
@@ -1602,7 +1599,7 @@ export function OnboardingPage() {
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${
                   currentStep === 1 && (subdomainCheck.status === 'unavailable' || subdomainCheck.status === 'checking')
                     ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700 opacity-60'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 cursor-pointer hover:scale-[1.02]'
+                    : 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white shadow-lg shadow-teal-600/20 cursor-pointer hover:scale-[1.02]'
                 }`}
               >
                 <span>
@@ -1638,7 +1635,7 @@ export function OnboardingPage() {
                   onClick={() => setPreviewDevice('mobile')}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                     previewDevice === 'mobile'
-                      ? 'bg-blue-600 text-white shadow-sm'
+                      ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
                   }`}
                   title="عرض هاتف محمول"
@@ -1652,7 +1649,7 @@ export function OnboardingPage() {
                   onClick={() => setPreviewDevice('desktop')}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                     previewDevice === 'desktop'
-                      ? 'bg-blue-600 text-white shadow-sm'
+                      ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
                   }`}
                   title="عرض شاشة كمبيوتر"
@@ -1670,7 +1667,7 @@ export function OnboardingPage() {
                   className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                   title="إعادة تحميل المعاينة"
                 >
-                  <RotateCcw className={`size-3 ${previewIsReloading ? 'animate-spin text-blue-400' : ''}`} />
+                  <RotateCcw className={`size-3 ${previewIsReloading ? 'animate-spin text-teal-400' : ''}`} />
                 </button>
               </div>
             </div>
@@ -1722,7 +1719,7 @@ export function OnboardingPage() {
                     }}
                     className="text-slate-400 hover:text-white shrink-0 p-1"
                   >
-                    <RotateCcw className={`size-3 ${previewIsReloading ? 'animate-spin text-blue-400' : ''}`} />
+                    <RotateCcw className={`size-3 ${previewIsReloading ? 'animate-spin text-teal-400' : ''}`} />
                   </button>
                 </div>
 
@@ -1791,7 +1788,7 @@ export function OnboardingPage() {
                             selectedTheme === 'store-classic' ? 'text-stone-900' : 'text-white'
                           }`}>
                             <span>{storeName}</span>
-                            <CheckCircle className="size-3 text-blue-500 shrink-0" />
+                            <CheckCircle className="size-3 text-teal-400 shrink-0" />
                           </h3>
                           <p className={`text-[9px] truncate max-w-[150px] mt-0.5 ${
                             selectedTheme === 'store-classic' ? 'text-stone-500' : 'text-slate-400'
@@ -1806,7 +1803,7 @@ export function OnboardingPage() {
                         <nav className={`hidden md:flex items-center gap-4 text-xs font-bold ${
                           selectedTheme === 'store-classic' ? 'text-stone-700' : 'text-slate-300'
                         }`}>
-                          <span className="text-blue-500 border-b-2 border-blue-500 pb-0.5">الرئيسية</span>
+                          <span className="text-teal-400 border-b-2 border-teal-400 pb-0.5">الرئيسية</span>
                           <span className="hover:opacity-80 cursor-pointer">المتجر</span>
                           <span className="hover:opacity-80 cursor-pointer">العروض</span>
                           <span className="hover:opacity-80 cursor-pointer">تواصل معنا</span>
@@ -1886,7 +1883,7 @@ export function OnboardingPage() {
                       : 'bg-purple-950/60 border-purple-900 text-purple-200'
                   }`}>
                     <div className="flex items-center justify-center gap-1">
-                      <Truck className="size-3 text-blue-500 shrink-0" />
+                      <Truck className="size-3 text-teal-400 shrink-0" />
                       <span className="truncate">شحن لكافة المحافظات</span>
                     </div>
                     <div className="flex items-center justify-center gap-1">
@@ -1957,165 +1954,161 @@ export function OnboardingPage() {
                       </div>
                     )}
 
-                    {/* Star Product Card */}
-                    <div className={`rounded-2xl border ${activeTheme.cardBg} overflow-hidden shadow-lg transition-all`}>
-                      <div className="relative h-44 sm:h-48 bg-slate-950 overflow-hidden">
-                        <img
-                          src={productImage}
-                          alt={productName}
-                          className="size-full object-cover"
-                        />
-                        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1">
-                          <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full bg-blue-600 text-white shadow-md">
-                            المنتج البطل • الأكثر طلباً
-                          </span>
-                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-600/90 text-white shadow-sm">
-                            متوفر بالمخزن جاهز للشحن
-                          </span>
-                        </div>
-
-                        <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-1 rounded-lg text-amber-400 text-[10px] font-bold">
-                          <Star className="size-3 fill-amber-400" />
-                          <span>4.9 (128 تقييم)</span>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 text-right space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
-                            {productCategory}
-                          </span>
-                          <span className="text-[10px] text-emerald-600 font-bold">
-                            توصيل خلال 24 - 48 ساعة
-                          </span>
-                        </div>
-
-                        <div>
-                          <h4 className="font-black text-sm text-slate-900 leading-snug">
-                            {productName}
-                          </h4>
-                          <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
-                            {slogan}
-                          </p>
-                        </div>
-
-                        {/* Price & Discount */}
-                        <div className="flex items-baseline justify-between pt-1 border-t border-slate-100">
-                          <div className="flex items-baseline gap-2">
-                            <span className={`text-lg font-black ${activeTheme.priceColor} font-mono`}>
-                              {formatIQD((Number(productPrice) || 45000) * previewQuantity)}
-                            </span>
-                            <span className="text-[11px] text-slate-400 line-through font-mono">
-                              {formatIQD(Math.round((Number(productPrice) || 45000) * 1.35 * previewQuantity))}
-                            </span>
-                          </div>
-
-                          {/* Quantity Stepper */}
-                          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                            <button
-                              type="button"
-                              onClick={() => setPreviewQuantity(prev => Math.max(1, prev - 1))}
-                              className="size-7 flex items-center justify-center text-slate-700 hover:bg-slate-200 font-black cursor-pointer"
-                            >
-                              -
-                            </button>
-                            <span className="px-2.5 font-mono text-xs font-black text-slate-900">
-                              {previewQuantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setPreviewQuantity(prev => prev + 1)}
-                              className="size-7 flex items-center justify-center text-slate-700 hover:bg-slate-200 font-black cursor-pointer"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Realistic COD Checkout Form Box */}
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-right">
-                          <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                            <span>طلب سريع عبر الدفع عند الاستلام (COD):</span>
-                            <span className="text-blue-600 text-[10px]">بدون فيزا كارت</span>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input
-                              type="text"
-                              value={previewCustomerName}
-                              onChange={(e) => setPreviewCustomerName(e.target.value)}
-                              placeholder="اسم المستلم (مثال: علي العراقي)"
-                              className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-blue-500"
-                            />
-                            <select
-                              value={previewGov}
-                              onChange={(e) => setPreviewGov(e.target.value)}
-                              className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-slate-800 focus:outline-none focus:border-blue-500"
-                            >
-                              {IRAQ_GOVERNORATES.map(gov => (
-                                <option key={gov} value={gov}>المحافظة: {gov}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <input
-                            type="tel"
-                            value={previewCustomerPhone}
-                            onChange={(e) => setPreviewCustomerPhone(e.target.value)}
-                            placeholder="رقم الهاتف (07XXXXXXXXX)"
-                            className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-blue-500 font-mono"
-                          />
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPreviewOrderPlaced(true);
-                              setTimeout(() => setPreviewOrderPlaced(false), 3500);
-                            }}
-                            className={`w-full py-2.5 rounded-xl ${activeTheme.btnBg} text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]`}
-                          >
-                            <ShoppingCart className="size-3.5" />
-                            <span>اطلب الآن — الدفع عند الاستلام ({formatIQD((Number(productPrice) || 45000) * previewQuantity)})</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 7. Secondary Related Products Grid (Makes the store look authentically full) */}
-                    <div className="space-y-2 pt-2">
-                      <div className="flex items-center justify-between text-xs font-black text-slate-800">
-                        <span>منتجات مقترحة أخرى بالمتجر:</span>
-                        <span className="text-blue-600 text-[10px] font-bold cursor-pointer">عرض المزيد</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2.5">
-                        {SAMPLE_PRODUCTS.filter(p => p.name !== productName).slice(0, 2).map((item) => (
-                          <div
-                            key={item.id}
-                            className="rounded-xl border border-slate-200 bg-white p-2 text-right space-y-1.5 shadow-sm hover:shadow-md transition-shadow"
-                          >
+                    {/* Star Product Card (Shows user custom product or prompt to add in Step 4) */}
+                    {productName ? (
+                      <div className={`rounded-2xl border ${activeTheme.cardBg} overflow-hidden shadow-lg transition-all`}>
+                        <div className="relative h-44 sm:h-48 bg-slate-900 overflow-hidden flex items-center justify-center">
+                          {productImage ? (
                             <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-24 rounded-lg object-cover"
+                              src={productImage}
+                              alt={productName}
+                              className="size-full object-cover"
                             />
-                            <p className="text-[10px] font-bold text-slate-800 line-clamp-1">{item.name}</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-mono font-black text-blue-600">
-                                {formatIQD(Number(item.price))}
+                          ) : (
+                            <div className="size-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-slate-900 to-slate-950 text-slate-400">
+                              <Package className="size-10 text-teal-400 mb-2 opacity-80" />
+                              <span className="text-xs font-bold text-slate-200">{productName}</span>
+                              <span className="text-[10px] text-teal-400/80">منتجك الخاص مضاف وجاهز للشحن</span>
+                            </div>
+                          )}
+                          <div className="absolute top-2.5 right-2.5 flex flex-col gap-1">
+                            <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md">
+                              المنتج الأول • جاهز للطلب
+                            </span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-600/90 text-white shadow-sm">
+                              متوفر بالمخزن جاهز للشحن
+                            </span>
+                          </div>
+
+                          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-1 rounded-lg text-amber-400 text-[10px] font-bold">
+                            <Star className="size-3 fill-amber-400" />
+                            <span>5.0 (تقييم ممتاز)</span>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 text-right space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                              {productCategory || 'عام'}
+                            </span>
+                            <span className="text-[10px] text-emerald-600 font-bold">
+                              توصيل خلال 24 - 48 ساعة
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="font-black text-sm text-slate-900 leading-snug">
+                              {productName}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
+                              {slogan}
+                            </p>
+                          </div>
+
+                          {/* Price & Discount */}
+                          <div className="flex items-baseline justify-between pt-1 border-t border-slate-100">
+                            <div className="flex items-baseline gap-2">
+                              <span className={`text-lg font-black ${activeTheme.priceColor} font-mono`}>
+                                {formatIQD((Number(productPrice) || 0) * previewQuantity)}
+                              </span>
+                              {Number(productPrice) > 0 && (
+                                <span className="text-[11px] text-slate-400 line-through font-mono">
+                                  {formatIQD(Math.round(Number(productPrice) * 1.35 * previewQuantity))}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Quantity Stepper */}
+                            <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewQuantity(prev => Math.max(1, prev - 1))}
+                                className="size-7 flex items-center justify-center text-slate-700 hover:bg-slate-200 font-black cursor-pointer"
+                              >
+                                -
+                              </button>
+                              <span className="px-2.5 font-mono text-xs font-black text-slate-900">
+                                {previewQuantity}
                               </span>
                               <button
                                 type="button"
-                                onClick={() => handlePickSampleProduct(item)}
-                                className="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer"
+                                onClick={() => setPreviewQuantity(prev => prev + 1)}
+                                className="size-7 flex items-center justify-center text-slate-700 hover:bg-slate-200 font-black cursor-pointer"
                               >
-                                اختياره
+                                +
                               </button>
                             </div>
                           </div>
-                        ))}
+
+                          {/* Realistic COD Checkout Form Box */}
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-right">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                              <span>طلب سريع عبر الدفع عند الاستلام (COD):</span>
+                              <span className="text-teal-600 text-[10px]">بدون فيزا كارت</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <input
+                                type="text"
+                                value={previewCustomerName}
+                                onChange={(e) => setPreviewCustomerName(e.target.value)}
+                                placeholder="اسم المستلم (مثال: علي العراقي)"
+                                className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-teal-500"
+                              />
+                              <select
+                                value={previewGov}
+                                onChange={(e) => setPreviewGov(e.target.value)}
+                                className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-slate-800 focus:outline-none focus:border-teal-500"
+                              >
+                                {IRAQ_GOVERNORATES.map(gov => (
+                                  <option key={gov} value={gov}>المحافظة: {gov}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <input
+                              type="tel"
+                              value={previewCustomerPhone}
+                              onChange={(e) => setPreviewCustomerPhone(e.target.value)}
+                              placeholder="رقم الهاتف (07XXXXXXXXX)"
+                              className="w-full text-[11px] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-teal-500 font-mono"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPreviewOrderPlaced(true);
+                                setTimeout(() => setPreviewOrderPlaced(false), 3500);
+                              }}
+                              className={`w-full py-2.5 rounded-xl ${activeTheme.btnBg} text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]`}
+                            >
+                              <ShoppingCart className="size-3.5" />
+                              <span>اطلب الآن — الدفع عند الاستلام ({formatIQD((Number(productPrice) || 0) * previewQuantity)})</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white/80 p-6 text-center space-y-3 shadow-sm">
+                        <div className="size-12 rounded-2xl bg-teal-50 text-teal-600 border border-teal-200 mx-auto grid place-items-center shadow-sm">
+                          <Package className="size-6" />
+                        </div>
+                        <div>
+                          <h4 className="font-black text-sm text-slate-900">لم تقم بإضافة منتج بعد</h4>
+                          <p className="text-xs text-slate-500 max-w-xs mx-auto mt-1 leading-relaxed">
+                            أضف منتجك يدوياً في الخطوة 4 ليظهر هنا في المتجر المباشر مع تفاصيله وسعره ونموذج الدفع عند الاستلام (COD).
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setCurrentStep(4)}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-xs font-black transition-all shadow-md shadow-teal-600/20 cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <Plus className="size-3.5" />
+                          <span>إضافة منتجك الأول الآن (الخطوة 4)</span>
+                        </button>
+                      </div>
+                    )}
 
                     {/* 8. Realistic Store Footer */}
                     <footer className={`pt-4 pb-2 border-t text-center space-y-1 text-[10px] ${
@@ -2237,36 +2230,36 @@ export function OnboardingPage() {
       {/* ========================================================================= */}
       {launchSuccessData && launchSuccessData.open && (
         <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn">
-          <div className="max-w-md w-full rounded-2xl sm:rounded-3xl border border-blue-500/40 bg-[#0f172a] p-4 sm:p-6 text-right space-y-3 sm:space-y-4 shadow-2xl relative my-auto max-h-[94vh] flex flex-col justify-between overflow-y-auto rf-scrollbar">
-            <div className="absolute top-0 right-0 size-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="max-w-md w-full rounded-2xl sm:rounded-3xl border border-teal-500/40 bg-[#0f172a] p-4 sm:p-6 text-right space-y-3 sm:space-y-4 shadow-2xl relative my-auto max-h-[94vh] flex flex-col justify-between overflow-y-auto rf-scrollbar">
+            <div className="absolute top-0 right-0 size-36 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
 
             <div className="text-center space-y-1.5">
-              <div className="size-11 sm:size-12 rounded-2xl bg-blue-500/20 border border-blue-500/40 text-blue-400 mx-auto grid place-items-center shadow-lg shadow-blue-500/20">
-                <Sparkles className="size-6 text-blue-400 animate-pulse" />
+              <div className="size-11 sm:size-12 rounded-2xl bg-teal-500/20 border border-teal-500/40 text-teal-400 mx-auto grid place-items-center shadow-lg shadow-teal-500/20">
+                <Sparkles className="size-6 text-teal-400 animate-pulse" />
               </div>
-              <span className="inline-block text-[10px] font-black text-blue-400 bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-800/80">
+              <span className="inline-block text-[10px] font-black text-teal-400 bg-teal-950/80 px-2.5 py-0.5 rounded-full border border-teal-800/80">
                 تم الربط والإطلاق أونلاين بنجاح
               </span>
               <h2 className="text-lg sm:text-xl font-black text-white">
                 متجرك انطلق الآن على الإنترنت
               </h2>
               <p className="text-[11px] text-slate-300 max-w-sm mx-auto leading-relaxed">
-                تم حجز دومينك وربطه بقالب (<span className="text-blue-300 font-bold">{launchSuccessData.templateName}</span>) وأصبح متاحاً للزبائن فوراً.
+                تم حجز دومينك وربطه بقالب (<span className="text-teal-300 font-bold">{launchSuccessData.templateName}</span>) وأصبح متاحاً للزبائن فوراً.
               </p>
             </div>
 
             {/* Store Code & Live Link Compact Cards */}
             <div className="space-y-2">
               {/* Store Code Box */}
-              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/90 border border-indigo-900/50 flex items-center justify-between">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
                 <div>
                   <span className="text-[9px] text-slate-400 font-bold block">الرمز التعريفي الفريد لمتجرك:</span>
-                  <span className="font-mono text-xs sm:text-sm font-black text-indigo-400">{launchSuccessData.storeCode}</span>
+                  <span className="font-mono text-xs sm:text-sm font-black text-emerald-400">{launchSuccessData.storeCode}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleCopyStoreCode(launchSuccessData.storeCode)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] font-black transition-colors cursor-pointer"
                 >
                   <Copy className="size-3" />
                   <span>{codeCopied ? 'تم النسخ' : 'نسخ الرمز'}</span>
@@ -2274,16 +2267,16 @@ export function OnboardingPage() {
               </div>
 
               {/* Live Store URL Box */}
-              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/90 border border-slate-700/80 space-y-1.5">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/90 border border-teal-900/50 space-y-1.5">
                 <span className="text-[9px] text-slate-400 font-bold block">رابط متجرك الحقيقي المباشر:</span>
                 <div className="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800">
-                  <span className="font-mono text-[11px] sm:text-xs text-blue-400 font-bold truncate dir-ltr">
+                  <span className="font-mono text-[11px] sm:text-xs text-teal-400 font-bold truncate dir-ltr">
                     https://{launchSuccessData.subdomain}.za3em.shop
                   </span>
                   <button
                     type="button"
                     onClick={() => handleCopyStoreLink(`https://${launchSuccessData.subdomain}.za3em.shop`)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black transition-colors shrink-0 cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-[10px] font-black transition-colors shrink-0 cursor-pointer"
                   >
                     <Copy className="size-3" />
                     <span>{linkCopied ? 'تم النسخ' : 'نسخ الرابط'}</span>
@@ -2294,46 +2287,48 @@ export function OnboardingPage() {
               {/* Quick Preview & Free Shipments Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
                 <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-slate-300">
-                  <span>معاينة بالمنصة:</span>
+                  <span>معاينة الرابط الفرعي:</span>
                   <a
-                    href={`/#/store/${launchSuccessData.subdomain}`}
+                    href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `/#/store/${launchSuccessData.subdomain}` : `https://${launchSuccessData.subdomain}.za3em.shop`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-400 hover:text-blue-300 font-bold underline flex items-center gap-0.5"
+                    className="text-teal-400 hover:text-teal-300 font-bold underline flex items-center gap-0.5 cursor-pointer"
                   >
                     <span>زيارة الآن</span>
                     <ExternalLink className="size-2.5" />
                   </a>
                 </div>
 
-                <div className="p-2 rounded-xl bg-blue-950/40 border border-blue-800/60 text-blue-300 flex items-center gap-1.5 font-bold">
-                  <Truck className="size-3 text-blue-400 shrink-0" />
+                <div className="p-2 rounded-xl bg-teal-950/40 border border-teal-800/60 text-teal-300 flex items-center gap-1.5 font-bold">
+                  <Truck className="size-3 text-teal-400 shrink-0" />
                   <span className="truncate">5 شحنات مجانية مفعلة!</span>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2.5 pt-2">
               <a
-                href={launchSuccessData.seedUrl || `https://${launchSuccessData.subdomain}.za3em.shop`}
+                href={launchSuccessData.seedUrl || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `/#/store/${launchSuccessData.subdomain}` : `https://${launchSuccessData.subdomain}.za3em.shop`)}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-2.5 sm:py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs text-center flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/25 transition-all cursor-pointer"
+                className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-xs sm:text-sm text-center flex items-center justify-center gap-2 shadow-lg shadow-teal-600/25 transition-all cursor-pointer active:scale-[0.98]"
               >
                 <span>فتح وتجربة المتجر المباشر</span>
                 <ExternalLink className="size-3.5" />
               </a>
 
+              {/* Ultra-clear, Prominent Dashboard Button */}
               <button
                 type="button"
                 onClick={() => {
                   window.location.hash = '#/dashboard';
                   setLocation('/dashboard');
                 }}
-                className="w-full py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition-colors cursor-pointer"
+                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 border-2 border-emerald-300 transition-all cursor-pointer active:scale-[0.98]"
               >
-                الانتقال للوحة التحكم ومتابعة الشحنات
+                <Store className="size-4 stroke-[2.5]" />
+                <span>الانتقال إلى لوحة التحكم ومتابعة الشحنات ←</span>
               </button>
             </div>
           </div>

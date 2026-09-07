@@ -286,7 +286,18 @@ export function normalizeTemplateId(id?: string): TemplateId {
     case 'nitro':
       return 'store-sneak';
     case 'oret':
+    case 'aurit':
       return 'store-aurit';
+    case 'brick':
+      return 'store-brick';
+    case 'novatrend':
+      return 'store-novatrend';
+    case 'gizmo':
+      return 'store-gizmo';
+    case 'sneak':
+      return 'store-sneak';
+    case 'nexora':
+      return 'store-nexora';
     default:
       return 'store-sprout';
   }

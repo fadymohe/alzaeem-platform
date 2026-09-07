@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRoute } from 'wouter';
-import { StoreTemplates, TEMPLATES_MAP, type TemplateId } from '../components/storefront/StoreTemplates';
+import { StoreTemplates, TEMPLATES_MAP, normalizeTemplateId, type TemplateId } from '../components/storefront/StoreTemplates';
 import { getRegisteredStore, type RegisteredStoreData } from '../utils/storeRegistry';
 
 export function StandaloneStorePage() {
@@ -18,13 +18,19 @@ export function StandaloneStorePage() {
   const cleanSub = rawSub.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
   const [storeName, setStoreName] = useState('متجر الزعيم الذهبي');
-  const [templateId, setTemplateId] = useState<TemplateId>('shoppingcart.1.2.7');
+  const [templateId, setTemplateId] = useState<TemplateId>('store-classic');
   const [storeData, setStoreData] = useState<RegisteredStoreData | null>(null);
 
   useEffect(() => {
-    // 1. If cleanSub directly names a template (volt, rose, nitro, sepia, oret)
-    if (TEMPLATES_MAP[cleanSub as TemplateId]) {
-      setTemplateId(cleanSub as TemplateId);
+    // 1. If cleanSub directly names a template or alias (nova, classic, aurit, etc.)
+    const normalized = normalizeTemplateId(cleanSub);
+    if (cleanSub !== 'zero' && (TEMPLATES_MAP[cleanSub as TemplateId] || (normalized && normalized !== 'store-sprout') || cleanSub === 'sprout')) {
+      const targetTmpl = TEMPLATES_MAP[cleanSub as TemplateId] ? (cleanSub as TemplateId) : normalized;
+      setTemplateId(targetTmpl);
+      const tmplInfo = TEMPLATES_MAP[targetTmpl];
+      if (tmplInfo) {
+        setStoreName(tmplInfo.name);
+      }
       return;
     }
 
@@ -32,8 +38,8 @@ export function StandaloneStorePage() {
     const registered = getRegisteredStore(cleanSub);
     if (registered) {
       if (registered.storeName) setStoreName(registered.storeName);
-      if (registered.templateId && TEMPLATES_MAP[registered.templateId as TemplateId]) {
-        setTemplateId(registered.templateId as TemplateId);
+      if (registered.templateId) {
+        setTemplateId(normalizeTemplateId(registered.templateId));
       }
       setStoreData(registered);
       return;
