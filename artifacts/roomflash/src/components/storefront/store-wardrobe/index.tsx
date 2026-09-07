@@ -3,11 +3,18 @@ import {
   ShoppingBag, Search, Heart, User, ArrowLeft, ArrowRight,
   Truck, ShieldCheck, Sparkles, Star, ChevronDown, CheckCircle2,
   PhoneCall, Shirt, SlidersHorizontal, ArrowUpDown, RotateCcw,
-  MessageCircle, Lock, Check
+  MessageCircle, Lock, Check, Flame, Zap
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
 import type { ThemeComponentProps } from '../store-classic';
+import {
+  ThemeShopView,
+  ThemeCategoriesView,
+  ThemeCartCheckoutView,
+  ThemeAccountView,
+  ThemeContactView
+} from '../theme-common/ThemePages';
 
 export function StoreWardrobeTheme({
   storeName,
@@ -16,6 +23,7 @@ export function StoreWardrobeTheme({
   products,
   filteredProducts,
   cartCount,
+  cartItems = [],
   onOpenCart,
   onOpenProductDetail,
   onOpenCustomerAuth,
@@ -29,395 +37,393 @@ export function StoreWardrobeTheme({
   logoUrl,
   customization
 }: ThemeComponentProps) {
+  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact'>('home');
   const [activeGender, setActiveGender] = useState('الكل');
 
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
   const brandColor = customization?.brandColor || '#111111';
+  const fontFamily = "'IBM Plex Sans Arabic', 'Syne', sans-serif";
   const isEn = customization?.defaultLanguage === 'en';
-  const isSticky = customization?.isHeaderSticky !== false;
-  const showTrust = customization?.showTrustFeatures !== false;
-  const showBanner = customization?.showHeroBanner !== false;
   const announcement = customization?.announcementText || 'أحدث خطوط الموضة والأزياء الراقية • توصيل سريع لجميع محافظات العراق والدفع عند الاستلام';
-  const heroTitle = customization?.heroTitle || (isEn ? 'Daily Signature Collection' : 'يومي بطابع خاص');
-  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'The pieces you wear on repeat' : 'القطع التي ترتديها فقط');
-  const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Now' : 'تسوق الآن');
-  const gridCols = customization?.productGridCols || 4;
-  const showDiscount = customization?.showDiscountBadge !== false;
-  const showStock = customization?.showStockStatus !== false;
-  const enableQuick = customization?.enableQuickBuy !== false;
-  const urgencyTicker = customization?.showUrgencyTicker !== false;
-  const copyright = customization?.footerCopyright || `© ${new Date().getFullYear()} ${storeName}. جميع الحقوق محفوظة • منصة الزعيم`;
-  const showBadges = customization?.showPaymentBadges !== false;
-  const enableWa = customization?.enableWhatsAppFloating !== false;
-  const waNumber = customization?.whatsAppNumber || '+9647700000000';
-  const enableStickyCart = customization?.enableStickyCartBar !== false;
+  const heroTitle = customization?.heroTitle || (isEn ? 'Daily Signature Collection' : 'يومي بطابع خاص — أزياء معاصرة');
+  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'The pieces you wear on repeat' : 'القطع التي ترتديها فقط — تسوق أحدث خطوط الكاجوال اليومية والستريت وير.');
+  const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Now' : 'تسوق التشكيلة');
 
-  const getColsClass = () => {
-    switch (gridCols) {
-      case 2: return 'grid-cols-1 sm:grid-cols-2';
-      case 3: return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
-      case 4:
-      default: return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
-    }
+  const sharedPageProps = {
+    storeName,
+    subdomain,
+    fullDomain,
+    brandColor: '#111111',
+    fontFamily,
+    products,
+    cartItems,
+    onAddToCart,
+    onQuickBuy,
+    onOpenProductDetail,
+    onNavigatePage: (page: any) => setCurrentPage(page)
   };
 
   return (
     <div
-      className="min-h-screen bg-[#fafafa] text-slate-900 font-sans antialiased selection:bg-black selection:text-white"
+      className="min-h-screen bg-white text-black antialiased selection:bg-black selection:text-white flex flex-col"
+      style={{ fontFamily }}
       dir={isEn ? 'ltr' : 'rtl'}
     >
-      
-      {/* 1. Top Minimalist Announcement Bar */}
-      {customization?.showAnnouncement !== false && (
-        <div className="bg-black text-white text-[11px] font-bold py-2 px-4 md:px-8 shadow-sm">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 mx-auto sm:mx-0">
-              <span>{announcement}</span>
-            </span>
-            <div className="hidden sm:flex items-center gap-4 text-slate-300 text-[11px]">
-              <a href="tel:+9647700000000" className="hover:text-white">
-                📞 +964 770 000 0000
-              </a>
-              <span>|</span>
-              <span className="font-mono text-white">https://{fullDomain}</span>
-            </div>
+      {/* 1. Minimal Monochromatic Announcement Bar */}
+      <div className="bg-black text-white text-xs py-2 px-4 select-none">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 overflow-hidden truncate">
+            <span className="size-1.5 rounded-full bg-[#e63946] animate-pulse shrink-0" />
+            <span className="font-bold text-[11px] truncate tracking-wide">{announcement}</span>
+          </div>
+          <div className="hidden md:flex items-center gap-4 text-[11px] font-mono shrink-0 text-slate-300">
+            <span className="font-bold text-white">توصيل لجميع المحافظات مع الزعيم</span>
+            <span>|</span>
+            <span className="font-bold text-[#e63946]">{fullDomain}</span>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* 2. Monochromatic Clean Header */}
-      <header className={`bg-white border-b border-slate-200 ${isSticky ? 'sticky top-0' : 'relative'} z-40 shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
-          
+      {/* 2. Bold Monochromatic Clean Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer select-none"
+            onClick={() => setCurrentPage('home')}
+          >
             {logoUrl ? (
               <img src={logoUrl} alt={storeName} className="h-9 w-auto max-w-[140px] object-contain" />
             ) : (
-              <div className="flex items-center gap-2">
-                <div
-                  className="size-9 text-white font-black grid place-items-center text-base rounded-lg shadow-sm"
-                  style={{ backgroundColor: brandColor }}
-                >
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 bg-black text-white font-black grid place-items-center rounded-lg shadow-sm">
                   <Shirt className="size-5" />
                 </div>
                 <div>
-                  <h1 className="font-black text-lg text-black tracking-tight leading-none uppercase">{storeName}</h1>
-                  <span className="text-[10px] font-mono text-slate-500 dir-ltr block mt-0.5">{fullDomain}</span>
+                  <h1 className="font-black text-lg text-black tracking-tighter uppercase leading-none">{storeName}</h1>
+                  <span className="text-[10px] font-mono text-slate-500 block mt-0.5">{fullDomain}</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Center Direct Category Tabs */}
-          <div className="hidden md:flex items-center gap-5 text-xs font-bold uppercase tracking-wider text-slate-700">
-            {categories.slice(0, 6).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => onSelectCategory(c)}
-                className={`py-1 transition-colors hover:text-black ${
-                  selectedCategory === c ? 'text-black font-black border-b-2 border-black' : ''
-                }`}
-              >
-                {c === 'الكل' && isEn ? 'All' : c}
-              </button>
-            ))}
-          </div>
-
-          {/* Right Search & Actions */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative hidden sm:block w-48 lg:w-56">
-              <Search className={`absolute ${isEn ? 'left-3' : 'right-3'} top-2.5 size-3.5 text-slate-400`} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder={isEn ? 'Search wardrobe...' : 'بحث في المنتجات...'}
-                className={`w-full h-8 ${isEn ? 'pl-9 pr-3' : 'pr-9 pl-3'} border border-slate-300 rounded-lg text-xs bg-slate-50 focus:outline-none focus:border-black focus:bg-white`}
-              />
-            </div>
-
-            {/* Customer Auth Button */}
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-6 text-xs font-black uppercase tracking-wider text-slate-700">
             <button
               type="button"
-              onClick={() => onOpenCustomerAuth?.()}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-900 text-xs font-bold hover:bg-slate-100 transition-colors"
-              title="تسجيل الدخول / حسابي"
+              onClick={() => setCurrentPage('home')}
+              className={`py-1 transition-colors hover:text-black ${
+                currentPage === 'home' ? 'text-black border-b-2 border-black' : ''
+              }`}
             >
-              <User className="size-3.5" />
-              <span className="hidden sm:inline">
-                {currentCustomer ? currentCustomer.name : 'دخول'}
-              </span>
+              الرئيسية
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('shop')}
+              className={`py-1 transition-colors hover:text-black ${
+                currentPage === 'shop' ? 'text-black border-b-2 border-black' : ''
+              }`}
+            >
+              جميع المنتجات
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('categories')}
+              className={`py-1 transition-colors hover:text-black ${
+                currentPage === 'categories' ? 'text-black border-b-2 border-black' : ''
+              }`}
+            >
+              التصنيفات
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('contact')}
+              className={`py-1 transition-colors hover:text-black ${
+                currentPage === 'contact' ? 'text-black border-b-2 border-black' : ''
+              }`}
+            >
+              اتصل بنا
+            </button>
+          </nav>
+
+          {/* Actions: Search, Account, Cart */}
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setCurrentPage('shop')}
+              className="size-9 rounded-lg border border-slate-200 hover:bg-slate-100 grid place-items-center transition-colors"
+              title="بحث في المتجر"
+            >
+              <Search className="size-4 text-slate-700" />
             </button>
 
-            {/* Cart Button */}
             <button
               type="button"
-              onClick={() => onOpenCart?.()}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-white font-black text-xs rounded-lg transition-all shadow-sm hover:opacity-90"
-              style={{ backgroundColor: brandColor }}
+              onClick={() => {
+                if (onOpenCustomerAuth) onOpenCustomerAuth();
+                else setCurrentPage('account');
+              }}
+              className="size-9 rounded-lg border border-slate-200 hover:bg-slate-100 grid place-items-center transition-colors"
+              title="حساب العميل"
             >
-              <ShoppingBag className="size-3.5" />
-              <span>{isEn ? 'Cart' : 'السلة'} ({cartCount})</span>
+              <User className="size-4 text-slate-700" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenCart) onOpenCart();
+                else setCurrentPage('cart');
+              }}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-black hover:bg-slate-800 text-white font-black text-xs transition-all active:scale-95"
+            >
+              <ShoppingBag className="size-4" />
+              <span>السلة</span>
+              <span className="size-4 rounded-full bg-[#e63946] text-white text-[10px] grid place-items-center font-mono">
+                {cartCount}
+              </span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* 3. Authentic Wardrobe Hero Banner (Matching Screenshot 1 left side) */}
-      {showBanner && (
-        <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-          <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row items-center justify-between">
-            {/* Left Model Photo (Striped Long Sleeve Knit Shirt matching Screenshot) */}
-            <div className="w-full md:w-1/2 h-72 md:h-96 relative overflow-hidden bg-slate-100">
-              <img
-                src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&auto=format&fit=crop&q=80"
-                alt="Wardrobe Hero Model"
-                className="size-full object-cover object-top hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-transparent via-transparent to-white/40" />
-            </div>
+      {/* 3. Main Body Routing */}
+      <main className="flex-1">
+        {currentPage === 'shop' && <ThemeShopView {...sharedPageProps} />}
+        {currentPage === 'categories' && <ThemeCategoriesView {...sharedPageProps} />}
+        {currentPage === 'cart' && <ThemeCartCheckoutView {...sharedPageProps} />}
+        {currentPage === 'checkout' && <ThemeCartCheckoutView {...sharedPageProps} />}
+        {currentPage === 'account' && <ThemeAccountView {...sharedPageProps} />}
+        {currentPage === 'contact' && <ThemeContactView {...sharedPageProps} />}
 
-            {/* Right Hero Content Text */}
-            <div className="w-full md:w-1/2 p-8 md:p-12 text-right space-y-4">
-              <span className="px-3 py-1 rounded-full text-[10px] font-black bg-black text-white uppercase tracking-wider inline-block">
-                {isEn ? 'Wardrobe Exclusive' : 'يومي بطابع خاص'}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-black text-black leading-tight tracking-tight">
-                {heroTitle}
-              </h2>
-              <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                {heroSubtitle}
-              </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById('wardrobe-products');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-8 py-3.5 text-white font-black text-xs rounded-xl shadow-md transition-all hover:scale-105 flex items-center gap-2"
-                  style={{ backgroundColor: brandColor }}
-                >
-                  <span>{heroBtnText}</span>
-                  <ArrowLeft className={`size-3.5 ${isEn ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* 4. 4 Benefit Cards (Matching Screenshot 1 Wardrobe: دفع آمن، شحن مجاني، إرجاع سهل، دعم متواصل) */}
-      {showTrust && (
-        <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              {
-                icon: ShieldCheck,
-                title: isEn ? 'Secure Checkout' : 'دفع آمن',
-                desc: isEn ? '100% Guaranteed Safe' : 'دفع آمن 100%'
-              },
-              {
-                icon: Truck,
-                title: isEn ? 'Free Shipping' : 'شحن مجاني',
-                desc: isEn ? 'On orders over $50' : 'للطلبات فوق 50$'
-              },
-              {
-                icon: RotateCcw,
-                title: isEn ? 'Easy Returns' : 'إرجاع سهل',
-                desc: isEn ? 'Within 14 days' : 'في غضون 14 يوماً'
-              },
-              {
-                icon: PhoneCall,
-                title: isEn ? '24/7 Support' : 'دعم متواصل',
-                desc: isEn ? 'Style consultation team' : 'دعم من فريق الاستشارات'
-              }
-            ].map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={idx}
-                  className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm hover:border-black transition-colors"
-                >
-                  <div className="size-10 rounded-xl bg-slate-100 text-black grid place-items-center shrink-0">
-                    <Icon className="size-5" />
+        {currentPage === 'home' && (
+          <div className="space-y-12 animate-fadeIn pb-16">
+            {/* Minimal Editorial Streetwear Hero */}
+            <section className="relative bg-slate-950 text-white py-16 md:py-24 px-4 md:px-8 overflow-hidden">
+              <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <div className="lg:col-span-7 space-y-6 text-right">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 text-white text-xs font-mono font-bold">
+                    <Flame className="size-4 text-[#e63946]" />
+                    <span>تشكيلة الموسم الجديد — NEW ARRIVALS</span>
                   </div>
-                  <div>
-                    <h4 className="font-extrabold text-xs text-black">{item.title}</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
-      {/* 5. Products Grid (الأكثر مبيعاً matching Screenshot 1 exactly) */}
-      <section id="wardrobe-products" className="max-w-7xl mx-auto px-4 md:px-8 mt-8 mb-16">
-        <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200">
-          <div>
-            <h2 className="font-black text-xl text-black">
-              {isEn ? 'Best Sellers' : 'الأكثر مبيعاً'}
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {isEn ? 'Premium daily casual essentials' : 'تشكيلة ملابس راقية تناسب إطلالتك اليومية'}
-            </p>
-          </div>
-          <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
-            {filteredProducts.length} {isEn ? 'Items' : 'قطعة'}
-          </span>
-        </div>
+                  <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-tight uppercase">
+                    {heroTitle}
+                  </h1>
 
-        <div className={`grid ${getColsClass()} gap-6`}>
-          {filteredProducts.map((p) => (
-            <div
-              key={p.id}
-              className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col justify-between group hover:border-black"
-            >
-              <div>
-                <div
-                  onClick={() => onOpenProductDetail?.(p)}
-                  className="h-72 bg-slate-100 relative overflow-hidden cursor-pointer"
-                >
-                  <img
-                    src={p.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=700&auto=format&fit=crop&q=80'}
-                    alt={p.name}
-                    className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  {showDiscount && p.compareAtPrice && (
-                    <span className="absolute top-2.5 right-2.5 text-[10px] font-black bg-[#e63946] text-white px-2 py-0.5 rounded shadow-sm">
-                      {isEn ? 'SALE' : 'تخفيض'}
-                    </span>
-                  )}
-                  {showStock && (
-                    <span className="absolute bottom-2.5 left-2.5 text-[9px] font-black bg-white/90 text-slate-800 px-2 py-0.5 rounded backdrop-blur-sm shadow-sm flex items-center gap-1">
-                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      {isEn ? 'In Stock' : 'متوفر بالمخزن'}
-                    </span>
-                  )}
-                  <span className="absolute bottom-2.5 right-2.5 text-[10px] font-bold bg-black/80 text-white px-2 py-0.5 rounded backdrop-blur-sm">
-                    {p.category}
-                  </span>
-                </div>
-
-                <div className="p-4 text-right space-y-1">
-                  <h4
-                    onClick={() => onOpenProductDetail?.(p)}
-                    className="font-black text-sm text-black line-clamp-1 group-hover:underline cursor-pointer"
-                  >
-                    {p.name}
-                  </h4>
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                    {p.description || 'قطعة ملابس كلاسيكية راقية مع شحن سريع ومعاينة قبل الاستلام.'}
+                  <p className="text-sm md:text-base text-slate-300 max-w-xl leading-relaxed">
+                    {heroSubtitle}
                   </p>
 
-                  {urgencyTicker && (
-                    <div className="pt-1 text-[10px] font-bold text-amber-600 flex items-center gap-1">
-                      <Sparkles className="size-3" />
-                      <span>{isEn ? 'High Demand • Limited pieces left' : 'طلب مرتفع • متبقي قطع محدودة'}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
-                <div>
-                  <span className="text-sm font-black font-mono text-black block">
-                    {formatIQD(p.price)}
-                  </span>
-                  {p.compareAtPrice && (
-                    <span className="text-[11px] text-slate-400 line-through font-mono">
-                      {formatIQD(p.compareAtPrice)}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onAddToCart) onAddToCart(p);
-                      else onQuickBuy(p);
-                    }}
-                    className="p-2 rounded-lg border border-slate-300 text-slate-800 hover:bg-slate-200 transition-colors"
-                    title="أضف إلى السلة"
-                  >
-                    <ShoppingBag className="size-3.5" />
-                  </button>
-
-                  {enableQuick && (
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => onQuickBuy(p)}
-                      className="px-3.5 py-2 rounded-xl text-xs font-black text-white shadow-sm flex items-center gap-1 transition-all hover:scale-105"
-                      style={{ backgroundColor: brandColor }}
+                      onClick={() => setCurrentPage('shop')}
+                      className="px-8 py-4 rounded-xl bg-[#e63946] hover:bg-rose-700 text-white font-black text-sm tracking-wider uppercase transition-all shadow-xl shadow-rose-900/30 flex items-center gap-2 hover:scale-[1.02]"
                     >
-                      <span>{isEn ? 'Quick Buy' : 'شراء فوري'}</span>
-                      <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
+                      <span>{heroBtnText}</span>
+                      <ArrowLeft className="size-4" />
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage('categories')}
+                      className="px-6 py-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-black text-sm transition-all"
+                    >
+                      تصفح الأقسام
+                    </button>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-5 relative">
+                  <div className="aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900">
+                    <img
+                      src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80"
+                      alt="Wardrobe Fashion"
+                      className="size-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-6 right-6 left-6 text-right space-y-1">
+                      <span className="text-[10px] font-mono font-black uppercase px-2.5 py-0.5 rounded bg-[#e63946] text-white inline-block">
+                        LIMITED RELEASE
+                      </span>
+                      <h3 className="text-xl font-black text-white">إطلالة مونوكروم حصرية</h3>
+                      <p className="text-xs text-slate-300">خامات قطن ثقيل عالي الجودة مع شحن لكافة المحافظات</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            </section>
 
-      {/* 6. Minimal Footer */}
-      <footer className="bg-white border-t border-slate-200 py-10 px-4 text-xs text-slate-600">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>{copyright}</p>
-          {showBadges && (
-            <div className="flex items-center gap-3 font-bold text-black text-[11px]">
-              <span className="px-2 py-1 rounded bg-slate-100 border border-slate-200">الدفع عند الاستلام (COD)</span>
-              <span className="px-2 py-1 rounded bg-slate-100 border border-slate-200">شركة الزعيم إكسبريس</span>
-              <span className="px-2 py-1 rounded bg-slate-100 border border-slate-200">معاينة قبل الدفع</span>
+            {/* Direct Benefits Bar */}
+            <section className="max-w-7xl mx-auto px-4 md:px-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+                <div className="flex items-center gap-3">
+                  <Truck className="size-6 text-[#e63946] shrink-0" />
+                  <div>
+                    <h4 className="font-black text-black">توصيل سريع مع الزعيم</h4>
+                    <p className="text-slate-500 mt-0.5">تغطية شاملة لجميع محافظات العراق الـ 18</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="size-6 text-[#e63946] shrink-0" />
+                  <div>
+                    <h4 className="font-black text-black">معاينة قبل الدفع</h4>
+                    <p className="text-slate-500 mt-0.5">افحص قطعتك براحتك عند الاستلام COD</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="size-6 text-[#e63946] shrink-0" />
+                  <div>
+                    <h4 className="font-black text-black">خامات معتمدة 100%</h4>
+                    <p className="text-slate-500 mt-0.5">أقمشة مختارة بعناية تعيش طويلاً</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Product Mosaic / Catalog Grid */}
+            <section className="max-w-7xl mx-auto px-4 md:px-8 space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b-2 border-black">
+                <div>
+                  <h3 className="text-2xl font-black text-black uppercase tracking-tight">التشكيلة المختارة</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">قطع يومية أساسية مصممة للبساطة والراحة المطلقة</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage('shop')}
+                    className="text-xs font-black text-black hover:text-[#e63946] flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>عرض الكتالوج الكامل</span>
+                    <ArrowLeft className="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {products.slice(0, 8).map((prod) => (
+                  <div
+                    key={prod.id}
+                    className="border border-slate-200 rounded-xl overflow-hidden hover:border-black transition-all duration-300 flex flex-col justify-between group"
+                  >
+                    <div
+                      className="relative aspect-[3/4] overflow-hidden bg-slate-100 cursor-pointer"
+                      onClick={() => onOpenProductDetail?.(prod)}
+                    >
+                      <img
+                        src={prod.imageUrl}
+                        alt={prod.name}
+                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
+                        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 text-[10px] font-mono font-black bg-[#e63946] text-white">
+                          SALE
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] font-mono text-slate-500 block uppercase">{prod.category || 'CASUAL'}</span>
+                        <h4
+                          className="font-bold text-xs md:text-sm text-black line-clamp-1 cursor-pointer hover:underline mt-0.5"
+                          onClick={() => onOpenProductDetail?.(prod)}
+                        >
+                          {prod.name}
+                        </h4>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 space-y-2">
+                        <div className="flex items-baseline justify-between font-mono">
+                          <span className="font-black text-sm md:text-base text-black">
+                            {formatIQD(prod.price)}
+                          </span>
+                          {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
+                            <span className="text-[10px] text-slate-400 line-through">
+                              {formatIQD(prod.compareAtPrice)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onQuickBuy(prod)}
+                            className="py-2 rounded-lg text-xs font-black bg-black hover:bg-slate-800 text-white transition-colors"
+                          >
+                            شراء سريع
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onAddToCart?.(prod)}
+                            className="py-2 rounded-lg text-xs font-bold border border-slate-300 hover:bg-slate-100 text-black transition-colors"
+                          >
+                            + السلة
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
+
+      {/* 4. Minimal Streetwear Footer */}
+      <footer className="bg-black text-white pt-14 pb-8 px-4 md:px-8 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-10 border-b border-slate-800 text-right">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Shirt className="size-6 text-[#e63946]" />
+              <h4 className="font-black text-lg text-white uppercase">{storeName}</h4>
             </div>
-          )}
+            <p className="text-xs text-slate-400 leading-relaxed">
+              أزياء يومية وستريت وير بمفهوم مينيمال معاصر. شحن لكافة محافظات العراق ودفع عند الاستلام.
+            </p>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <h5 className="font-black text-white text-sm uppercase tracking-wider">روابط سريعة</h5>
+            <div className="flex flex-col gap-1.5 text-slate-400">
+              <button type="button" onClick={() => setCurrentPage('home')} className="hover:text-white text-right">الرئيسية</button>
+              <button type="button" onClick={() => setCurrentPage('shop')} className="hover:text-white text-right">المتجر والكتالوج</button>
+              <button type="button" onClick={() => setCurrentPage('categories')} className="hover:text-white text-right">أقسام الأزياء</button>
+              <button type="button" onClick={() => setCurrentPage('contact')} className="hover:text-white text-right">تواصل مع الإدارة</button>
+            </div>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <h5 className="font-black text-white text-sm uppercase tracking-wider">خدمات الشحن</h5>
+            <div className="flex flex-col gap-1.5 text-slate-400">
+              <span>✓ شحن لجميع المحافظات مع شركة الزعيم</span>
+              <span>✓ فحص ومعاينة الشحنة قبل الاستلام</span>
+              <span>✓ استبدال فوري للمقاسات</span>
+              <span>✓ دفع نقدي أو إلكتروني عند الاستلام</span>
+            </div>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <h5 className="font-black text-white text-sm uppercase tracking-wider">خدمة العملاء</h5>
+            <p className="text-slate-400">الخط الساخن لطلبات الموضة السريعة:</p>
+            <a href="tel:+9647700000000" className="font-mono font-bold text-[#e63946] block text-sm">
+              +964 770 000 0000
+            </a>
+            <span className="text-[10px] text-slate-500 font-mono block">STORE DOMAIN: https://{fullDomain}</span>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto pt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 font-mono">
+          <span>© {new Date().getFullYear()} {storeName}. ALL RIGHTS RESERVED • POWERED BY ZAEEM</span>
+          <span className="text-slate-400 font-bold">WARDROBE MINIMAL THEME</span>
         </div>
       </footer>
-
-      {/* 7. Floating WhatsApp Button */}
-      {enableWa && (
-        <a
-          href={`https://wa.me/${waNumber.replace(/[^0-9]/g, '')}`}
-          target="_blank"
-          rel="noreferrer"
-          className="fixed bottom-6 left-6 z-40 size-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl grid place-items-center transition-transform hover:scale-110"
-          title="تواصل عبر واتساب للطلب الفوري"
-        >
-          <MessageCircle className="size-6 fill-white" />
-        </a>
-      )}
-
-      {/* 8. Sticky Bottom Cart Bar */}
-      {enableStickyCart && cartCount > 0 && (
-        <div className="fixed bottom-0 inset-x-0 bg-black text-white px-4 py-3 z-30 shadow-2xl flex items-center justify-between border-t border-slate-800">
-          <div className="flex items-center gap-3">
-            <ShoppingBag className="size-4" />
-            <span className="text-xs font-bold">
-              {isEn ? `You have ${cartCount} items ready` : `لديك ${cartCount} منتجات في السلة`}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const el = document.getElementById('wardrobe-products');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="px-4 py-1.5 rounded-lg bg-white text-black font-black text-xs hover:bg-slate-200 transition-colors"
-          >
-            {isEn ? 'Checkout' : 'إتمام الطلب'}
-          </button>
-        </div>
-      )}
-
     </div>
   );
 }
-
 export default StoreWardrobeTheme;

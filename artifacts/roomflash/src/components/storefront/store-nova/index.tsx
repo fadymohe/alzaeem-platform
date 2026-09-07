@@ -2,15 +2,23 @@ import React, { useState } from 'react';
 import {
   ShoppingBag, Search, Star, ArrowLeft, Truck, ShieldCheck,
   Sparkles, Heart, Clock, Check, Phone, Zap, ArrowRight, Grid,
-  ChevronDown, Headphones, Smartphone, Watch, Tv, Flame, Tag, ShoppingCart
+  ChevronDown, Headphones, Smartphone, Watch, Tv, Flame, Tag, ShoppingCart,
+  Award, PhoneCall, Plus, RefreshCw
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
 import type { ThemeComponentProps } from '../store-classic';
+import {
+  ThemeShopView,
+  ThemeCategoriesView,
+  ThemeCartCheckoutView,
+  ThemeAccountView,
+  ThemeContactView
+} from '../theme-common/ThemePages';
 
 /**
- * StoreNovaTheme - Inspired by eShopkit Tech & Lifestyle Marketplace (Screenshot 1)
- * Purple Brand Accent, Hotline Badge, Flash Sale Pill, Split Hero with Side Promos, 4 Feature Cards, Popular Categories
+ * StoreNovaTheme - Inspired by eShopkit Tech & Lifestyle Marketplace
+ * Purple Brand Accent, Alexandria / Outfit typography, Hotline Badge, Flash Sale Pill, and full multi-page navigation
  */
 export function StoreNovaTheme({
   storeName,
@@ -19,366 +27,680 @@ export function StoreNovaTheme({
   products,
   filteredProducts,
   cartCount,
+  cartItems = [],
+  onOpenCart,
+  onOpenProductDetail,
+  onOpenCustomerAuth,
+  currentCustomer,
   selectedCategory,
   onSelectCategory,
   searchQuery,
   onSearchChange,
   onQuickBuy,
-  logoUrl
+  onAddToCart,
+  logoUrl,
+  customization
 }: ThemeComponentProps) {
+  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact'>('home');
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
+  const brandColor = customization?.brandColor || '#5e17eb';
+  const fontFamily = "'Alexandria', 'Outfit', sans-serif";
+  const isEn = customization?.defaultLanguage === 'en';
+  const announcement = customization?.announcementText || 'أحدث الأجهزة والإلكترونيات الذكية • توصيل سريع لكافة المحافظات مع ميزة فحص وتشغيل الجهاز قبل الدفع';
+  const heroTitle = customization?.heroTitle || (isEn ? 'Next-Gen Gadgets & Smart Tech' : 'أجهزة ذكية وإلكترونيات الجيل القادم بأسعار لا تُنافس');
+  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Genuine wireless audio, wearables, and smartphone accessories inspected before payment.' : 'سماعات بلوتوث، ساعات ذكية، ملحقات أصلية وأحدث التقنيات العالمية، نوفرها لك مع ميزة فحص الجهاز وتجربته باليد قبل إتمام الدفع.');
+  const heroBtnText = customization?.heroButtonText || (isEn ? 'Explore Gadgets' : 'استكشف التخفيضات الآن');
+
   const popularAvatars = [
-    { name: 'الكل', badge: '10 منتجات', icon: '🟣', cat: 'الكل', color: 'bg-purple-600 text-white' },
-    { name: 'الأكثر مبيعاً', badge: '3 منتجات', icon: '🐼', cat: 'عام' },
-    { name: 'أحدث الواصلات', badge: '4 منتجات', icon: '🎧', cat: 'إلكترونيات' },
-    { name: 'أفضل العروض', badge: '10 منتجات', icon: '👚', cat: 'أزياء' },
-    { name: 'منتجات مميزة', badge: '8 منتجات', icon: '👒', cat: 'إكسسوارات' },
-    { name: 'عروض اليوم', badge: '7 منتجات', icon: '⌚', cat: 'ساعات' },
-    { name: 'عروض الصيف', badge: '9 منتجات', icon: '🕶️', cat: 'صيف' },
-    { name: 'عروض حصرية', badge: '5 منتجات', icon: '📱', cat: 'هواتف' },
+    { name: 'الكل', badge: 'عروض كبرى', icon: '⚡', cat: 'الكل' },
+    { name: 'سماعات وايرلس', badge: 'خصم 25%', icon: '🎧', cat: 'إلكترونيات' },
+    { name: 'ساعات ذكية', badge: 'الأكثر طلباً', icon: '⌚', cat: 'ساعات' },
+    { name: 'شواحن وكيابل', badge: 'أصلي 100%', icon: '🔌', cat: 'ملحقات' },
+    { name: 'إكسسوارات هواتف', badge: 'جديد 2026', icon: '📱', cat: 'هواتف' },
+    { name: 'أجهزة منزلية', badge: 'توفير', icon: '📺', cat: 'منزل' }
   ];
 
+  const sharedPageProps = {
+    storeName,
+    subdomain,
+    fullDomain,
+    brandColor,
+    fontFamily,
+    products,
+    cartItems,
+    onAddToCart,
+    onQuickBuy,
+    onOpenProductDetail,
+    onNavigatePage: (page: any) => setCurrentPage(page)
+  };
+
   return (
-    <div className="min-h-screen bg-[#f8f9fc] text-slate-900 font-sans antialiased selection:bg-purple-600 selection:text-white">
-      {/* Top Purple Announcement Bar */}
-      <div className="bg-[#5e17eb] text-white text-xs py-2 px-4 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between text-[11px] font-bold">
-          <span className="flex items-center gap-2">
-            🔥 شحن مجاني لكافة محافظات العراق عند الطلب المباشر والدفع عند الاستلام
-          </span>
-          <div className="hidden md:flex items-center gap-5 text-white/90">
-            <span>(IQD) د.ع</span>
-            <span>•</span>
-            <span>سياسة الاستبدال المضمونة</span>
-            <span>•</span>
-            <span>ضمان الفحص قبل الاستلام</span>
+    <div
+      className="min-h-screen bg-[#f8f9fc] text-slate-900 antialiased selection:bg-[#5e17eb] selection:text-white flex flex-col"
+      style={{ fontFamily }}
+      dir={isEn ? 'ltr' : 'rtl'}
+    >
+      {/* 1. Top Purple Strip */}
+      <div className="bg-[#5e17eb] text-white text-xs py-2 px-4 select-none shadow-sm">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 overflow-hidden truncate">
+            <Zap className="size-3.5 shrink-0 text-amber-300 animate-bounce" />
+            <span className="text-[11px] font-bold truncate">{announcement}</span>
+          </div>
+          <div className="hidden md:flex items-center gap-4 text-[11px] font-mono shrink-0">
+            <span className="bg-white/20 px-2 py-0.5 rounded font-bold">فحص وتشغيل قبل الاستلام</span>
+            <span>|</span>
+            <span className="font-bold text-white">https://{fullDomain}</span>
           </div>
         </div>
       </div>
 
-      {/* Main Bar: Logo, Search with Category Select, Hotline, Flash Sale */}
-      <header className="bg-white border-b border-slate-200/80 px-4 md:px-8 py-4 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      {/* 2. Tech Marketplace Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer select-none"
+            onClick={() => setCurrentPage('home')}
+          >
             {logoUrl ? (
-              <img src={logoUrl} alt={storeName} className="h-10 max-w-[140px] object-contain" />
+              <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[140px] object-contain" />
             ) : (
-              <div className="flex items-center gap-2">
-                <div className="size-11 rounded-2xl bg-gradient-to-tr from-[#5e17eb] to-indigo-600 text-white grid place-items-center font-black text-xl shadow-md">
-                  <ShoppingBag className="size-6" />
+              <div className="flex items-center gap-2.5">
+                <div className="size-11 rounded-2xl bg-gradient-to-tr from-[#5e17eb] to-indigo-600 text-white grid place-items-center font-black text-xl shadow-md shadow-purple-600/30">
+                  <Zap className="size-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-black text-slate-950 leading-none tracking-tight">
-                    {storeName}
-                  </h1>
-                  <span className="text-[11px] text-[#5e17eb] font-mono font-bold block mt-0.5">
-                    https://{fullDomain}
+                  <h1 className="font-black text-xl text-slate-950 tracking-tight leading-none">{storeName}</h1>
+                  <span className="text-[10px] font-bold text-[#5e17eb] block mt-0.5 tracking-wider uppercase font-mono">
+                    TECH & GADGETS
                   </span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Search Bar with Category Dropdown */}
-          <div className="flex-1 max-w-xl hidden md:flex items-center rounded-full border border-slate-300 bg-slate-50 focus-within:border-[#5e17eb] overflow-hidden transition-colors">
+          {/* Search Bar with Category Selector (Desktop) */}
+          <div className="hidden lg:flex items-center flex-1 max-w-xl mx-4 border-2 border-[#5e17eb] rounded-full overflow-hidden bg-slate-50 focus-within:bg-white shadow-sm transition-all">
             <select
               value={selectedCategory}
-              onChange={(e) => onSelectCategory(e.target.value)}
-              className="h-10 px-4 bg-transparent text-xs font-bold text-slate-700 border-l border-slate-300 outline-none cursor-pointer"
+              onChange={(e) => {
+                onSelectCategory(e.target.value);
+                if (currentPage !== 'shop') setCurrentPage('shop');
+              }}
+              className="h-10 px-4 bg-slate-100 text-xs font-bold text-slate-700 border-l border-slate-200 outline-none cursor-pointer"
             >
               {categories.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="ابحث عن منتجك المفضل..."
-              className="flex-1 h-10 px-4 text-xs bg-transparent outline-none text-slate-900"
-            />
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="ابحث عن سماعة، شاحن، ساعة، أو كفر..."
+                value={searchQuery}
+                onChange={(e) => {
+                  onSearchChange(e.target.value);
+                  if (currentPage !== 'shop') setCurrentPage('shop');
+                }}
+                className="w-full h-10 px-4 text-xs text-slate-900 bg-transparent outline-none"
+              />
+            </div>
             <button
               type="button"
-              className="size-10 bg-[#5e17eb] hover:bg-[#4c13c7] text-white grid place-items-center transition-colors shrink-0"
+              onClick={() => setCurrentPage('shop')}
+              className="h-10 px-5 bg-[#5e17eb] hover:bg-[#4d12c4] text-white text-xs font-bold flex items-center gap-1 transition-colors"
             >
               <Search className="size-4" />
+              <span>بحث</span>
             </button>
           </div>
 
-          {/* Hotline & Flash Sale */}
-          <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-2 text-right">
-              <div className="size-9 rounded-full bg-purple-50 text-[#5e17eb] grid place-items-center">
-                <Phone className="size-4" />
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold block leading-tight">اتصل في أي وقت</span>
-                <span className="text-xs font-mono font-black text-slate-900 dir-ltr">+964 770 000 0000</span>
-              </div>
-            </div>
-
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-full border border-slate-200 text-xs font-bold">
             <button
               type="button"
-              onClick={() => {
-                const el = document.getElementById('eshop-products');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="px-4 py-2 rounded-full bg-[#5e17eb] hover:bg-[#4c13c7] text-white text-xs font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95"
+              onClick={() => setCurrentPage('home')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'home'
+                  ? 'bg-[#5e17eb] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-950'
+              }`}
             >
-              <Zap className="size-3.5 fill-amber-300 text-amber-300" />
-              <span>عروض خاطفة (Flash Sale)</span>
+              الرئيسية
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('shop')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'shop'
+                  ? 'bg-[#5e17eb] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-950'
+              }`}
+            >
+              المتجر والمنتجات
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('categories')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'categories'
+                  ? 'bg-[#5e17eb] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-950'
+              }`}
+            >
+              التصنيفات
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('cart')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'cart' || currentPage === 'checkout'
+                  ? 'bg-[#5e17eb] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-950'
+              }`}
+            >
+              السلة
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('account')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'account'
+                  ? 'bg-[#5e17eb] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-950'
+              }`}
+            >
+              حسابي
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('contact')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'contact'
+                  ? 'bg-[#5e17eb] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-950'
+              }`}
+            >
+              الدعم الفني
+            </button>
+          </nav>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="lg:hidden p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+              title="بحث"
+            >
+              <Search className="size-4" />
             </button>
 
             <button
               type="button"
-              onClick={() => {
-                const el = document.getElementById('eshop-products');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="p-2 rounded-full bg-slate-100 text-slate-800 hover:bg-slate-200 relative transition-colors"
+              onClick={() => setCurrentPage('account')}
+              className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+              title="حسابي"
             >
-              <ShoppingCart className="size-5" />
+              <User className="size-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage('cart')}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#5e17eb] hover:bg-[#4d12c4] text-white font-bold text-xs shadow-md shadow-purple-600/25 transition-all"
+            >
+              <ShoppingCart className="size-4" />
+              <span>السلة</span>
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#5e17eb] text-white text-[10px] font-bold grid place-items-center">
+                <span className="bg-amber-300 text-slate-950 px-1.5 py-0.5 rounded-full text-[10px] font-black">
                   {cartCount}
                 </span>
               )}
             </button>
           </div>
         </div>
+
+        {/* Mobile Search Flyout */}
+        {searchOpen && (
+          <div className="lg:hidden bg-slate-50 border-t border-slate-200 p-3 px-4">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="size-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="ابحث عن جهاز أو ملحق..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    onSearchChange(e.target.value);
+                    if (currentPage !== 'shop') setCurrentPage('shop');
+                  }}
+                  className="w-full bg-white border border-slate-300 rounded-full pr-10 pl-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#5e17eb]"
+                  autoFocus
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                className="text-xs text-slate-600 hover:text-slate-950 px-2 py-1"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* 4 Feature Trust Cards (Screenshot 1) */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3.5 text-right">
-            <div className="size-12 rounded-2xl bg-purple-50 text-[#5e17eb] grid place-items-center shrink-0">
-              <Truck className="size-6" />
-            </div>
-            <div>
-              <h4 className="font-black text-xs md:text-sm text-slate-900">توصيل سريع (Fast Delivery)</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">شحن مباشر لكافة المحافظات</p>
-            </div>
-          </div>
+      {/* Main Pages Switcher */}
+      <main className="flex-1">
+        {currentPage === 'shop' && (
+          <ThemeShopView
+            {...sharedPageProps}
+            themeStyle="modern"
+            initialCategory={selectedCategory}
+            initialSearch={searchQuery}
+          />
+        )}
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3.5 text-right">
-            <div className="size-12 rounded-2xl bg-purple-50 text-[#5e17eb] grid place-items-center shrink-0">
-              <ShieldCheck className="size-6" />
-            </div>
-            <div>
-              <h4 className="font-black text-xs md:text-sm text-slate-900">دفع آمن عند الاستلام</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">معاينة وفحص قبل الدفع</p>
-            </div>
-          </div>
+        {currentPage === 'categories' && (
+          <ThemeCategoriesView
+            {...sharedPageProps}
+            onSelectCategory={(cat) => {
+              onSelectCategory(cat);
+              setCurrentPage('shop');
+            }}
+          />
+        )}
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3.5 text-right">
-            <div className="size-12 rounded-2xl bg-purple-50 text-[#5e17eb] grid place-items-center shrink-0">
-              <Sparkles className="size-6" />
-            </div>
-            <div>
-              <h4 className="font-black text-xs md:text-sm text-slate-900">ضمان استرجاع</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">استبدال فوري عند الحاجة</p>
-            </div>
-          </div>
+        {currentPage === 'cart' && (
+          <ThemeCartCheckoutView
+            {...sharedPageProps}
+            initialStep="cart"
+          />
+        )}
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3.5 text-right">
-            <div className="size-12 rounded-2xl bg-purple-50 text-[#5e17eb] grid place-items-center shrink-0">
-              <Clock className="size-6" />
-            </div>
-            <div>
-              <h4 className="font-black text-xs md:text-sm text-slate-900">دعم متواصل 24/7</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">فريق خدمة الزبائن معك</p>
-            </div>
-          </div>
-        </div>
-      </section>
+        {currentPage === 'checkout' && (
+          <ThemeCartCheckoutView
+            {...sharedPageProps}
+            initialStep="checkout"
+          />
+        )}
 
-      {/* Split Hero Section: Main Banner + 2 Side Promos (Screenshot 1) */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Dark Tech Banner (2 Cols) */}
-          <div className="lg:col-span-2 relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#172033] via-[#1e293b] to-[#0f172a] text-white p-8 md:p-12 min-h-[360px] flex items-center shadow-md">
-            <div className="relative z-10 max-w-md space-y-4 text-right">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[#5e17eb] text-white shadow-sm">
-                ⚡ عروض نهاية الأسبوع التي لا تفوتك!
-              </span>
-              <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
-                اكتشف أحدث صيحات الموضة والتقنية
-              </h2>
-              <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
-                تصاميم عصرية وأحدث الواصلات بأسعار استثنائية مع التوصيل إلى باب بيتك.
-              </p>
-              <div className="pt-2 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById('eshop-products');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-6 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs shadow-md transition-all hover:scale-105"
-                >
-                  تسوق الآن (Shop Now)
-                </button>
-              </div>
-            </div>
+        {currentPage === 'account' && (
+          <ThemeAccountView
+            {...sharedPageProps}
+            currentCustomer={currentCustomer}
+          />
+        )}
 
-            {/* Banner Background Image */}
-            <div className="hidden sm:block absolute left-4 bottom-0 top-0 w-1/2 overflow-hidden pointer-events-none">
-              <img
-                src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80"
-                alt="Showcase"
-                className="size-full object-cover object-center opacity-85"
-              />
-            </div>
-          </div>
+        {currentPage === 'contact' && (
+          <ThemeContactView
+            {...sharedPageProps}
+          />
+        )}
 
-          {/* 2 Side Promo Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-            {/* Promo 1: Speaker */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#38bdf8]/30 via-[#7dd3fc]/20 to-white p-5 border border-sky-200 flex items-center justify-between shadow-sm">
-              <div className="space-y-1.5 text-right z-10">
-                <span className="text-[11px] font-bold text-slate-600 block">سماعات ذكية فاخرة</span>
-                <h4 className="font-black text-base text-slate-900">تبدأ من 45,000 د.ع</h4>
-                <span className="text-[10px] text-sky-700 font-bold block">عرض لفترة محدودة</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById('eshop-products');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-3.5 py-1 rounded-lg bg-slate-950 text-white text-[10px] font-bold mt-1"
-                >
-                  تسوق الآن
-                </button>
-              </div>
-              <div className="size-24 rounded-xl overflow-hidden bg-white/60 p-1 shrink-0">
-                <img src="https://images.unsplash.com/photo-1545454675-3531b543be5d?w=400&auto=format&fit=crop&q=80" className="size-full object-cover rounded-lg" alt="Headphones" />
-              </div>
-            </div>
-
-            {/* Promo 2: Mobiles */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#818cf8]/30 via-[#c7d2fe]/20 to-white p-5 border border-indigo-200 flex items-center justify-between shadow-sm">
-              <div className="space-y-1.5 text-right z-10">
-                <span className="text-[11px] font-bold text-slate-600 block">أفضل عروض الأجهزة</span>
-                <h4 className="font-black text-base text-slate-900">أجهزة ومواصفات عالية</h4>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById('eshop-products');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-3.5 py-1 rounded-lg bg-[#5e17eb] text-white text-[10px] font-bold mt-1"
-                >
-                  تسوق الآن
-                </button>
-              </div>
-              <div className="size-24 rounded-xl overflow-hidden bg-white/60 p-1 shrink-0">
-                <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80" className="size-full object-cover rounded-lg" alt="Smartphone" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Popular Categories Circular Avatars (Screenshot 1) */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-10">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-extrabold text-base md:text-lg text-slate-900">الأقسام الشائعة • Popular Categories</h3>
-          <span className="text-xs font-bold text-[#5e17eb]">مشاهدة كافة العروض ←</span>
-        </div>
-
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-          {popularAvatars.map((item, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => onSelectCategory(item.cat)}
-              className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center group hover:border-[#5e17eb] hover:shadow-md transition-all"
-            >
-              <div className={`size-14 rounded-full ${item.color || 'bg-purple-50'} grid place-items-center text-2xl mb-2 shadow-inner group-hover:scale-110 transition-transform`}>
-                {item.icon}
-              </div>
-              <span className="font-extrabold text-xs text-slate-900 line-clamp-1">{item.name}</span>
-              <span className="text-[10px] text-slate-400 font-medium mt-0.5">{item.badge}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Products Grid */}
-      <section id="eshop-products" className="max-w-7xl mx-auto px-4 md:px-8 mt-10 mb-20">
-        <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200">
+        {currentPage === 'home' && (
           <div>
-            <h3 className="font-black text-xl text-slate-950">تشكيلة المتجر الحصرية</h3>
-            <p className="text-xs text-slate-500 mt-0.5">منتجات مختارة بعناية فائقة</p>
-          </div>
-          <span className="text-xs font-mono font-bold text-[#5e17eb] bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
-            {filteredProducts.length} منتج متاح
-          </span>
-        </div>
+            {/* 3. Tech Hero Banner */}
+            <section className="relative overflow-hidden bg-gradient-to-r from-[#240046] via-[#3c096c] to-[#5e17eb] text-white py-16 md:py-24 px-4 md:px-8">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(147,51,234,0.3),transparent_50%)] pointer-events-none" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredProducts.map((p) => (
-            <div
-              key={p.id}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between group hover:border-[#5e17eb] hover:shadow-xl transition-all"
-            >
-              <div>
-                <div className="h-60 bg-slate-50 relative overflow-hidden flex items-center justify-center p-3">
-                  <img
-                    src={p.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700&auto=format&fit=crop&q=80'}
-                    alt={p.name}
-                    className="size-full object-contain group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <span className="absolute top-2.5 right-2.5 text-[10px] font-bold bg-[#5e17eb] text-white px-2.5 py-0.5 rounded-full">
-                    {p.category}
-                  </span>
+              <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
+                <div className="lg:col-span-7 space-y-5 text-right">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-amber-300 text-xs font-bold">
+                    <Zap className="size-3.5 fill-amber-300" />
+                    <span>⚡ فلاش سيل عراقي 24 ساعة • شحن سريع</span>
+                  </div>
+
+                  <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
+                    {heroTitle}
+                  </h1>
+
+                  <p className="text-sm md:text-base text-purple-100 max-w-xl leading-relaxed">
+                    {heroSubtitle}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage('shop')}
+                      className="px-8 py-3.5 rounded-full bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-sm shadow-xl shadow-black/20 flex items-center gap-2 group transition-all"
+                    >
+                      <span>{heroBtnText}</span>
+                      <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage('categories')}
+                      className="px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-sm transition-all"
+                    >
+                      تصفح حسب الفئة
+                    </button>
+                  </div>
                 </div>
 
-                <div className="p-4 text-right space-y-1.5">
-                  <h4 className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-[#5e17eb] transition-colors">
-                    {p.name}
-                  </h4>
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                    {p.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'}
+                {/* Hero Showcase Tech Box */}
+                <div className="lg:col-span-5 relative">
+                  <div className="bg-white rounded-3xl p-5 text-slate-900 shadow-2xl border border-slate-100">
+                    <div className="aspect-[4/3] rounded-2xl overflow-hidden relative mb-4 bg-slate-100">
+                      <img
+                        src={products[0]?.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'}
+                        alt="Tech Showcase"
+                        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 right-3 bg-[#5e17eb] text-white text-[11px] font-black px-2.5 py-1 rounded-md shadow-md">
+                        صفقة فلاش 🔥
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-[#5e17eb] font-bold">سماعة لاسلكية برو</span>
+                        <h4 className="font-bold text-slate-900 text-base mt-0.5">عزل ضوضاء وصوت نقي محيطي</h4>
+                      </div>
+                      <div className="text-left">
+                        <div className="text-base font-black text-[#5e17eb]">
+                          {products[0]?.price ? formatIQD(products[0].price) : '32,000 د.ع'}
+                        </div>
+                        <span className="text-[10px] text-slate-500">فحص قبل الدفع</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 4. Popular Category Circle Avatars */}
+            <section className="py-8 bg-white border-b border-slate-200">
+              <div className="max-w-7xl mx-auto px-4 md:px-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
+                    <Grid className="size-4 text-[#5e17eb]" />
+                    <span>أقسام الأجهزة الأكثر طلباً</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage('categories')}
+                    className="text-xs font-bold text-[#5e17eb] hover:underline"
+                  >
+                    عرض الكل
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                  {popularAvatars.map((item, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        onSelectCategory(item.cat);
+                        setCurrentPage('shop');
+                      }}
+                      className="flex flex-col items-center p-3 rounded-2xl bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-300 cursor-pointer transition-all group text-center"
+                    >
+                      <div className="size-12 rounded-full bg-purple-100 text-xl grid place-items-center mb-2 group-hover:scale-110 transition-transform">
+                        <span>{item.icon}</span>
+                      </div>
+                      <span className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</span>
+                      <span className="text-[10px] font-bold text-[#5e17eb] mt-0.5 bg-purple-100/70 px-2 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* 5. Featured Products Grid */}
+            <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 md:px-8">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                    <Flame className="size-6 text-[#5e17eb]" />
+                    <span>أحدث الأجهزة والإلكترونيات الذكية</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    أجهزة مضمونة ومجربة مع إمكانية التشغيل والفحص قبل دفع المبلغ
                   </p>
                 </div>
-              </div>
-
-              <div className="p-4 border-t border-slate-100 flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-black font-mono text-[#5e17eb] block">
-                    {formatIQD(p.price)}
-                  </span>
-                  {p.compareAtPrice && (
-                    <span className="text-[11px] text-slate-400 line-through font-mono">
-                      {formatIQD(p.compareAtPrice)}
-                    </span>
-                  )}
-                </div>
-
                 <button
                   type="button"
-                  onClick={() => onQuickBuy(p)}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#5e17eb] hover:bg-[#4c13c7] text-white text-xs font-black transition-transform hover:scale-105 shadow-sm"
+                  onClick={() => setCurrentPage('shop')}
+                  className="text-xs font-bold text-[#5e17eb] hover:text-purple-800 flex items-center gap-1"
                 >
-                  شراء فوري
+                  <span>عرض الكل ({products.length})</span>
+                  <ArrowLeft className="size-3.5" />
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-10 px-4 md:px-8 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة • منصة الزعيم</p>
-          <div className="flex items-center gap-4 text-slate-600 text-xs">
-            <span className="flex items-center gap-1"><Truck className="size-3.5 text-[#5e17eb]" /> توصيل سريع</span>
-            <span className="flex items-center gap-1"><ShieldCheck className="size-3.5 text-[#5e17eb]" /> دفع عند الاستلام</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {products.slice(0, 8).map((product) => {
+                  const hasDiscount = !!product.originalPrice && product.originalPrice > product.price;
+                  return (
+                    <div
+                      key={product.id}
+                      className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-[#5e17eb] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+                    >
+                      <div
+                        className="relative aspect-square overflow-hidden bg-slate-100 cursor-pointer"
+                        onClick={() => onOpenProductDetail?.(product)}
+                      >
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        {hasDiscount && (
+                          <div className="absolute top-2.5 right-2.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-md">
+                            تخفيض
+                          </div>
+                        )}
+                        <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm text-[10px] font-bold text-[#5e17eb] px-2 py-0.5 rounded-md border border-slate-200">
+                          {product.category || 'إلكترونيات'}
+                        </div>
+                      </div>
+
+                      <div className="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-1 text-amber-500 mb-1.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className="size-3 fill-amber-500" />
+                            ))}
+                            <span className="text-[10px] text-slate-400 mr-1">(4.9)</span>
+                          </div>
+
+                          <h4
+                            className="font-bold text-sm text-slate-900 line-clamp-1 cursor-pointer hover:text-[#5e17eb] transition-colors"
+                            onClick={() => onOpenProductDetail?.(product)}
+                          >
+                            {product.name}
+                          </h4>
+
+                          <p className="text-[11px] text-slate-500 line-clamp-1 mt-1">
+                            {product.description || 'جهاز ذكي أصلي مع كفالة تشغيلية'}
+                          </p>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <span className="text-[10px] text-slate-500 block">السعر</span>
+                              <div className="text-base font-black text-[#5e17eb]">
+                                {formatIQD(product.price)}
+                              </div>
+                            </div>
+                            {hasDiscount && product.originalPrice && (
+                              <div className="text-left">
+                                <span className="text-[10px] text-slate-400 line-through block">
+                                  {formatIQD(product.originalPrice)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => onAddToCart?.(product)}
+                              className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-slate-200"
+                            >
+                              <ShoppingCart className="size-3.5" />
+                              <span>للسلة</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onQuickBuy?.(product)}
+                              className="w-full py-2 rounded-xl bg-[#5e17eb] hover:bg-[#4d12c4] text-white text-xs font-bold transition-colors shadow-md shadow-purple-600/20"
+                            >
+                              طلب فوري
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* 6. Feature Cards Strip */}
+            <section className="py-12 bg-white border-y border-slate-200">
+              <div className="max-w-7xl mx-auto px-4 md:px-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-purple-50/50 border border-purple-100">
+                    <div className="size-12 rounded-xl bg-[#5e17eb] text-white grid place-items-center shrink-0">
+                      <Truck className="size-6" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-sm text-slate-900">توصيل سريع لكل المحافظات</h5>
+                      <p className="text-[11px] text-slate-500 mt-0.5">بغداد 24 س • المحافظات 48 س</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-purple-50/50 border border-purple-100">
+                    <div className="size-12 rounded-xl bg-[#5e17eb] text-white grid place-items-center shrink-0">
+                      <ShieldCheck className="size-6" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-sm text-slate-900">معاينة وتشغيل باليد</h5>
+                      <p className="text-[11px] text-slate-500 mt-0.5">افحص جهازك وتأكد منه قبل الدفع</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-purple-50/50 border border-purple-100">
+                    <div className="size-12 rounded-xl bg-[#5e17eb] text-white grid place-items-center shrink-0">
+                      <Award className="size-6" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-sm text-slate-900">ضمان استبدال رسمي</h5>
+                      <p className="text-[11px] text-slate-500 mt-0.5">كفالة تشغيلية وحماية للمشتري</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-purple-50/50 border border-purple-100">
+                    <div className="size-12 rounded-xl bg-[#5e17eb] text-white grid place-items-center shrink-0">
+                      <PhoneCall className="size-6" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-sm text-slate-900">دعم فني واستفسار</h5>
+                      <p className="text-[11px] text-slate-500 mt-0.5">مساعدة سريعة عبر الواتساب</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
+
+      {/* 7. Tech Marketplace Footer */}
+      <footer className="bg-slate-900 text-slate-300 text-xs mt-auto">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-xl bg-[#5e17eb] text-white grid place-items-center">
+                  <Zap className="size-4" />
+                </div>
+                <h4 className="font-black text-white text-base">{storeName}</h4>
+              </div>
+              <p className="text-[11px] leading-relaxed text-slate-400">
+                وجهتك العراقية الموثوقة لأحدث الأجهزة الذكية والملحقات التقنية الأصلية مع المعاينة قبل الدفع.
+              </p>
+            </div>
+
+            <div>
+              <h5 className="font-bold text-white text-sm mb-3">أقسام الإلكترونيات</h5>
+              <ul className="space-y-2 text-[11px]">
+                {categories.slice(0, 5).map(cat => (
+                  <li key={cat}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectCategory(cat);
+                        setCurrentPage('shop');
+                      }}
+                      className="hover:text-purple-400 transition-colors"
+                    >
+                      {cat}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h5 className="font-bold text-white text-sm mb-3">روابط وتصفح</h5>
+              <ul className="space-y-2 text-[11px]">
+                <li>
+                  <button type="button" onClick={() => setCurrentPage('shop')} className="hover:text-purple-400 transition-colors">
+                    جميع المنتجات
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => setCurrentPage('cart')} className="hover:text-purple-400 transition-colors">
+                    سلة المشتريات
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => setCurrentPage('account')} className="hover:text-purple-400 transition-colors">
+                    حسابي والطلبات
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => setCurrentPage('contact')} className="hover:text-purple-400 transition-colors">
+                    تواصل مع الدعم
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h5 className="font-bold text-white text-sm">التوصيل وخدمة العراق</h5>
+              <p className="text-[11px] text-slate-400">
+                شحن لجميع المحافظات: بغداد، البصرة، أربيل، النجف، كربلاء وكافة المدن.
+              </p>
+              <div className="font-mono text-purple-400 font-bold text-xs">
+                📞 0770 000 0000
+              </div>
+              <div className="text-[10px] text-slate-500">
+                الدفع: نقد عند الاستلام (COD) • زين كاش • ماستركارد
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-500">
+            <div>
+              © {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة • مدعوم بواسطة الزعيم Al-Zaeem
+            </div>
+            <div className="flex items-center gap-3">
+              <span>سياسة الخصوصية والضمان</span>
+              <span>•</span>
+              <span>الشروط والأحكام</span>
+            </div>
           </div>
         </div>
       </footer>
