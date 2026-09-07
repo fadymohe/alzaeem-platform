@@ -473,9 +473,17 @@ export function StorePage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                         
                         {/* Domain Tag overlay */}
-                        <div className="absolute bottom-2 left-3 text-[10px] font-mono font-bold text-slate-300 bg-slate-950/80 px-2.5 py-0.5 rounded border border-white/10">
-                          {t.nameEn.toLowerCase().replace(/[^a-z0-9]/g, '')}.za3em.shop
-                        </div>
+                        <a
+                          href={typeof window !== 'undefined' && (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')) ? `/#/store/${t.id.replace('store-', '')}` : `https://${t.id.replace('store-', '')}.za3em.shop`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute bottom-2 left-3 text-[10px] font-mono font-bold text-teal-300 hover:text-white bg-slate-950/80 hover:bg-slate-900 px-2.5 py-0.5 rounded border border-teal-500/30 transition-colors flex items-center gap-1 shadow"
+                          title="معاينة حية للقالب في نافذة خارجية"
+                        >
+                          <span>{t.id.replace('store-', '')}.za3em.shop</span>
+                          <ExternalLink className="size-2.5 text-teal-400" />
+                        </a>
                       </div>
 
                       {/* Mobile floating mockup thumbnail */}

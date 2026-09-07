@@ -27,14 +27,12 @@ export function SignInPage() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
-  const [loginOtpHint, setLoginOtpHint] = useState('');
 
   // Forgot Password / Account Recovery Modal State
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [recoveryStep, setRecoveryStep] = useState<1 | 2 | 3>(1); // 1: email, 2: otp, 3: new password
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryOtp, setRecoveryOtp] = useState('');
-  const [recoveryOtpHint, setRecoveryOtpHint] = useState('');
   const [recoveryAccessToken, setRecoveryAccessToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -387,22 +385,16 @@ export function SignInPage() {
     setOtpLoading(true);
     setOtpError('');
     setOtpSuccess('');
-    setLoginOtpHint('');
 
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      // 1. Backend Send OTP (Immediate local generation and logging)
-      const backendRes = await fetch('/api/auth/send-otp', {
+      // 1. Backend Send OTP (fallback notification)
+      fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: normalizedEmail, type: 'login' })
       }).catch(() => null);
-
-      const backendData = backendRes ? await backendRes.json().catch(() => null) : null;
-      if (backendData?.otpCode) {
-        setLoginOtpHint(backendData.otpCode);
-      }
 
       // 2. Supabase OTP Send
       const res = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
@@ -420,7 +412,7 @@ export function SignInPage() {
       const data = await res.json().catch(() => ({}));
       
       // If either backend or supabase succeeded
-      if (res.ok || backendData?.success) {
+      if (res.ok) {
         setOtpSent(true);
         setOtpSuccess(isAr
           ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️ يرجى إدخاله أدناه للدخول الفوري.'
@@ -529,22 +521,16 @@ export function SignInPage() {
     }
     setRecoveryLoading(true);
     setRecoveryError('');
-    setRecoveryOtpHint('');
 
     const normalizedEmail = recoveryEmail.trim().toLowerCase();
 
     try {
       // 1. Backend Send OTP
-      const backendRes = await fetch('/api/auth/send-otp', {
+      fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: normalizedEmail, type: 'recovery' })
       }).catch(() => null);
-
-      const backendData = backendRes ? await backendRes.json().catch(() => null) : null;
-      if (backendData?.otpCode) {
-        setRecoveryOtpHint(backendData.otpCode);
-      }
 
       // 2. Also call Supabase recovery endpoint
       fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/recover', {
@@ -998,22 +984,6 @@ export function SignInPage() {
 
               {otpSent && (
                 <form onSubmit={handleVerifyOtpLogin} className="space-y-4 animate-fadeIn">
-                  {loginOtpHint && (
-                    <div className="p-3 rounded-2xl bg-teal-50 border border-teal-200 text-teal-900 text-xs flex items-center justify-between animate-fadeIn">
-                      <div>
-                        <span className="font-bold block text-[11px]">رمز التحقق الفوري للحساب:</span>
-                        <span className="font-mono text-sm font-black tracking-widest text-teal-800">{loginOtpHint}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setOtpCode(loginOtpHint)}
-                        className="px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs cursor-pointer"
-                      >
-                        تعبئة تلقائية
-                      </button>
-                    </div>
-                  )}
-
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-700">
@@ -1230,22 +1200,6 @@ export function SignInPage() {
             {/* STEP 2: Enter OTP */}
             {recoveryStep === 2 && (
               <form onSubmit={handleVerifyRecoveryOtp} className="space-y-4">
-                {recoveryOtpHint && (
-                  <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between animate-fadeIn">
-                    <div>
-                      <span className="font-bold block text-[11px]">كود التحقق الفوري لحسابك:</span>
-                      <span className="font-mono text-sm font-black tracking-widest text-teal-800">{recoveryOtpHint}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setRecoveryOtp(recoveryOtpHint)}
-                      className="px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs cursor-pointer"
-                    >
-                      تعبئة تلقائية
-                    </button>
-                  </div>
-                )}
-
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700">كود التحقق</label>

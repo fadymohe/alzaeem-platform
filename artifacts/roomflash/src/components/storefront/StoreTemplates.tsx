@@ -303,6 +303,79 @@ export function normalizeTemplateId(id?: string): TemplateId {
   }
 }
 
+export const TEMPLATE_IDENTIFIERS = new Set([
+  'sprout', 'wardrobe', 'stride', 'chic', 'mane', 'loftora',
+  'classic', 'aurit', 'nova', 'brick', 'novatrend', 'gizmo', 'sneak', 'nexora',
+  'store-sprout', 'store-wardrobe', 'store-stride', 'store-chic', 'store-mane', 'store-loftora',
+  'store-classic', 'store-aurit', 'store-nova', 'store-brick', 'store-novatrend', 'store-gizmo', 'store-sneak', 'store-nexora',
+  'volt', 'rose', 'nitro', 'sepia', 'oret', 'shoppingcart.1.2.7'
+]);
+
+export function isTemplatePreview(slug?: string): boolean {
+  if (!slug) return false;
+  const clean = slug.toLowerCase().replace(/^\/?(store|view-store)\//, '').replace(/^store-/, '').trim();
+  return TEMPLATE_IDENTIFIERS.has(clean) || TEMPLATE_IDENTIFIERS.has(`store-${clean}`);
+}
+
+export const SAMPLE_THEME_PRODUCTS: StoreProduct[] = [
+  {
+    id: 101,
+    name: 'سماعات برو اللاسلكية بنظام العزل الفائق ANC',
+    sku: 'AUDIO-PRO-MAX',
+    description: 'سماعات رأس لاسلكية مريحة مع بطارية تدوم 30 ساعة وصوت نقي بدقة Hi-Res وعزل ضوضاء فعال',
+    price: 45000,
+    compareAtPrice: 65000,
+    stock: 25,
+    lowStockThreshold: 5,
+    category: 'إلكترونيات',
+    status: 'active',
+    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+    weightGrams: 300
+  },
+  {
+    id: 102,
+    name: 'ساعة ذكية ألترا تيتانيوم مقاومة للماء',
+    sku: 'SMART-WATCH-ULTRA',
+    description: 'ساعة ذكية مع شاشة AMOLED لمسية ساطعة، مراقبة نبضات القلب، ومكالمات بلوتوث مباشرة',
+    price: 68000,
+    compareAtPrice: 85000,
+    stock: 18,
+    lowStockThreshold: 4,
+    category: 'إلكترونيات',
+    status: 'active',
+    imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80',
+    weightGrams: 180
+  },
+  {
+    id: 103,
+    name: 'حذاء سنيكرز رياضي مرن وخفيف للجري اليومي',
+    sku: 'SNEAK-RUN-PRO',
+    description: 'حذاء جري بتصميم هوائي مبطن يوفر راحة فائقة طوال اليوم وتهوية ممتازة للقدمين',
+    price: 39000,
+    compareAtPrice: 52000,
+    stock: 30,
+    lowStockThreshold: 6,
+    category: 'أزياء',
+    status: 'active',
+    imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80',
+    weightGrams: 450
+  },
+  {
+    id: 104,
+    name: 'عطر العود والمسك الأبيض الملكي 100 مل',
+    sku: 'PERFUME-ROYAL-OUD',
+    description: 'تركيبة عطرية شرقية ساحرة تدوم طويلاً تجمع بين خشب الصندل والعود الفاخر وعبير المسك',
+    price: 55000,
+    compareAtPrice: 75000,
+    stock: 20,
+    lowStockThreshold: 5,
+    category: 'عطور',
+    status: 'active',
+    imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
+    weightGrams: 400
+  }
+];
+
 // Check if merchant has an active PRO subscription
 export function isMerchantPro(): boolean {
   try {
@@ -377,7 +450,7 @@ export function StoreTemplates({
     ? products
     : baseProducts.length > 0
     ? baseProducts
-    : [];
+    : SAMPLE_THEME_PRODUCTS;
 
   const fullDomain = `${subdomain}.za3em.shop`;
 

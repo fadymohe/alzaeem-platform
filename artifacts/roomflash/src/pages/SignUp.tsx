@@ -29,7 +29,6 @@ export function SignUpPage() {
   // Email OTP Verification State
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const [signupOtpHint, setSignupOtpHint] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [supabaseAccessToken, setSupabaseAccessToken] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
@@ -301,19 +300,12 @@ export function SignUpPage() {
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       const formattedPhone = phoneBody ? `+964${phoneBody}` : '';
-      setSignupOtpHint('');
-
       // 1. Send OTP via backend service first (Immediate reliable fallback)
-      const backendRes = await fetch('/api/auth/send-otp', {
+      fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ email: email.trim(), type: 'register' }),
       }).catch(() => null);
-
-      const backendData = backendRes ? await backendRes.json().catch(() => null) : null;
-      if (backendData?.otpCode) {
-        setSignupOtpHint(backendData.otpCode);
-      }
 
       // 2. Send real email OTP directly via Supabase Auth with initial metadata
       const supabaseRes = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
@@ -337,7 +329,7 @@ export function SignUpPage() {
 
       const data = await supabaseRes.json().catch(() => ({}));
 
-      if (!supabaseRes.ok && data?.error_code === 'over_email_send_rate_limit' && !backendData?.success) {
+      if (!supabaseRes.ok && data?.error_code === 'over_email_send_rate_limit') {
         setOtpError(isAr ? 'تم إرسال كود مسبقاً، يرجى الانتظار 60 ثانية قبل طلب كود جديد' : 'Please wait 60 seconds before requesting another code');
         setOtpLoading(false);
         return;
@@ -816,22 +808,6 @@ export function SignUpPage() {
               {/* 6 to 8-Digit OTP Code Input Box */}
               {otpSent && !emailVerified && (
                 <div className="p-3.5 bg-slate-50 border border-teal-200 rounded-2xl space-y-2.5 mt-1 animate-fadeIn">
-                  {signupOtpHint && (
-                    <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 text-xs flex items-center justify-between animate-fadeIn">
-                      <div>
-                        <span className="font-bold block text-[11px]">رمز التحقق الفوري لبريدك:</span>
-                        <span className="font-mono text-sm font-black tracking-widest text-teal-800">{signupOtpHint}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setOtpCode(signupOtpHint)}
-                        className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs cursor-pointer"
-                      >
-                        تعبئة تلقائية
-                      </button>
-                    </div>
-                  )}
-
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-slate-700">أدخل كود التحقق المستلم:</span>
                     <span className="text-[10px] font-medium text-slate-400">راجع صندوق الوارد (Inbox) أو Spam</span>

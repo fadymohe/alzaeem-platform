@@ -219,9 +219,39 @@ export function OnboardingPage() {
     return 'my-store.za3em.shop';
   });
   const [slogan, setSlogan] = useState('أفضل المنتجات المختارة بعناية مع التوصيل السريع لجميع محافظات العراق');
-  const [selectedNiche, setSelectedNiche] = useState('perfumes');
-  const [selectedTheme, setSelectedTheme] = useState('store-classic');
-  const [categories, setCategories] = useState<string[]>(['عطور فرنسية', 'دهن عود وبخور', 'عناية بالبشرة']);
+
+  // Read initial theme from URL query param if present (e.g. ?theme=store-nova or #/onboarding?theme=nova)
+  const initialThemeFromUrl = (() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const search = window.location.search;
+        const hash = window.location.hash;
+        const urlParams = new URLSearchParams(search);
+        let themeParam = urlParams.get('theme');
+        if (!themeParam && hash.includes('?')) {
+          const hashSearch = hash.split('?')[1];
+          themeParam = new URLSearchParams(hashSearch).get('theme');
+        }
+        if (themeParam) {
+          const clean = themeParam.toLowerCase().trim();
+          return clean.startsWith('store-') ? clean : `store-${clean}`;
+        }
+      }
+    } catch {}
+    return null;
+  })();
+
+  const [selectedTheme, setSelectedTheme] = useState(() => initialThemeFromUrl || 'store-classic');
+  const [selectedNiche, setSelectedNiche] = useState(() => {
+    if (initialThemeFromUrl === 'store-nova') return 'electronics';
+    if (initialThemeFromUrl === 'store-aurit') return 'fashion';
+    return 'perfumes';
+  });
+  const [categories, setCategories] = useState<string[]>(() => {
+    if (initialThemeFromUrl === 'store-nova') return ['شواحن وكفرات', 'ساعات ذكية', 'سماعات صوتية', 'أجهزة إلكترونية'];
+    if (initialThemeFromUrl === 'store-aurit') return ['أزياء رجالي', 'فساتين وعبايات', 'أحذية رياضية', 'حقائب وإكسسوارات'];
+    return ['عطور فرنسية', 'دهن عود وبخور', 'عناية بالبشرة'];
+  });
   const [newCatInput, setNewCatInput] = useState('');
 
   // Branding: Optional Logo & Banner

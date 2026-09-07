@@ -31,6 +31,7 @@ import { MarketingPage } from './pages/Marketing';
 import { StorePage } from './pages/StorePage';
 import { StandaloneStorePage } from './pages/StandaloneStore';
 import { DynamicStoreLanding } from './pages/DynamicStoreLanding';
+import { isTemplatePreview } from './components/storefront/StoreTemplates';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
 import { SettingsPage } from './pages/Settings';
 import { SupportPage } from './pages/Support';
@@ -412,9 +413,24 @@ function RoutedApp() {
     );
   }
 
-  // Automatic Subdomain Detection (e.g. zero.za3em.shop)
+  // 1. Template Subdomain Preview (e.g. nova.za3em.shop, classic.za3em.shop, aurit.za3em.shop, etc.)
   const hostMatch = window.location.hostname.match(/^([a-zA-Z0-9-]+)\.za3em\.shop$/i);
   const hostSub = hostMatch?.[1]?.toLowerCase();
+  if (hostSub && isTemplatePreview(hostSub)) {
+    return <StandaloneStorePage />;
+  }
+
+  // 2. Hash Route Template Preview (e.g. #/store/nova or #/view-store/classic)
+  const hash = typeof window !== 'undefined' ? window.location.hash : '';
+  if (hash.includes('/store/') || hash.includes('/view-store/')) {
+    const hashParts = hash.split('?')[0].split('/').filter(Boolean);
+    const hashSlug = hashParts[1] || '';
+    if (isTemplatePreview(hashSlug)) {
+      return <StandaloneStorePage />;
+    }
+  }
+
+  // 3. Automatic Merchant Subdomain Detection (e.g. zero.za3em.shop)
   if (hostSub && !RESERVED_SUBDOMAINS.includes(hostSub)) {
     return <DynamicStoreLanding />;
   }
@@ -424,6 +440,11 @@ function RoutedApp() {
 
   // صفحات المتاجر والهبوط بالنطاقات المباشرة
   if (location.startsWith('/landing/') || location.startsWith('/view-store/') || location.startsWith('/store/') || location.startsWith('/p/')) {
+    const segments = location.split('/').filter(Boolean);
+    const slug = segments[1] || '';
+    if (isTemplatePreview(slug)) {
+      return <StandaloneStorePage />;
+    }
     return <DynamicStoreLanding />;
   }
 

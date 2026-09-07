@@ -14,6 +14,8 @@ import {
 import { fetchCloudStore, fetchCloudLandingPageBySlug } from "../utils/cloudDb";
 import { addStoredOrder } from "../data/storeState";
 import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, PauseCircle, Power } from "lucide-react";
+import { StandaloneStorePage } from "./StandaloneStore";
+import { isTemplatePreview } from "../components/storefront/StoreTemplates";
 
 export function DynamicStoreLanding() {
   const [matchView, paramsView] = useRoute("/view-store/:subdomain");
@@ -58,6 +60,11 @@ export function DynamicStoreLanding() {
         "alzaeem";
 
   const cleanSubdomain = (rawSub || "alzaeem").toLowerCase().replace(/[^a-z0-9-]/g, "");
+
+  // إذا كان المطلوب هو معاينة أحد ثيمات/قوالب المنصة (مثل nova, classic, aurit, brick, etc.)
+  if (isTemplatePreview(cleanSubdomain) || isTemplatePreview(rawSub) || isTemplatePreview(hashSub)) {
+    return <StandaloneStorePage />;
+  }
 
   // استخراج اسم صفحة الهبوط (Slug) إن وجد (مثل landbidg1)
   let currentSlug = "";
