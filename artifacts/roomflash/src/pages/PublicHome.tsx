@@ -514,7 +514,7 @@ export function PublicHomePage() {
         {/* ========================================================================= */}
         {/* 9️⃣ FOOTER (Flush to bottom, with official headquarters and phone numbers) */}
         {/* ========================================================================= */}
-        <footer className="border-t border-slate-800 bg-slate-950 text-white pt-16 pb-20 px-4">
+        <footer className="border-t border-slate-800 bg-slate-950 text-white pt-16 pb-28 px-4">
           <div className="mx-auto max-w-6xl grid gap-10 sm:grid-cols-2 lg:grid-cols-4 mb-12">
             <div className="lg:col-span-2 space-y-4">
               <Logo showSubtitle={false} inverse />
@@ -533,6 +533,12 @@ export function PublicHomePage() {
                   <a href="tel:07822999919" dir="ltr" className="font-mono font-bold text-white hover:text-teal-300 transition-colors">07822999919</a>
                   <span>أو</span>
                   <a href="tel:07722999919" dir="ltr" className="font-mono font-bold text-white hover:text-teal-300 transition-colors">07722999919</a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400 font-bold">💬 واتساب مباشر:</span>
+                  <a href="https://wa.me/9647822999919" target="_blank" rel="noopener noreferrer" dir="ltr" className="font-mono font-bold text-emerald-300 hover:underline">
+                    +964 782 299 9919
+                  </a>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-teal-400 font-bold">✉️ البريد الإلكتروني:</span>

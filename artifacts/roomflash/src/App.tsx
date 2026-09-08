@@ -181,6 +181,32 @@ const RESERVED_SUBDOMAINS = ['api', 'admin', 'www', 'app', 'static', 'assets', '
 
 function RoutedApp() {
   const [location, setLocation] = useLocation();
+
+  // Auto-sync direct pathname into hash for universal SPA compatibility
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const path = window.location.pathname.replace(/^\/+/, '/');
+    if (path !== '/' && path !== '/index.html' && (!window.location.hash || window.location.hash === '#' || window.location.hash === '#/')) {
+      const search = window.location.search || '';
+      window.location.hash = '#' + path + search;
+      setLocation(path);
+    }
+  }, [setLocation]);
+
+  // Compute effective route combining hash routing and pathname fallback
+  const effectiveRoute = (() => {
+    if (typeof window === 'undefined') return location;
+    const hash = window.location.hash || '';
+    if (hash.startsWith('#/')) {
+      return hash.slice(1).split('?')[0];
+    }
+    const cleanPath = window.location.pathname.replace(/^\/+/, '/');
+    if (cleanPath !== '/' && cleanPath !== '/index.html') {
+      return cleanPath;
+    }
+    return location;
+  })();
+
   const [oauthProcessing, setOauthProcessing] = useState<boolean>(() => {
     const hash = window.location.hash || '';
     const search = window.location.search || '';
@@ -453,11 +479,11 @@ function RoutedApp() {
   }
 
   // صفحة التتبع الحي للعملاء
-  if (location.startsWith('/track')) return <OrderTrackingPage />;
+  if (effectiveRoute.startsWith('/track')) return <OrderTrackingPage />;
 
   // صفحات المتاجر والهبوط بالنطاقات المباشرة
-  if (location.startsWith('/landing/') || location.startsWith('/view-store/') || location.startsWith('/store/') || location.startsWith('/p/')) {
-    const segments = location.split('/').filter(Boolean);
+  if (effectiveRoute.startsWith('/landing/') || effectiveRoute.startsWith('/view-store/') || effectiveRoute.startsWith('/store/') || effectiveRoute.startsWith('/p/')) {
+    const segments = effectiveRoute.split('/').filter(Boolean);
     const slug = segments[1] || '';
     if (isTemplatePreview(slug)) {
       return <StandaloneStorePage />;
@@ -465,10 +491,12 @@ function RoutedApp() {
     return <DynamicStoreLanding />;
   }
 
-  if (location === '/') return <PublicHomePage />;
-  if (location.startsWith('/sign-in')) return <SignInPage />;
-  if (location.startsWith('/sign-up')) return <SignUpPage />;
-  if (location.startsWith('/onboarding')) return <OnboardingPage />;
+  if (effectiveRoute === '/' || effectiveRoute === '') return <PublicHomePage />;
+  if (effectiveRoute.startsWith('/sign-in')) return <SignInPage />;
+  if (effectiveRoute.startsWith('/sign-up')) return <SignUpPage />;
+  if (effectiveRoute.startsWith('/onboarding')) return <OnboardingPage />;
+  if (effectiveRoute.startsWith('/support')) return <SupportPage />;
+  if (effectiveRoute.startsWith('/theme-customizer')) return <ThemeCustomizerPage />;
   return <ProtectedRoutes />;
 }
 
