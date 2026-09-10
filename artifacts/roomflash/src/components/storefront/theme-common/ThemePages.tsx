@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShoppingBag, Search, Star, ArrowLeft, ArrowRight, Truck, ShieldCheck,
   Sparkles, Heart, Clock, Check, User, X, Phone, MapPin, MessageCircle,
@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../../../data/iraqData';
 import { addStoredOrder, type StoreProduct } from '../../../data/storeState';
-import { saveCloudShipment } from '../../../utils/cloudDb';
+import { saveCloudShipment, validateAndApplyCoupon, fetchCloudCoupons } from '../../../utils/cloudDb';
 
 export interface ThemeSharedProps {
   storeName: string;
@@ -371,13 +371,21 @@ export function ThemeCartCheckoutView({
 
   const [activeStep, setActiveStep] = useState<'cart' | 'checkout' | 'success'>('cart');
   const [couponCode, setCouponCode] = useState('');
-  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [couponMsg, setCouponMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+  // Preload coupons from database
+  useEffect(() => {
+    fetchCloudCoupons().catch(() => {});
+  }, []);
 
   // Checkout inputs
   const [custName, setCustName] = useState('');
   const [custPhone, setCustPhone] = useState('');
   const [custGov, setCustGov] = useState('بغداد');
   const [custAddress, setCustAddress] = useState('');
+  const [custNotes, setCustNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'zaincash' | 'mastercard'>('cod');
   const [orderCode, setOrderCode] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -385,6 +393,19 @@ export function ThemeCartCheckoutView({
   const subtotal = items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
   const selectedGovData = IRAQ_GOVERNORATES.find(g => g.name === custGov);
   const shippingFee = selectedGovData?.deliveryFee || 5000;
+
+  // Dynamically calculate discount based on applied coupon & current subtotal
+  const couponDiscount = (() => {
+    if (!appliedCoupon || subtotal <= 0) return 0;
+    let d = 0;
+    if (appliedCoupon.discountType === 'percentage') {
+      d = Math.round((subtotal * Number(appliedCoupon.discountValue)) / 100);
+    } else {
+      d = Number(appliedCoupon.discountValue) || 5000;
+    }
+    return Math.min(d, subtotal);
+  })();
+
   const total = Math.max(0, subtotal - couponDiscount + (items.length > 0 ? shippingFee : 0));
 
   const updateQuantity = (idx: number, delta: number) => {
@@ -399,56 +420,31 @@ export function ThemeCartCheckoutView({
     });
   };
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
-    const clean = couponCode.toUpperCase().trim();
+    setIsApplyingCoupon(true);
+    setCouponMsg(null);
 
-    let foundCoupon: any = null;
     try {
-      const rawCloud = localStorage.getItem('zaeem_cloud_coupons');
-      const rawCoupons = localStorage.getItem('zaeem_coupons');
-      const list = [
-        ...(rawCloud ? JSON.parse(rawCloud) : []),
-        ...(rawCoupons ? JSON.parse(rawCoupons) : [])
-      ];
-      foundCoupon = list.find((c: any) => c.code && c.code.toUpperCase().trim() === clean);
-    } catch {}
-
-    if (!foundCoupon) {
-      if (clean === 'ZAEEM' || clean === 'VIP' || clean === 'ZAEEM10' || clean === 'DISCOUNT10') {
-        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 15, minOrderValue: 0 };
-      } else if (clean === 'WELCOME' || clean === 'ZA3EM5') {
-        foundCoupon = { code: clean, discountType: 'fixed', discountValue: 5000, minOrderValue: 20000 };
-      } else if (clean === 'RAMADAN' || clean === 'SALE20') {
-        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 20, minOrderValue: 0 };
+      const res = await validateAndApplyCoupon(couponCode, subtotal);
+      if (res.valid) {
+        setAppliedCoupon(res.coupon || { code: couponCode.trim().toUpperCase(), discountType: 'fixed', discountValue: res.discountAmount });
+        setCouponMsg({ type: 'success', text: res.message });
+      } else {
+        setAppliedCoupon(null);
+        setCouponMsg({ type: 'error', text: res.message });
       }
+    } catch (e) {
+      setCouponMsg({ type: 'error', text: 'حدث خطأ أثناء فحص كود الكوبون' });
+    } finally {
+      setIsApplyingCoupon(false);
     }
+  };
 
-    if (!foundCoupon) {
-      alert('كود الخصم غير صالح أو منتهي الصلاحية');
-      return;
-    }
-
-    if (foundCoupon.status === 'متوقف') {
-      alert('هذا الكوبون متوقف حالياً');
-      return;
-    }
-
-    if (foundCoupon.minOrderValue && subtotal < Number(foundCoupon.minOrderValue)) {
-      alert(`الحد الأدنى لتطبيق هذا الكوبون هو ${formatIQD(Number(foundCoupon.minOrderValue))}`);
-      return;
-    }
-
-    let discount = 0;
-    if (foundCoupon.discountType === 'percentage') {
-      discount = Math.round((subtotal * Number(foundCoupon.discountValue)) / 100);
-    } else {
-      discount = Number(foundCoupon.discountValue) || 5000;
-    }
-
-    const appliedDiscount = Math.min(discount, subtotal);
-    setCouponDiscount(appliedDiscount);
-    alert(`تم تطبيق كود الخصم بنجاح! تم خصم ${formatIQD(appliedDiscount)} من إجمالي الطلب 🎉`);
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponMsg(null);
   };
 
   const handleConfirmOrder = (e: React.FormEvent) => {
@@ -470,6 +466,11 @@ export function ThemeCartCheckoutView({
         unitPrice: i.product.price,
       }));
 
+      const fullNotes = [
+        custNotes ? `ملاحظات الزبون: ${custNotes}` : '',
+        appliedCoupon ? `كود الخصم: ${appliedCoupon.code} (خصم: ${formatIQD(couponDiscount)})` : ''
+      ].filter(Boolean).join(' | ');
+
       addStoredOrder({
         customerName: custName.trim(),
         customerPhone: custPhone.trim(),
@@ -479,12 +480,12 @@ export function ThemeCartCheckoutView({
         shippingCost: shippingFee,
         itemsCount: orderItems.reduce((acc, i) => acc + i.quantity, 0),
         status: 'pending',
-        paymentMethod: 'cod',
-        notes: custNotes || undefined,
+        paymentMethod: paymentMethod,
+        notes: fullNotes || undefined,
         items: orderItems,
       });
 
-      // Save corresponding shipment
+      // Save corresponding shipment to cloud
       saveCloudShipment({
         trackingNumber: randTrack,
         subdomain: subdomain,
@@ -496,10 +497,10 @@ export function ThemeCartCheckoutView({
         address: `${custGov} — ${custAddress.trim()}`,
         codAmount: total,
         shippingCost: shippingFee,
-        paymentType: 'cod',
+        paymentType: paymentMethod,
         status: 'جديدة',
         shippingCompany: 'شركة الزعيم للشحن السريع',
-        notes: custNotes || '',
+        notes: fullNotes || '',
         createdAt: new Date().toISOString(),
         date: new Date().toISOString().split('T')[0],
       });
@@ -684,24 +685,54 @@ export function ThemeCartCheckoutView({
             <h4 className="font-black text-sm text-inherit pb-2 border-b border-white/10">ملخص الطلب والتوصيل</h4>
 
             {/* Coupon Code Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 block">كود الخصم الترويجي</label>
+            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <Tag className="size-3.5 text-amber-400" />
+                  <span>كود الخصم الترويجي</span>
+                </span>
+                {appliedCoupon && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="text-[10px] text-rose-400 hover:underline font-bold"
+                  >
+                    إلغاء الكوبون
+                  </button>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  placeholder="مثال: ZAEEM"
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-inherit font-mono uppercase focus:outline-none focus:border-emerald-500"
+                  onChange={(e) => setCouponCode(e.target.value.replace(/[^A-Za-z0-9\u0600-\u06FF]/g, '').toUpperCase())}
+                  placeholder="مثال: ZAEEM أو SALE20"
+                  disabled={Boolean(appliedCoupon)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-inherit font-mono uppercase focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                 />
                 <button
                   type="button"
-                  onClick={handleApplyCoupon}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-inherit"
+                  onClick={appliedCoupon ? handleRemoveCoupon : handleApplyCoupon}
+                  disabled={isApplyingCoupon || (!appliedCoupon && !couponCode.trim())}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all ${
+                    appliedCoupon
+                      ? 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
+                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md disabled:opacity-50'
+                  }`}
                 >
-                  تطبيق
+                  {isApplyingCoupon ? 'جارِ الفحص...' : appliedCoupon ? 'إلغاء' : 'تطبيق'}
                 </button>
               </div>
+
+              {couponMsg && (
+                <p className={`text-[11px] font-bold flex items-center gap-1 mt-1 ${
+                  couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {couponMsg.type === 'success' ? <Check className="size-3.5" /> : <AlertCircle className="size-3.5" />}
+                  <span>{couponMsg.text}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-2 text-xs font-bold pt-2 border-t border-white/10">
@@ -710,9 +741,9 @@ export function ThemeCartCheckoutView({
                 <span className="font-mono text-inherit">{formatIQD(subtotal)}</span>
               </div>
               {couponDiscount > 0 && (
-                <div className="flex justify-between text-rose-400">
-                  <span>الخصم المطبق:</span>
-                  <span className="font-mono">- {formatIQD(couponDiscount)}</span>
+                <div className="flex justify-between text-emerald-400">
+                  <span>الخصم المطبق {appliedCoupon ? `(${appliedCoupon.code})` : ''}:</span>
+                  <span className="font-mono font-bold">- {formatIQD(couponDiscount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-slate-400">
@@ -838,21 +869,77 @@ export function ThemeCartCheckoutView({
           <div className="lg:col-span-4 p-5 rounded-3xl bg-black/15 border border-white/10 space-y-4">
             <h4 className="font-black text-sm text-inherit pb-2 border-b border-white/10">تأكيد الحجز النهائي</h4>
 
+            {/* Quick Coupon Check in Step 2 */}
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <Tag className="size-3.5 text-amber-400" />
+                  <span>كود الخصم</span>
+                </span>
+                {appliedCoupon && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="text-[10px] text-rose-400 hover:underline font-bold"
+                  >
+                    إلغاء
+                  </button>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.replace(/[^A-Za-z0-9\u0600-\u06FF]/g, '').toUpperCase())}
+                  placeholder="كود الكوبون"
+                  disabled={Boolean(appliedCoupon)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-inherit font-mono uppercase focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={appliedCoupon ? handleRemoveCoupon : handleApplyCoupon}
+                  disabled={isApplyingCoupon || (!appliedCoupon && !couponCode.trim())}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    appliedCoupon
+                      ? 'bg-rose-500/20 text-rose-300'
+                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md disabled:opacity-50'
+                  }`}
+                >
+                  {isApplyingCoupon ? 'فحص..' : appliedCoupon ? 'إلغاء' : 'تطبيق'}
+                </button>
+              </div>
+
+              {couponMsg && (
+                <p className={`text-[10px] font-bold ${
+                  couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {couponMsg.text}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2 text-xs font-bold">
               <div className="flex justify-between text-slate-400">
-                <span>عدد الأصناف:</span>
-                <span>{items.reduce((acc, i) => acc + i.quantity, 0)} قطع</span>
+                <span>المجموع الفرعي ({items.reduce((acc, i) => acc + i.quantity, 0)} قطع):</span>
+                <span>{formatIQD(subtotal)}</span>
               </div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-emerald-400 font-black">
+                  <span>خصم الكوبون ({appliedCoupon?.code}):</span>
+                  <span>- {formatIQD(couponDiscount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-slate-400">
                 <span>المحافظة المحددة:</span>
                 <span>{custGov}</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>الشحن:</span>
+                <span>أجور الشحن:</span>
                 <span>{formatIQD(shippingFee)}</span>
               </div>
               <div className="flex justify-between text-base font-black pt-2 border-t border-white/10">
-                <span>المجموع النهائي:</span>
+                <span>المجموع النهائي عند الاستلام:</span>
                 <span className="font-mono text-emerald-400">{formatIQD(total)}</span>
               </div>
             </div>

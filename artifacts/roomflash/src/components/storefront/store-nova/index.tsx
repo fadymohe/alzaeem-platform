@@ -3,7 +3,7 @@ import {
   ShoppingBag, Search, Star, ArrowLeft, Truck, ShieldCheck,
   Sparkles, Heart, Clock, Check, Phone, Zap, ArrowRight, Grid,
   ChevronDown, Headphones, Smartphone, Watch, Tv, Flame, Tag, ShoppingCart,
-  Award, PhoneCall, Plus, RefreshCw
+  Award, PhoneCall, Plus, RefreshCw, User
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';

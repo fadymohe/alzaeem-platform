@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../../data/iraqData';
 import { getStoredProducts, addStoredOrder, type StoreProduct } from '../../data/storeState';
+import { validateAndApplyCoupon, fetchCloudCoupons, saveCloudShipment } from '../../utils/cloudDb';
 
 // Import All 12 modular theme components
 import { StoreClassicTheme } from './store-classic';
@@ -1044,65 +1045,34 @@ export function StoreTemplates({
     setCartItems(prev => prev.filter(item => item.product.id !== productId));
   };
 
+  // Preload coupons from database
+  useEffect(() => {
+    fetchCloudCoupons().catch(() => {});
+  }, []);
+
   // Coupon validation
-  const handleApplyCoupon = (orderSubtotal: number) => {
+  const handleApplyCoupon = async (orderSubtotal: number) => {
     setCouponError('');
     setCouponSuccess('');
     if (!couponCode.trim()) return;
-    const clean = couponCode.toUpperCase().trim();
 
-    let foundCoupon: any = null;
     try {
-      const rawCloud = localStorage.getItem('zaeem_cloud_coupons');
-      const rawCoupons = localStorage.getItem('zaeem_coupons');
-      const list = [
-        ...(rawCloud ? JSON.parse(rawCloud) : []),
-        ...(rawCoupons ? JSON.parse(rawCoupons) : [])
-      ];
-      foundCoupon = list.find((c: any) => c.code && c.code.toUpperCase().trim() === clean);
-    } catch {}
-
-    // Default built-in coupons
-    if (!foundCoupon) {
-      if (clean === 'ZAEEM' || clean === 'VIP' || clean === 'ZAEEM10' || clean === 'DISCOUNT10') {
-        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 15, minOrderValue: 0 };
-      } else if (clean === 'WELCOME' || clean === 'ZA3EM5') {
-        foundCoupon = { code: clean, discountType: 'fixed', discountValue: 5000, minOrderValue: 20000 };
-      } else if (clean === 'RAMADAN' || clean === 'SALE20') {
-        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 20, minOrderValue: 0 };
+      const res = await validateAndApplyCoupon(couponCode, orderSubtotal);
+      if (res.valid) {
+        setAppliedCoupon({
+          code: couponCode.trim().toUpperCase(),
+          discountAmount: res.discountAmount,
+          discountType: res.coupon?.discountType || 'fixed',
+          discountValue: res.coupon?.discountValue || res.discountAmount
+        });
+        setCouponSuccess(res.message);
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(res.message);
       }
+    } catch {
+      setCouponError('حدث خطأ أثناء التحقق من الكوبون');
     }
-
-    if (!foundCoupon) {
-      setCouponError('كود الخصم غير صحيح أو منتهي الصلاحية');
-      return;
-    }
-
-    if (foundCoupon.status === 'متوقف') {
-      setCouponError('هذا الكوبون متوقف حالياً');
-      return;
-    }
-
-    if (foundCoupon.minOrderValue && orderSubtotal < Number(foundCoupon.minOrderValue)) {
-      setCouponError(`الحد الأدنى لتطبيق هذا الكوبون هو ${formatIQD(Number(foundCoupon.minOrderValue))}`);
-      return;
-    }
-
-    let discount = 0;
-    if (foundCoupon.discountType === 'percentage') {
-      discount = Math.round((orderSubtotal * Number(foundCoupon.discountValue)) / 100);
-    } else {
-      discount = Number(foundCoupon.discountValue) || 5000;
-    }
-
-    const appliedDiscount = Math.min(discount, orderSubtotal);
-    setAppliedCoupon({
-      code: clean,
-      discountAmount: appliedDiscount,
-      discountType: foundCoupon.discountType,
-      discountValue: foundCoupon.discountValue
-    });
-    setCouponSuccess(`تم تفعيل خصم بقيمة ${formatIQD(appliedDiscount)} بنجاح! 🎉`);
   };
 
   // Customer Login / Signup Handlers
@@ -1226,9 +1196,25 @@ export function StoreTemplates({
       ? selectedProductModal!.price
       : cartItems.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
 
-    const discountDeduction = appliedCoupon ? appliedCoupon.discountAmount : 0;
+    let discountDeduction = 0;
+    if (appliedCoupon) {
+      if (appliedCoupon.discountType === 'percentage') {
+        discountDeduction = Math.round((itemsSubtotal * Number(appliedCoupon.discountValue)) / 100);
+      } else {
+        discountDeduction = Number(appliedCoupon.discountValue) || appliedCoupon.discountAmount || 0;
+      }
+      discountDeduction = Math.min(discountDeduction, itemsSubtotal);
+    }
+
     const shippingFee = itemsSubtotal >= 50000 ? 0 : 5000;
     const finalTotal = Math.max(0, itemsSubtotal - discountDeduction) + shippingFee;
+
+    const fullNotes = [
+      custNotes ? `ملاحظات الزبون: ${custNotes}` : '',
+      appliedCoupon ? `كود الخصم: ${appliedCoupon.code} (خصم: ${formatIQD(discountDeduction)})` : ''
+    ].filter(Boolean).join(' | ');
+
+    const randTrack = `ZAEEM-2026-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const stored = addStoredOrder({
       customerName: custName.trim(),
@@ -1240,11 +1226,33 @@ export function StoreTemplates({
       itemsCount: orderItems.reduce((acc, i) => acc + i.quantity, 0),
       status: 'pending',
       paymentMethod: 'cod',
-      notes: custNotes || undefined,
+      notes: fullNotes || undefined,
       items: orderItems
     });
 
-    setLastPlacedOrder(stored);
+    // Save corresponding shipment to cloud
+    try {
+      saveCloudShipment({
+        trackingNumber: randTrack,
+        subdomain: subdomain,
+        recipientName: custName.trim(),
+        recipientPhone: custPhone.trim(),
+        governorate: custCity,
+        district: custAddress.trim(),
+        nearestLandmark: custAddress.trim(),
+        address: `${custCity} — ${custAddress.trim()}`,
+        codAmount: finalTotal,
+        shippingCost: shippingFee,
+        paymentType: 'cod',
+        status: 'جديدة',
+        shippingCompany: 'شركة الزعيم للشحن السريع',
+        notes: fullNotes || '',
+        createdAt: new Date().toISOString(),
+        date: new Date().toISOString().split('T')[0],
+      });
+    } catch {}
+
+    setLastPlacedOrder({ ...stored, trackingNumber: randTrack });
     setOrderSuccessModal(true);
     setSelectedProductModal(null);
     setSelectedProductDetail(null);
