@@ -2,78 +2,87 @@ import React, { useState, useEffect } from 'react';
 import {
   CreditCard, CheckCircle2, ShieldCheck, Sparkles, Clock, FileText,
   Building, ArrowLeft, RefreshCw, AlertCircle, MessageCircle, ExternalLink,
-  Gift, Check
+  Gift, Check, Zap, Crown, Layers, ShoppingBag, Globe, Rocket
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
 
 interface Plan {
   id: string;
   name: string;
-  priceMonthly: number;
+  priceUSD: number;
+  priceMonthlyIQD: number;
+  commission: string;
+  badge?: string;
   description: string;
   features: string[];
   popular?: boolean;
   orderLimitText: string;
+  storesLimit: string;
+  landingPagesLimit: string;
 }
 
 const PLANS: Plan[] = [
   {
-    id: 'free',
-    name: 'المجانية',
-    priceMonthly: 0,
-    description: 'الخطة الافتراضية المجانية لبدء وتجربة المتجر والشحنات الأولى.',
-    orderLimitText: '10 طلبات شهرياً مجاناً',
+    id: 'trial',
+    name: 'اشتراك مؤقت مجاني (3 أيام)',
+    priceUSD: 0,
+    priceMonthlyIQD: 0,
+    commission: '0 عمولة خلال فترة التجربة',
+    badge: 'تجربة مجانية 3 أيام',
+    description: 'اشتراك تجريبي مجاني لمدة 3 أيام للبدء واستكشاف المنصة وتجهيز المتجر والشحنات.',
+    orderLimitText: 'فترة تجريبية مجانية لمدة 3 أيام',
+    storesLimit: 'متجر تجريبي واحد',
+    landingPagesLimit: 'صفحة هبوط تجريبية',
     features: [
-      'متجر إلكتروني متكامل مجاناً',
-      '10 طلبات شهرياً بدون رسوم',
-      'ربط أسطول الزعيم للشحن السريع',
-      'صفحة هبوط واحدة نشطة',
-      'دعم فني عبر المنصة',
+      'فترة تجريبية مجانية بالكامل لمدة 3 أيام',
+      'تجهيز وتجربة متجر إلكتروني متكامل',
+      'تجربة إنشاء شحنات وربط أسطول الزعيم',
+      'معاينة وتجربة كافة أقسام لوحة التحكم',
+      'دعم فني وتدريب سريع عبر المنصة',
     ],
   },
   {
     id: 'basic',
-    name: 'أساسي',
-    priceMonthly: 6600,
-    description: 'للمتاجر الناشئة التي تريد الاستقرار ورفع المبيعات.',
-    orderLimitText: '100 طلب شهرياً',
+    name: 'الاشتراك الأساسي',
+    priceUSD: 2,
+    priceMonthlyIQD: 2600,
+    commission: 'عمولة 5 سنت ($0.05) على كل شحنة جديدة',
+    badge: '2$ شهرياً فقط ⚡',
+    description: 'الخيار الاقتصادي الأمثل للتجار وأصحاب المتاجر الناشئة مع عمولة 5 سنت فقط على كل شحنة.',
+    orderLimitText: 'متجر احترافي 1 + 10 صفحات هبوط',
+    storesLimit: '1 متجر احترافي متكامل',
+    landingPagesLimit: '10 صفحات هبوط تسويقية',
     features: [
-      'منتجات متجر غير محدودة',
-      '100 طلب شهرياً',
-      'ربط واتساب وإشعار الزبائن',
-      '5 صفحات هبوط احترافية',
-      'تحليلات المبيعات والطلبات',
-      'تصفية أسبوعية للتحصيل النقدي',
+      'اشتراك شهري رمزي بـ 2 دولار فقط (2,600 د.ع)',
+      'عمولة 5 سنت ($0.05) على كل شحنة جديدة',
+      '1 متجر احترافي متكامل مع دومين فرعي مجاني',
+      '10 صفحات هبوط تسويقية سريعة ومربوطة',
+      'ربط أوتوماتيكي مع أسطول الزعيم للشحن السريع',
+      'إدارة المنتجات والمخزون وتحصيل المبالغ (COD)',
+      'لوحة تحليلات المبيعات وتتبع الشحنات للزبائن',
     ],
   },
   {
     id: 'pro',
-    name: 'الاحترافية',
-    priceMonthly: 13200,
-    description: 'للأعمال المتنامية بكثافة شحنات يومية عالية.',
+    name: 'الاشتراك الاحترافي (Pro)',
+    priceUSD: 15,
+    priceMonthlyIQD: 19500,
+    commission: 'نسبة العمولة 5 سنت ($0.05) على كل شحنة',
     popular: true,
-    orderLimitText: 'طلبات غير محدودة',
+    badge: 'الأقوى للشركات والتجار الكبار 👑',
+    description: 'طلبات لا نهائية مع 20 متجراً احترافياً، وإتاحة كافة الثيمات وصفحات هبوط لا نهائية.',
+    orderLimitText: 'عدد لا نهائي من الطلبات + 20 متجر احترافي',
+    storesLimit: '20 متجر احترافي مستقل',
+    landingPagesLimit: 'عدد لا نهائي من صفحات الهبوط',
     features: [
-      'طلبات وشحنات غير محدودة',
-      'ربط نطاق مخصص (.iq / .com)',
-      'صفحات هبوط غير محدودة',
-      'تكامل جميع تطبيقات الزعيم (Meta/Google)',
-      'تصفية يومية لمبالغ الدفع عند الاستلام (COD)',
-      'مدير حساب خاص لخدمة المتجر',
-    ],
-  },
-  {
-    id: 'enterprise',
-    name: 'الأعمال',
-    priceMonthly: 26400,
-    description: 'للشركات الكبيرة والمستودعات والتجارة السريعة.',
-    orderLimitText: 'حلول مخصصة للشركات',
-    features: [
-      'جميع ميزات الخطة الاحترافية',
-      'ربط REST API و Webhooks مخصص',
-      'مستودع تخزين مخصص لدى شركة الزعيم',
-      'خصومات خاصة على أجور الشحن للمحافظات',
-      'دعم فني 24/7 عبر الهاتف والواتساب',
+      'عدد لا نهائي من الطلبات والشحنات شهرياً',
+      '20 متجر احترافي مستقل لإدارة عدة براندات',
+      'كافة الثيمات والقوالب متاحة ومفتوحة بالكامل',
+      'عدد لا نهائي من صفحات الهبوط التسويقية',
+      'نسبة عمولة 5 سنت ($0.05) فقط على كل شحنة',
+      'ربط دومينات ونطاقات مخصصة (.com / .iq)',
+      'تكامل متقدم مع بيكسل Meta و TikTok و Google Ads',
+      'مدير حساب خاص وأولوية معالجة الشحنات 24/7',
     ],
   },
 ];
@@ -84,7 +93,7 @@ export function SubscriptionsPage() {
       const saved = localStorage.getItem('zaeem_current_plan');
       if (saved) return saved;
     } catch (e) {}
-    return 'free'; // الخطة الافتراضية عند إنشاء الحساب هي المجانية
+    return 'trial'; // الخطة الافتراضية
   });
 
   const [isAnnual, setIsAnnual] = useState(false);
@@ -121,41 +130,44 @@ export function SubscriptionsPage() {
   const renewalDate = calculateRenewalDate(storeInfo.createdAt);
 
   const handleUpgrade = (plan: Plan) => {
-    // 1. صياغة رسالة الواتساب المجهزة المطلوبة بدقة
     const billingType = isAnnual ? 'الفوترة السنوية (مع خصم 10%)' : 'الفوترة الشهرية';
+    const effectiveUSD = isAnnual && plan.priceUSD > 0 ? (plan.priceUSD * 0.9).toFixed(1) : plan.priceUSD;
+    const effectiveIQD = isAnnual && plan.priceMonthlyIQD > 0 ? Math.round(plan.priceMonthlyIQD * 0.9) : plan.priceMonthlyIQD;
+
     const waMessage = `انا مالك متجر (${storeInfo.storeName}) اريد ترقية الخطة الي خطة (${plan.name})
 رمز المتجر: (${storeInfo.storeCode})
 نوع الاشتراك: ${billingType}
-السعر: ${formatIQD(isAnnual ? plan.priceMonthly * 0.9 : plan.priceMonthly)} / شهرياً`;
+السعر: ${effectiveUSD}$ شهرياً (${formatIQD(effectiveIQD)})
+المميزات: ${plan.orderLimitText} | ${plan.commission}`;
 
     const whatsappUrl = `https://wa.me/9647700000000?text=${encodeURIComponent(waMessage)}`;
-
-    // فتح واتساب في نافذة جديدة
     window.open(whatsappUrl, '_blank');
 
-    // تحديث الخطة محلياً وإظهار إشعار
     setCurrentPlanId(plan.id);
     try {
       localStorage.setItem('zaeem_current_plan', plan.id);
+      localStorage.setItem('zaeem_plan', plan.id);
     } catch (e) {}
 
-    setNotification(`تم فتح واتساب لإرسال طلب ترقية الخطة إلى "${plan.name}" وتجهيز الحساب بنجاح 🚀`);
+    setNotification(`تم فتح واتساب لإرسال طلب تفعيل "${plan.name}" وتجهيز الحساب بنجاح 🚀`);
     setTimeout(() => setNotification(null), 5000);
   };
 
+  const currentPlan = PLANS.find((p) => p.id === currentPlanId) || PLANS[0];
+
   return (
-    <div className="space-y-8 rf-appear">
+    <div className="space-y-8 rf-appear" dir="rtl">
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-teal-700 dark:text-teal-400 mb-1">
-            <CreditCard className="size-4" /> الاشتراكات والفوترة
+            <CreditCard className="size-4" /> باقات واشتراكات منصة الزعيم
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            خطط الأسعار والفوترة بالدينار العراقي
+            خطط الأسعار والاشتراكات الشهرية
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            اختر الخطة المناسبة لحجم تجارتك وشحناتك اليومية مع شركة الزعيم للشحن.
+            اختر الخطة المناسبة لتجارتك: تجربة مجانية 3 أيام، أو خطة أساسية بـ 2$، أو خطة احترافية شاملة.
           </p>
         </div>
 
@@ -199,9 +211,9 @@ export function SubscriptionsPage() {
           </span>
           <div>
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400">الخطة الحالية للمتجر ({storeInfo.storeName})</span>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                خطة {PLANS.find((p) => p.id === currentPlanId)?.name || 'المجانية'}
+                {currentPlan.name}
               </h2>
               <span className="px-3 py-1 rounded-full text-[11px] font-black bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
                 نشطة
@@ -210,22 +222,25 @@ export function SubscriptionsPage() {
                 كود المتجر: {storeInfo.storeCode}
               </span>
             </div>
+            <p className="text-xs text-teal-600 dark:text-teal-400 font-bold mt-1">
+              {currentPlan.commission}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-left bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <p className="text-[11px] font-bold text-slate-500">تاريخ التجديد القادم (30 يوم من الإنشاء):</p>
+            <p className="text-[11px] font-bold text-slate-500">تاريخ التجديد القادم:</p>
             <p className="text-xs font-mono font-black text-teal-700 dark:text-teal-400 mt-0.5">{renewalDate}</p>
           </div>
         </div>
       </div>
 
-      {/* Pricing Cards Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {/* Pricing Cards Grid (3 prominent cards) */}
+      <div className="grid gap-6 md:grid-cols-3 items-stretch">
         {PLANS.map((plan) => {
-          // الخصم السنوي 10%
-          const rawPrice = isAnnual && plan.priceMonthly > 0 ? Math.round(plan.priceMonthly * 0.9) : plan.priceMonthly;
+          const effectiveUSD = isAnnual && plan.priceUSD > 0 ? (plan.priceUSD * 0.9).toFixed(1) : plan.priceUSD;
+          const effectiveIQD = isAnnual && plan.priceMonthlyIQD > 0 ? Math.round(plan.priceMonthlyIQD * 0.9) : plan.priceMonthlyIQD;
           const isCurrent = plan.id === currentPlanId;
 
           return (
@@ -233,52 +248,80 @@ export function SubscriptionsPage() {
               key={plan.id}
               className={`rounded-3xl border p-6 flex flex-col justify-between transition-all relative ${
                 plan.popular
-                  ? 'border-teal-600 dark:border-teal-500 bg-white dark:bg-slate-900 shadow-xl ring-2 ring-teal-600/20'
+                  ? 'border-teal-500 dark:border-teal-400 bg-gradient-to-b from-teal-500/5 via-white to-white dark:from-teal-950/20 dark:via-slate-900 dark:to-slate-900 shadow-2xl ring-2 ring-teal-500/30'
                   : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md'
               }`}
             >
               {plan.popular && (
-                <span className="absolute -top-3.5 right-6 px-3.5 py-1 rounded-full text-[10px] font-black bg-teal-700 text-white shadow-md">
-                  الأكثر طلباً للتجار ⭐
+                <span className="absolute -top-3.5 right-6 px-3.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-teal-500 to-emerald-400 text-slate-950 shadow-md">
+                  {plan.badge || 'الأكثر طلباً للتجار ⭐'}
                 </span>
               )}
 
               <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">{plan.name}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 min-h-[32px]">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">{plan.name}</h3>
+                  {!plan.popular && plan.badge && (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      {plan.badge}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 min-h-[36px]">
                   {plan.description}
                 </p>
 
-                <div className="my-5">
-                  {rawPrice === 0 ? (
+                {/* Price Display */}
+                <div className="my-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-100 dark:border-slate-800/80 space-y-2">
+                  {plan.priceUSD === 0 ? (
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-slate-900 dark:text-white">مجاناً</span>
-                      <span className="text-xs text-slate-400">/ الخطة الافتراضية</span>
+                      <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">مجاناً</span>
+                      <span className="text-xs text-slate-400">/ 3 أيام تجريبية</span>
                     </div>
                   ) : (
-                    <div className="space-y-0.5">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white font-mono">
-                          {formatIQD(rawPrice)}
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-3xl font-black text-teal-600 dark:text-teal-400 font-mono">
+                          ${effectiveUSD}
                         </span>
-                        <span className="text-xs text-slate-400">/ شهرياً</span>
+                        <span className="text-xs font-bold text-slate-400">/ شهرياً</span>
+                        <span className="text-xs font-mono font-bold text-slate-500 mr-auto">
+                          (≈ {formatIQD(effectiveIQD)})
+                        </span>
                       </div>
                       {isAnnual && (
-                        <p className="text-[10px] font-bold text-amber-600">
-                          (وفرت 10% مع الفوترة السنوية)
+                        <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                          (تم تطبيق خصم 10% مع الفوترة السنوية)
                         </p>
                       )}
                     </div>
                   )}
-                  <p className="text-[11px] font-bold text-teal-700 dark:text-teal-400 mt-1.5">
-                    {plan.orderLimitText}
-                  </p>
+
+                  {/* Commission Highlight Pill */}
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[11px] font-extrabold text-teal-700 dark:text-teal-300">
+                    <span>نسبة العمولة:</span>
+                    <span className="bg-teal-500/10 px-2 py-0.5 rounded-md font-mono">{plan.commission}</span>
+                  </div>
                 </div>
 
+                {/* Limits Summary Badges */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="p-2.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <ShoppingBag className="size-3.5 text-teal-600 shrink-0" />
+                    <span className="truncate">{plan.storesLimit}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Layers className="size-3.5 text-teal-600 shrink-0" />
+                    <span className="truncate">{plan.landingPagesLimit}</span>
+                  </div>
+                </div>
+
+                {/* Features List */}
                 <div className="space-y-2.5 border-t border-slate-100 dark:border-slate-800 pt-4">
                   {plan.features.map((feat, i) => (
                     <div key={i} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300">
-                      <CheckCircle2 className="size-4 text-teal-600 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="size-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
                       <span>{feat}</span>
                     </div>
                   ))}
@@ -289,11 +332,11 @@ export function SubscriptionsPage() {
                 type="button"
                 onClick={() => handleUpgrade(plan)}
                 disabled={isCurrent}
-                className={`w-full mt-6 h-11 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`w-full mt-6 h-12 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
                   isCurrent
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-200 dark:border-slate-700'
                     : plan.popular
-                    ? 'bg-teal-700 hover:bg-teal-800 text-white shadow-lg active:scale-95'
+                    ? 'bg-gradient-to-r from-teal-500 to-emerald-400 hover:from-teal-600 hover:to-emerald-500 text-slate-950 active:scale-95'
                     : 'bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 text-white dark:text-slate-900 active:scale-95'
                 }`}
               >
@@ -302,7 +345,7 @@ export function SubscriptionsPage() {
                 ) : (
                   <>
                     <MessageCircle className="size-4" />
-                    <span>ترقية الخطة عبر واتساب</span>
+                    <span>تفعيل الخطة عبر واتساب</span>
                   </>
                 )}
               </button>
@@ -311,12 +354,12 @@ export function SubscriptionsPage() {
         })}
       </div>
 
-      {/* Invoice History: First month invoice on account creation date */}
+      {/* Invoice History */}
       <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <h3 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-2">
             <FileText className="size-5 text-teal-700" />
-            <span>سجل الفواتير والاشتراكات بالدينار العراقي (IQD)</span>
+            <span>سجل الفواتير والاشتراكات الرسمية</span>
           </h3>
           <span className="text-xs text-slate-500 font-bold">تحديث دوري شهري</span>
         </div>
@@ -327,7 +370,7 @@ export function SubscriptionsPage() {
               <tr>
                 <th className="p-3.5">رقم الفاتورة</th>
                 <th className="p-3.5">تفاصيل الاشتراك</th>
-                <th className="p-3.5">المبلغ بالدينار العراقي</th>
+                <th className="p-3.5">الرسوم والعمولة</th>
                 <th className="p-3.5">حالة الفاتورة</th>
                 <th className="p-3.5">تاريخ الإصدار</th>
               </tr>
@@ -338,14 +381,14 @@ export function SubscriptionsPage() {
                   INV-{storeInfo.createdAt.replace(/-/g, '')}-001
                 </td>
                 <td className="p-3.5 font-bold">
-                  فاتورة الشهر الأول (الخطة المجانية التأسيسية)
+                  {currentPlan.name}
                 </td>
                 <td className="p-3.5 font-mono font-bold text-teal-700 dark:text-teal-400">
-                  {formatIQD(0)}
+                  {currentPlan.priceUSD === 0 ? 'مجاناً' : `$${currentPlan.priceUSD} (${formatIQD(currentPlan.priceMonthlyIQD)}) + ${currentPlan.commission}`}
                 </td>
                 <td className="p-3.5">
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
-                    <Check className="size-3" /> مدفوعة ومفعلة
+                    <Check className="size-3" /> نشطة ومفعلة
                   </span>
                 </td>
                 <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400 font-bold">
@@ -357,9 +400,10 @@ export function SubscriptionsPage() {
         </div>
 
         <p className="text-[11px] text-slate-500 text-center pt-2">
-          💡 يتم إصدار الفاتورة الشهرية تلقائياً عند موعد التجديد الدوري كل 30 يوماً من تاريخ إنشاء الحساب.
+          💡 يتم تجديد الاشتراك وتصفية عمولات الشحن بمرونة عبر لوحة التحكم وتحويلات زين كاش / الحساب المصرفي.
         </p>
       </div>
     </div>
   );
 }
+
