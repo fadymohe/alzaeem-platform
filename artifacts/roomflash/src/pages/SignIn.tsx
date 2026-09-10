@@ -4,11 +4,22 @@ import { Logo } from '../components/common/Logo';
 import {
   Eye, EyeOff, ArrowLeft, Globe, Mail, Lock, AlertCircle,
   CheckCircle2, ShieldCheck, KeyRound, RefreshCw, X, User, Sparkles,
-  Phone, MessageCircle, MessageSquare, Send
+  Phone, MessageCircle, MessageSquare, Send, ExternalLink, Edit2
 } from 'lucide-react';
 import { fetchCloudStoreByUser, checkCloudEmailExists, checkCloudPhoneExists } from '../utils/cloudDb';
 import { supabase } from '../utils/supabase';
 import { ensureAccountDataIsolation } from '../data/storeState';
+
+const getEmailProviderUrl = (emailAddress: string) => {
+  const domain = (emailAddress || '').split('@')[1]?.toLowerCase() || '';
+  if (domain.includes('gmail') || domain.includes('googlemail')) return 'https://mail.google.com';
+  if (domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live') || domain.includes('msn')) return 'https://outlook.live.com';
+  if (domain.includes('yahoo') || domain.includes('ymail')) return 'https://mail.yahoo.com';
+  if (domain.includes('icloud') || domain.includes('me.com') || domain.includes('mac.com')) return 'https://www.icloud.com/mail';
+  if (domain.includes('zoho')) return 'https://mail.zoho.com';
+  if (domain.includes('proton') || domain.includes('protonmail')) return 'https://mail.proton.me';
+  return emailAddress ? `mailto:${emailAddress}` : 'https://mail.google.com';
+};
 
 const GOOGLE_CLIENT_ID = '142585183945-gtdbluikj92oj5r5qpb902467a4ag95f.apps.googleusercontent.com';
 
@@ -38,6 +49,7 @@ export function SignInPage() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
+  const [otpCountdown, setOtpCountdown] = useState(0);
 
   // Forgot Password / Account Recovery Modal State
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -398,7 +410,7 @@ export function SignInPage() {
     }
   };
 
-  // 1.5 WhatsApp OTP Timer & Handlers
+  // 1.5 WhatsApp & Email OTP Timers
   useEffect(() => {
     if (whatsappCountdown <= 0) return;
     const timer = setInterval(() => {
@@ -406,6 +418,14 @@ export function SignInPage() {
     }, 1000);
     return () => clearInterval(timer);
   }, [whatsappCountdown]);
+
+  useEffect(() => {
+    if (otpCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCountdown]);
 
   const handleSendWhatsappOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -622,8 +642,9 @@ export function SignInPage() {
       
       if (res.ok) {
         setOtpSent(true);
+        setOtpCountdown(60);
         setOtpSuccess(isAr
-          ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️ يرجى إدخاله أدناه للدخول الفوري.'
+          ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️'
           : 'Verification code sent to your email! Enter it below to sign in.'
         );
       } else {
@@ -634,8 +655,9 @@ export function SignInPage() {
         } else {
           // If backend handled or fallback
           setOtpSent(true);
+          setOtpCountdown(60);
           setOtpSuccess(isAr
-            ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️ يرجى إدخاله أدناه للدخول الفوري.'
+            ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️'
             : 'Verification code sent to your email! Enter it below to sign in.'
           );
         }
@@ -1296,72 +1318,132 @@ export function SignInPage() {
                   )}
                 </div>
               )}
-              {otpSuccess && (
-                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-start gap-2.5">
-                  <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-600" />
-                  <span className="leading-relaxed">{otpSuccess}</span>
-                </div>
-              )}
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">
-                  {isAr ? 'البريد الإلكتروني المسجل' : 'Registered Email Address'}
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="merchant@za3em.shop"
-                      dir="ltr"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-3 text-xs text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none pl-10"
-                    />
-                    <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={otpLoading || !email}
-                    onClick={handleSendOtpLogin}
-                    className="shrink-0 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 font-extrabold text-xs px-4 py-3 transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    {otpLoading ? (isAr ? 'جاري الإرسال...' : 'Sending...') : (otpSent ? (isAr ? 'إعادة إرسال' : 'Resend') : (isAr ? 'إرسال الكود' : 'Send Code'))}
-                  </button>
-                </div>
-                {errors.email && <p className="text-[11px] text-red-500 font-bold">{errors.email}</p>}
-              </div>
-
-              {otpSent && (
-                <form onSubmit={handleVerifyOtpLogin} className="space-y-4 animate-fadeIn">
+              {!otpSent ? (
+                /* Step 1: Input Email & Send Code */
+                <form onSubmit={handleSendOtpLogin} className="space-y-3.5">
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-700">
-                        {isAr ? 'أدخل كود التحقق (من 6 إلى 8 أرقام)' : 'Enter OTP Code (6-8 digits)'}
-                      </label>
-                      <span className="text-[10px] text-slate-400">تحقق من بريدك الوارد / Spam</span>
+                    <label className="text-xs font-bold text-slate-700 block">
+                      {isAr ? 'البريد الإلكتروني المسجل' : 'Registered Email Address'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="merchant@za3em.shop"
+                        dir="ltr"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-3 text-xs text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none pl-10"
+                      />
+                      <Mail className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
-                    <input
-                      type="text"
-                      required
-                      maxLength={8}
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="••••••••"
-                      dir="ltr"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-center text-lg font-mono font-bold tracking-widest text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none"
-                    />
+                    {errors.email && <p className="text-[11px] text-red-500 font-bold">{errors.email}</p>}
                   </div>
 
                   <button
                     type="submit"
-                    disabled={otpLoading || otpCode.length < 6}
+                    disabled={otpLoading || !email}
                     className="w-full flex items-center justify-center gap-2 rounded-2xl bg-teal-700 hover:bg-teal-800 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-teal-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
                   >
-                    <span>{otpLoading ? (isAr ? 'جاري التحقق والدخول...' : 'Verifying & Signing In...') : (isAr ? 'تأكيد الرمز والدخول إلى لوحة التحكم' : 'Verify & Sign In')}</span>
+                    <span>{otpLoading ? (isAr ? 'جاري الإرسال...' : 'Sending...') : (isAr ? 'إرسال رمز التحقق' : 'Send Verification Code')}</span>
                     {isAr ? <ArrowLeft className="size-4" /> : null}
                   </button>
                 </form>
+              ) : (
+                /* Step 2: Message Sent Notification & Action Bar & Enter OTP */
+                <div className="space-y-4 animate-fadeIn">
+                  {/* Sent Notification Card */}
+                  <div className="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200 text-emerald-900 text-right space-y-3">
+                    <div className="flex items-center gap-2 text-emerald-800">
+                      <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                      <h4 className="text-xs font-extrabold">
+                        {isAr ? 'تم إرسال رسالة في البريد الإلكتروني' : 'Verification Email Sent'}
+                      </h4>
+                    </div>
+
+                    <p className="text-[11px] text-emerald-700 font-medium leading-relaxed">
+                      {isAr ? 'تم إرسال رمز التحقق إلى بريدك:' : 'Verification code was sent to:'}{' '}
+                      <span dir="ltr" className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 inline-block">
+                        {email}
+                      </span>
+                    </p>
+
+                    {/* Action Buttons: Go to email, Resend, Change email */}
+                    <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-emerald-200/70 text-xs">
+                      <a
+                        href={getEmailProviderUrl(email)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[11px] shadow-sm transition-all"
+                      >
+                        <ExternalLink className="size-3" />
+                        <span>{isAr ? 'الانتقال إلى البريد الإلكتروني' : 'Go to Email'}</span>
+                      </a>
+
+                      <button
+                        type="button"
+                        disabled={otpLoading || otpCountdown > 0}
+                        onClick={handleSendOtpLogin}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-[11px] transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw className={`size-3 ${otpLoading ? 'animate-spin' : ''}`} />
+                        <span>
+                          {otpLoading
+                            ? (isAr ? 'جاري الإرسال...' : 'Sending...')
+                            : otpCountdown > 0
+                            ? (isAr ? `أرسل مجدداً (${otpCountdown}ث)` : `Resend (${otpCountdown}s)`)
+                            : (isAr ? 'أرسل مجدداً' : 'Resend Code')}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpSent(false);
+                          setOtpCode('');
+                          setOtpError('');
+                          setOtpSuccess('');
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 underline px-1 py-1 cursor-pointer mr-auto"
+                      >
+                        <Edit2 className="size-3" />
+                        <span>{isAr ? 'تغيير البريد الإلكتروني' : 'Change email'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Form to enter OTP code */}
+                  <form onSubmit={handleVerifyOtpLogin} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-700">
+                          {isAr ? 'أدخل كود التحقق المستلم' : 'Enter Received OTP Code'}
+                        </label>
+                        <span className="text-[10px] text-slate-400">راجع صندوق الوارد أو Spam</span>
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        maxLength={8}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        placeholder="••••••••"
+                        dir="ltr"
+                        className="w-full rounded-2xl border border-teal-300 bg-teal-50/20 px-4 py-3 text-center text-xl font-mono font-black tracking-widest text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={otpLoading || otpCode.length < 6}
+                      className="w-full flex items-center justify-center gap-2 rounded-2xl bg-teal-700 hover:bg-teal-800 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-teal-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
+                    >
+                      <span>{otpLoading ? (isAr ? 'جاري التحقق والدخول...' : 'Verifying & Signing In...') : (isAr ? 'تأكيد الرمز والدخول إلى لوحة التحكم' : 'Verify & Sign In')}</span>
+                      {isAr ? <ArrowLeft className="size-4" /> : null}
+                    </button>
+                  </form>
+                </div>
               )}
             </div>
           )}
@@ -1550,6 +1632,44 @@ export function SignInPage() {
             {/* STEP 2: Enter OTP */}
             {recoveryStep === 2 && (
               <form onSubmit={handleVerifyRecoveryOtp} className="space-y-4">
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-right space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-800">
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                    <h4 className="text-xs font-extrabold">تم إرسال رسالة في البريد الإلكتروني</h4>
+                  </div>
+                  <p className="text-[11px] text-emerald-700 font-medium leading-relaxed">
+                    تم إرسال رمز التحقق إلى: <span dir="ltr" className="font-mono font-bold text-slate-900 bg-white px-1.5 py-0.5 rounded border border-emerald-200 inline-block">{recoveryEmail}</span>
+                  </p>
+                  <div className="pt-1.5 flex flex-wrap items-center gap-2 border-t border-emerald-200/60 text-xs">
+                    <a
+                      href={getEmailProviderUrl(recoveryEmail)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[11px] shadow-sm transition-all"
+                    >
+                      <ExternalLink className="size-3" />
+                      <span>الانتقال إلى البريد الإلكتروني</span>
+                    </a>
+                    <button
+                      type="button"
+                      disabled={recoveryLoading}
+                      onClick={handleSendRecoveryOtp}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-[11px] cursor-pointer"
+                    >
+                      <RefreshCw className={`size-3 ${recoveryLoading ? 'animate-spin' : ''}`} />
+                      <span>أرسل مجدداً</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRecoveryStep(1)}
+                      className="text-[11px] font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer mr-auto flex items-center gap-1"
+                    >
+                      <Edit2 className="size-3" />
+                      <span>تغيير البريد الإلكتروني</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700">كود التحقق</label>
@@ -1573,15 +1693,6 @@ export function SignInPage() {
                 >
                   {recoveryLoading ? 'جاري التحقق...' : 'تأكيد الكود ومتابعة'}
                 </button>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setRecoveryStep(1)}
-                    className="text-xs text-slate-500 hover:text-slate-700 cursor-pointer"
-                  >
-                    تغيير البريد الإلكتروني
-                  </button>
-                </div>
               </form>
             )}
 
