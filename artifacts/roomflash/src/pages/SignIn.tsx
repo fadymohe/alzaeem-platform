@@ -1398,7 +1398,7 @@ export function SignInPage() {
         <div className="text-center text-xs font-medium text-slate-500">
           {isAr ? 'ليس لديك حساب بعد؟ ' : "Don't have an account yet? "}
           <Link href="/sign-up" className="font-extrabold text-teal-700 hover:underline">
-            {isAr ? 'أنشئ حساب جديد (5 شحنات مجانية)' : 'Create New Account (5 Free Shipments)'}
+            {isAr ? 'أنشئ حساب جديد' : 'Create New Account'}
           </Link>
         </div>
 
