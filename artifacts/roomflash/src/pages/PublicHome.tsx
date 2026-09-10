@@ -178,39 +178,11 @@ export function PublicHomePage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2️⃣ HERO SECTION WITH FLOATING INTERACTIVE BADGES & ANIMATIONS */}
+        {/* 2️⃣ HERO SECTION */}
         {/* ========================================================================= */}
-        <section className="relative mx-auto max-w-6xl px-4 pt-16 pb-12 text-center md:pt-24 md:pb-16 overflow-hidden">
+        <section className="relative mx-auto max-w-5xl px-4 pt-14 pb-8 text-center md:pt-20 md:pb-12 overflow-hidden">
           {/* Ambient background pulsing orbs */}
-          <div className="absolute top-10 left-1/2 -translate-x-1/2 size-96 rounded-full bg-gradient-to-tr from-teal-400/20 via-emerald-400/15 to-transparent blur-3xl pointer-events-none animate-pulse-glow -z-10" />
-
-          {/* Floating Live Event Badge - Left (Desktop) */}
-          <div className="hidden xl:flex absolute left-4 top-28 items-center gap-3 bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl px-4 py-2.5 animate-float-slow text-right max-w-xs z-20">
-            <div className="size-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
-              <ShoppingBag className="size-4 text-emerald-600" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-800">
-                <span>طلب جديد #1048 · بغداد</span>
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
-              </div>
-              <p className="text-[10px] font-semibold text-emerald-700 mt-0.5">+45,000 د.ع · تم تأكيد الطلب ✓</p>
-            </div>
-          </div>
-
-          {/* Floating Live Event Badge - Right (Desktop) */}
-          <div className="hidden xl:flex absolute right-4 top-36 items-center gap-3 bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl px-4 py-2.5 animate-float-reverse text-right max-w-xs z-20">
-            <div className="size-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center shrink-0">
-              <Truck className="size-4 text-teal-600" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-800">
-                <span>أسطول الزعيم · البصرة</span>
-                <span className="size-1.5 rounded-full bg-teal-500" />
-              </div>
-              <p className="text-[10px] font-semibold text-teal-700 mt-0.5">بوليصة ZAEEM-9821 · قيد التوصيل</p>
-            </div>
-          </div>
+          <div className="absolute top-10 left-1/2 -translate-x-1/2 size-96 rounded-full bg-gradient-to-tr from-teal-400/15 via-emerald-400/10 to-transparent blur-3xl pointer-events-none animate-pulse-glow -z-10" />
 
           <div className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 bg-teal-50/80 px-4 py-1.5 text-xs font-extrabold text-teal-800 shadow-sm backdrop-blur-sm mb-6">
             <Sparkles className="size-4 text-teal-600 animate-pulse" />

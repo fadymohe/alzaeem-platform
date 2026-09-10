@@ -114,14 +114,14 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
   };
 
   return (
-    <section id="how-it-works" className="py-20 px-4 mx-auto max-w-6xl scroll-mt-28 md:scroll-mt-32">
+    <section id="how-it-works" className="py-10 px-4 mx-auto max-w-5xl scroll-mt-24">
       {/* Section Header */}
-      <div className="text-center max-w-3xl mx-auto mb-12">
-        <div className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 bg-teal-50/80 px-4 py-1.5 text-xs font-black text-teal-800 shadow-xs mb-4">
-          <Sparkles className="size-4 text-teal-600 animate-pulse" />
+      <div className="text-center max-w-2xl mx-auto mb-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 bg-teal-50/80 px-3 py-1 text-[11px] font-black text-teal-800 shadow-xs mb-2.5">
+          <Sparkles className="size-3.5 text-teal-600 animate-pulse" />
           <span>{isAr ? 'فيديو توضيحي تفاعلي · 60 ثانية' : 'Interactive Video Demo · 60s'}</span>
         </div>
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
           {isAr ? (
             <>
               شاهد كيف تعمل المنصة{' '}
@@ -133,7 +133,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
             'See How the Platform Works from Click to Cash Collection'
           )}
         </h2>
-        <p className="text-xs sm:text-sm md:text-base text-slate-500 mt-3 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-lg mx-auto leading-relaxed">
           {isAr
             ? 'محاكاة حية توضح السلاسة والسرعة التي يدير بها مئات التجار طلبياتهم وشحناتهم تلقائياً دون أي تشتت.'
             : 'A live interactive walkthrough demonstrating how merchants automate orders, confirmations, and shipping in minutes.'}
@@ -141,7 +141,7 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
       </div>
 
       {/* Interactive Step Navigator Tabs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 max-w-4xl mx-auto mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-w-3xl mx-auto mb-4">
         {steps.map((step, idx) => {
           const Icon = step.icon;
           const isActive = currentStep === idx;
@@ -149,27 +149,27 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
             <button
               key={step.id}
               onClick={() => handleStepClick(idx)}
-              className={`rounded-2xl p-3 sm:p-4 text-right transition-all duration-300 border flex flex-col justify-between cursor-pointer ${
+              className={`rounded-xl p-2.5 sm:p-3 text-right transition-all duration-300 border flex flex-col justify-between cursor-pointer ${
                 isActive
-                  ? 'border-teal-500 bg-teal-50/70 shadow-md ring-2 ring-teal-200 text-teal-950 scale-[1.02]'
+                  ? 'border-teal-500 bg-teal-50/70 shadow-sm ring-2 ring-teal-200 text-teal-950 scale-[1.01]'
                   : 'border-slate-200/80 bg-white hover:bg-slate-50 text-slate-600'
               }`}
             >
-              <div className="flex items-center justify-between w-full mb-2">
+              <div className="flex items-center justify-between w-full mb-1.5">
                 <div
-                  className={`size-8 rounded-xl grid place-items-center transition-colors ${
+                  className={`size-7 rounded-lg grid place-items-center transition-colors ${
                     isActive ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-500'
                   }`}
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-3.5" />
                 </div>
                 {isActive && (
-                  <span className="text-[10px] font-black uppercase tracking-wider bg-teal-200/60 text-teal-900 px-2 py-0.5 rounded-full">
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-teal-200/60 text-teal-900 px-1.5 py-0.5 rounded-full">
                     {isAr ? 'يعمل الآن' : 'Playing'}
                   </span>
                 )}
               </div>
-              <span className="font-extrabold text-xs sm:text-sm block">
+              <span className="font-extrabold text-xs block">
                 {step.tabTitle}
               </span>
             </button>
@@ -178,20 +178,20 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
       </div>
 
       {/* Video Player Mockup Container */}
-      <div className="relative mx-auto max-w-4xl rounded-3xl border border-slate-300/80 bg-slate-950 text-white shadow-2xl shadow-slate-900/40 overflow-hidden">
+      <div className="relative mx-auto max-w-3xl rounded-2xl border border-slate-300/80 bg-slate-950 text-white shadow-xl shadow-slate-900/30 overflow-hidden">
         {/* Player Top Window Bar */}
-        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/90 px-4 py-3 backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <span className="size-3 rounded-full bg-red-500/90" />
-            <span className="size-3 rounded-full bg-amber-500/90" />
-            <span className="size-3 rounded-full bg-emerald-500/90" />
-            <span className="mx-3 text-[11px] font-mono text-slate-400 hidden sm:inline">
-              alzaeem-platform-demo.mp4 · 1080p 60fps
+        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/90 px-3.5 py-2 backdrop-blur-md">
+          <div className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full bg-red-500/90" />
+            <span className="size-2.5 rounded-full bg-amber-500/90" />
+            <span className="size-2.5 rounded-full bg-emerald-500/90" />
+            <span className="mx-2 text-[10px] font-mono text-slate-400 hidden sm:inline">
+              alzaeem-platform-demo.mp4 · 1080p
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-0.5 rounded-full">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-full">
               {isAr ? 'محاكاة حية تفاعلية' : 'Live Simulation'}
             </span>
             <button
@@ -199,43 +199,43 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
               title={isMuted ? 'Unmute' : 'Mute'}
               className="text-slate-400 hover:text-white transition-colors"
             >
-              {isMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+              {isMuted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
             </button>
           </div>
         </div>
 
         {/* Video Viewport: Stage Display */}
-        <div className="relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] p-6 sm:p-10 flex flex-col justify-between bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="relative min-h-[260px] sm:min-h-[290px] md:min-h-[310px] p-4 sm:p-6 flex flex-col justify-between bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
           
           {/* Subtle Ambient Background Animation */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute -top-1/4 -right-1/4 size-96 rounded-full bg-teal-500/10 blur-[100px] animate-pulse" />
-            <div className="absolute -bottom-1/4 -left-1/4 size-96 rounded-full bg-blue-500/10 blur-[100px] animate-pulse" />
+            <div className="absolute -top-1/4 -right-1/4 size-72 rounded-full bg-teal-500/10 blur-[80px] animate-pulse" />
+            <div className="absolute -bottom-1/4 -left-1/4 size-72 rounded-full bg-blue-500/10 blur-[80px] animate-pulse" />
           </div>
 
           {/* Current Step Description Overlay */}
-          <div className="relative z-10 flex items-start justify-between gap-4 flex-wrap">
-            <div className="space-y-1.5 max-w-xl text-right">
-              <div className="inline-flex items-center gap-2 rounded-full bg-teal-500/20 border border-teal-500/40 px-3 py-1 text-[11px] font-extrabold text-teal-300 mb-1">
+          <div className="relative z-10 flex items-start justify-between gap-3 flex-wrap mb-2">
+            <div className="space-y-1 max-w-lg text-right">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-teal-500/20 border border-teal-500/40 px-2.5 py-0.5 text-[10px] font-extrabold text-teal-300">
                 <span>{steps[currentStep].badge}</span>
               </div>
-              <h3 className="text-lg sm:text-2xl font-black text-white">
+              <h3 className="text-base sm:text-lg font-black text-white">
                 {steps[currentStep].title}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
                 {steps[currentStep].subtitle}
               </p>
             </div>
           </div>
 
           {/* Interactive Animated Visual Scene Content based on currentStep */}
-          <div className="relative z-10 my-6 flex items-center justify-center">
+          <div className="relative z-10 my-2 flex items-center justify-center">
             {/* SCENE 0: Store Setup */}
             {currentStep === 0 && (
-              <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-2xl backdrop-blur-sm animate-fadeIn">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-                  <div className="flex items-center gap-2 text-xs font-bold text-teal-400">
-                    <Store className="size-4" />
+              <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl backdrop-blur-sm animate-fadeIn">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-teal-400">
+                    <Store className="size-3.5" />
                     <span>store.zaeem.shop/my-brand</span>
                   </div>
                   <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
@@ -243,25 +243,25 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 flex flex-col justify-between">
-                    <div className="size-16 rounded-lg bg-teal-500/10 grid place-items-center text-teal-300 mx-auto mb-2">
-                      <Store className="size-8" />
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 flex flex-col justify-between">
+                    <div className="size-10 rounded-md bg-teal-500/10 grid place-items-center text-teal-300 mx-auto mb-1.5">
+                      <Store className="size-5" />
                     </div>
-                    <span className="text-xs font-bold text-slate-200 text-center">تيشيرت براند الزعيم</span>
-                    <span className="text-[11px] font-black text-teal-400 font-mono text-center mt-1">+35,000 د.ع</span>
+                    <span className="text-[11px] font-bold text-slate-200 text-center">تيشيرت براند الزعيم</span>
+                    <span className="text-[10px] font-black text-teal-400 font-mono text-center mt-0.5">+35,000 د.ع</span>
                   </div>
 
-                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 flex flex-col justify-between">
-                    <div className="size-16 rounded-lg bg-blue-500/10 grid place-items-center text-blue-300 mx-auto mb-2">
-                      <Sparkles className="size-8" />
+                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 flex flex-col justify-between">
+                    <div className="size-10 rounded-md bg-blue-500/10 grid place-items-center text-blue-300 mx-auto mb-1.5">
+                      <Sparkles className="size-5" />
                     </div>
-                    <span className="text-xs font-bold text-slate-200 text-center">حقيبة جلد كلاسيك</span>
-                    <span className="text-[11px] font-black text-blue-400 font-mono text-center mt-1">+45,000 د.ع</span>
+                    <span className="text-[11px] font-bold text-slate-200 text-center">حقيبة جلد كلاسيك</span>
+                    <span className="text-[10px] font-black text-blue-400 font-mono text-center mt-0.5">+45,000 د.ع</span>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
                   <span>⚡ سرعة تحميل 0.4 ثانية</span>
                   <span className="text-teal-300 font-bold">بدون أي عمولة على المبيعات (0%)</span>
                 </div>
@@ -270,35 +270,35 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
 
             {/* SCENE 1: WhatsApp Confirmation */}
             {currentStep === 1 && (
-              <div className="w-full max-w-md rounded-2xl border border-emerald-900/60 bg-[#0b141a] p-4 shadow-2xl backdrop-blur-sm animate-fadeIn">
-                <div className="flex items-center justify-between border-b border-emerald-900/40 pb-2 mb-3 text-right">
+              <div className="w-full max-w-sm rounded-xl border border-emerald-900/60 bg-[#0b141a] p-3.5 shadow-xl backdrop-blur-sm animate-fadeIn">
+                <div className="flex items-center justify-between border-b border-emerald-900/40 pb-2 mb-2.5 text-right">
                   <div className="flex items-center gap-2">
-                    <div className="size-8 rounded-full bg-emerald-600 text-white grid place-items-center font-bold text-xs">
+                    <div className="size-7 rounded-full bg-emerald-600 text-white grid place-items-center font-bold text-xs">
                       WA
                     </div>
                     <div>
-                      <span className="text-xs font-bold text-white block">بوت واتساب الزعيم التلقائي</span>
-                      <span className="text-[10px] text-emerald-400">متصل الآن · تأكيد فوري</span>
+                      <span className="text-xs font-bold text-white block">بوت واتساب الزعيم</span>
+                      <span className="text-[9px] text-emerald-400">متصل الآن · تأكيد فوري</span>
                     </div>
                   </div>
-                  <CheckCircle2 className="size-4 text-emerald-400" />
+                  <CheckCircle2 className="size-3.5 text-emerald-400" />
                 </div>
 
-                <div className="space-y-3">
-                  <div className="rounded-xl bg-[#202c33] p-3 text-right text-xs text-slate-200 max-w-[85%] ml-auto border border-emerald-900/30">
-                    <p className="leading-relaxed">
-                      أهلاً أحمد! 👋 تم استلام طلبك رقم <span className="text-emerald-400 font-mono font-bold">#1004</span> (تيشيرت أوفرسايز - بغداد / الكرخ).
+                <div className="space-y-2">
+                  <div className="rounded-lg bg-[#202c33] p-2.5 text-right text-[11px] text-slate-200 max-w-[90%] ml-auto border border-emerald-900/30">
+                    <p className="leading-snug">
+                      أهلاً أحمد! 👋 تم استلام طلبك <span className="text-emerald-400 font-mono font-bold">#1004</span> (بغداد / الكرخ).
                     </p>
-                    <p className="mt-1 text-[11px] text-slate-400">
-                      هل تود تأكيد شحن الطلب فوراً لعنوانك؟
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      هل تود تأكيد شحن الطلب فوراً؟
                     </p>
                   </div>
 
-                  <div className="rounded-xl bg-[#005c4b] p-3 text-center text-xs font-black text-white shadow-md border border-emerald-400/40 cursor-pointer animate-pulse">
+                  <div className="rounded-lg bg-[#005c4b] p-2 text-center text-xs font-black text-white shadow-xs border border-emerald-400/40 cursor-pointer animate-pulse">
                     «نعم، أكد الطلب والشحن الآن ✓»
                   </div>
 
-                  <div className="rounded-xl bg-[#202c33] p-2.5 text-right text-[11px] text-emerald-300 max-w-[80%] ml-auto border border-emerald-700/30">
+                  <div className="rounded-lg bg-[#202c33] p-2 text-right text-[10px] text-emerald-300 max-w-[85%] ml-auto border border-emerald-700/30">
                     ✓ تم تأكيد الطلب وتجهيز بوليصة الشحن بنجاح!
                   </div>
                 </div>
@@ -307,33 +307,33 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
 
             {/* SCENE 2: Waybill & Fleet Dispatch */}
             {currentStep === 2 && (
-              <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-2xl backdrop-blur-sm animate-fadeIn">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Truck className="size-5 text-teal-400" />
+              <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl backdrop-blur-sm animate-fadeIn">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="size-4 text-teal-400" />
                     <span className="text-xs font-bold text-white">أسطول شركة الزعيم للشحن</span>
                   </div>
-                  <span className="text-xs font-mono font-black text-teal-400 bg-teal-950 border border-teal-800 px-2.5 py-0.5 rounded-full">
+                  <span className="text-[10px] font-mono font-black text-teal-400 bg-teal-950 border border-teal-800 px-2 py-0.5 rounded-full">
                     TRK-29841
                   </span>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block">خط سير الشحنة</span>
-                      <span className="text-xs font-bold text-slate-200">من مستودع التاجر ➔ إلى باب العميل</span>
+                      <span className="text-[9px] text-slate-400 block">خط سير الشحنة</span>
+                      <span className="text-[11px] font-bold text-slate-200">من مستودع التاجر ➔ إلى باب العميل</span>
                     </div>
-                    <div className="size-9 rounded-full bg-teal-600/20 text-teal-300 grid place-items-center">
-                      <MapPin className="size-4 animate-bounce" />
+                    <div className="size-7 rounded-full bg-teal-600/20 text-teal-300 grid place-items-center">
+                      <MapPin className="size-3.5 animate-bounce" />
                     </div>
                   </div>
 
                   {/* Waybill Mock Barcode */}
-                  <div className="p-3 rounded-xl bg-white text-slate-900 flex flex-col items-center justify-center">
-                    <span className="text-[10px] font-bold text-slate-500 mb-1">بوليصة شحن معتمدة ZAEEM</span>
-                    <div className="h-8 w-48 bg-[repeating-linear-gradient(to_right,#000_0px,#000_2px,transparent_2px,transparent_4px)]" />
-                    <span className="text-[10px] font-mono font-black mt-1">#1004 · TRK-29841 · COD: +35,000 د.ع</span>
+                  <div className="p-2 rounded-lg bg-white text-slate-900 flex flex-col items-center justify-center">
+                    <span className="text-[9px] font-bold text-slate-500 mb-0.5">بوليصة شحن معتمدة ZAEEM</span>
+                    <div className="h-6 w-40 bg-[repeating-linear-gradient(to_right,#000_0px,#000_2px,transparent_2px,transparent_4px)]" />
+                    <span className="text-[9px] font-mono font-black mt-0.5">#1004 · TRK-29841 · COD: +35,000 د.ع</span>
                   </div>
                 </div>
               </div>
@@ -341,38 +341,38 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
 
             {/* SCENE 3: Cash Collection & Payouts */}
             {currentStep === 3 && (
-              <div className="w-full max-w-md rounded-2xl border border-teal-900/60 bg-slate-900/95 p-5 shadow-2xl backdrop-blur-sm animate-fadeIn">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-                  <div className="flex items-center gap-2 text-xs font-bold text-teal-400">
-                    <Wallet className="size-5" />
+              <div className="w-full max-w-sm rounded-xl border border-teal-900/60 bg-slate-900/95 p-4 shadow-xl backdrop-blur-sm animate-fadeIn">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-teal-400">
+                    <Wallet className="size-4" />
                     <span>محفظة التاجر الإلكترونية</span>
                   </div>
-                  <span className="text-[10px] bg-teal-500/20 text-teal-300 border border-teal-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                  <span className="text-[9px] bg-teal-500/20 text-teal-300 border border-teal-500/30 px-2 py-0.5 rounded-full font-bold">
                     إيداع فوري
                   </span>
                 </div>
 
-                <div className="text-center py-4 bg-gradient-to-b from-teal-950/40 to-transparent rounded-2xl border border-teal-800/40 mb-3">
-                  <span className="text-xs text-slate-400 block mb-1">إجمالي الأرباح الصافية المحصلة</span>
-                  <div className="text-3xl sm:text-4xl font-black text-emerald-400 font-mono tracking-tight animate-pulse">
-                    19,410,000 <span className="text-sm font-bold text-white">{isAr ? 'د.ع' : 'IQD'}</span>
+                <div className="text-center py-3 bg-gradient-to-b from-teal-950/40 to-transparent rounded-xl border border-teal-800/40 mb-2">
+                  <span className="text-[11px] text-slate-400 block mb-0.5">إجمالي الأرباح الصافية المحصلة</span>
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight animate-pulse">
+                    19,410,000 <span className="text-xs font-bold text-white">{isAr ? 'د.ع' : 'IQD'}</span>
                   </div>
-                  <span className="text-[11px] text-emerald-400 font-bold mt-1 inline-flex items-center gap-1">
+                  <span className="text-[10px] text-emerald-400 font-bold mt-0.5 inline-flex items-center gap-1">
                     <CheckCircle2 className="size-3" />
                     {isAr ? 'تم تحصيل مبالغ الدفع عند الاستلام بنجاح' : 'All COD Cash Collected'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 text-[10px] text-slate-300">
                   <span>طلب سحب للأرباح بنقرة واحدة</span>
-                  <span className="text-teal-400 font-bold">تحويل بنكي / محفظة زين كاش / كاش</span>
+                  <span className="text-teal-400 font-bold">تحويل بنكي / زين كاش / كاش</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Bottom Player Controls Bar */}
-          <div className="relative z-10 pt-4 border-t border-slate-800/90 flex flex-col gap-3">
+          <div className="relative z-10 pt-2.5 border-t border-slate-800/90 flex flex-col gap-2">
             {/* Timeline Scrubber Progress */}
             <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
               <div
@@ -382,10 +382,10 @@ export function PlatformVideoShowcase({ isAr = true }: PlatformVideoShowcaseProp
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={togglePlay}
-                  className="size-8 rounded-full bg-teal-600 hover:bg-teal-500 text-white grid place-items-center transition-transform hover:scale-110"
+                  className="size-7 rounded-full bg-teal-600 hover:bg-teal-500 text-white grid place-items-center transition-transform hover:scale-110"
                   title={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? <Pause className="size-4 fill-white" /> : <Play className="size-4 fill-white ml-0.5" />}
