@@ -537,10 +537,10 @@ export function PublicHomePage() {
             <div className="space-y-3">
               <h4 className="font-extrabold text-xs text-white">{isAr ? 'الشركة والتنقل' : 'Navigation'}</h4>
               <ul className="space-y-2 text-xs text-slate-400">
-                <li><button type="button" onClick={() => scrollToSection('features')} className="hover:text-white transition-colors cursor-pointer">{t.navFeatures}</button></li>
-                <li><button type="button" onClick={() => scrollToSection('templates')} className="hover:text-white transition-colors cursor-pointer">{t.navTemplates}</button></li>
+                <li><button type="button" onClick={() => scrollToSection('how-it-works')} className="hover:text-white transition-colors cursor-pointer">{isAr ? 'كيف تعمل المنصة' : 'How It Works'}</button></li>
                 <li><button type="button" onClick={() => scrollToSection('stories')} className="hover:text-white transition-colors cursor-pointer">{t.navStories}</button></li>
                 <li><button type="button" onClick={() => scrollToSection('shipping')} className="hover:text-white transition-colors cursor-pointer">{t.navShipping}</button></li>
+                <li><button type="button" onClick={() => scrollToSection('blog')} className="hover:text-white transition-colors cursor-pointer">{t.navBlog}</button></li>
               </ul>
             </div>
 
