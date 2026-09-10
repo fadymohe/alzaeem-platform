@@ -121,15 +121,15 @@ export function EcosystemRadialHub({ isAr = true }: EcosystemRadialHubProps) {
       <div className="relative z-10 mx-auto max-w-6xl">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/90 bg-blue-50/80 px-4 py-1.5 text-xs font-black text-blue-800 shadow-xs mb-3">
-            <Sparkles className="size-3.5 text-blue-600 animate-pulse" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/90 bg-emerald-50/80 px-4 py-1.5 text-xs font-black text-emerald-800 shadow-xs mb-3">
+            <Sparkles className="size-3.5 text-emerald-600 animate-pulse" />
             <span>{isAr ? '● المنظومة المتكاملة' : '● Unified Ecosystem'}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
             {isAr ? (
               <>
                 منظومة الزعيم في قلب أعمالك —{' '}
-                <span className="bg-gradient-to-r from-blue-700 via-indigo-600 to-teal-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-500 bg-clip-text text-transparent">
                   كل ما تحتاجه في منصة واحدة
                 </span>
               </>
@@ -151,15 +151,15 @@ export function EcosystemRadialHub({ isAr = true }: EcosystemRadialHubProps) {
             <defs>
               {/* Radial glow gradient */}
               <radialGradient id="hubCenterGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#0d9488" stopOpacity="0" />
               </radialGradient>
 
               {/* Energy pulse linear gradient */}
               <linearGradient id="beamGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#60a5fa" />
-                <stop offset="50%" stopColor="#2563eb" />
-                <stop offset="100%" stopColor="#38bdf8" />
+                <stop offset="0%" stopColor="#34d399" />
+                <stop offset="50%" stopColor="#059669" />
+                <stop offset="100%" stopColor="#14b8a6" />
               </linearGradient>
             </defs>
 
@@ -186,9 +186,9 @@ export function EcosystemRadialHub({ isAr = true }: EcosystemRadialHubProps) {
               width="250"
               height="280"
               rx="55"
-              stroke="#dbeafe"
+              stroke="#ccfbf1"
               strokeWidth="1.5"
-              className="opacity-70 transition-all duration-500"
+              className="opacity-80 transition-all duration-500"
             />
             {/* Inner Rounded Frame */}
             <rect
@@ -197,9 +197,9 @@ export function EcosystemRadialHub({ isAr = true }: EcosystemRadialHubProps) {
               width="200"
               height="230"
               rx="40"
-              stroke="#93c5fd"
+              stroke="#99f6e4"
               strokeWidth="1.5"
-              className="opacity-80 transition-all duration-500"
+              className="opacity-90 transition-all duration-500"
             />
 
             {/* 8 Spoke Connection Lines with Animated Energy Pulses */}
@@ -213,7 +213,7 @@ export function EcosystemRadialHub({ isAr = true }: EcosystemRadialHubProps) {
                     y1={n.spoke.y1}
                     x2={n.spoke.x2}
                     y2={n.spoke.y2}
-                    stroke={isActive ? '#3b82f6' : '#bfdbfe'}
+                    stroke={isActive ? '#059669' : '#ccfbf1'}
                     strokeWidth={isActive ? 2.5 : 1.5}
                     className="transition-colors duration-300"
                   />
@@ -224,14 +224,14 @@ export function EcosystemRadialHub({ isAr = true }: EcosystemRadialHubProps) {
                     y1={n.spoke.y1}
                     x2={n.spoke.x2}
                     y2={n.spoke.y2}
-                    stroke={isActive ? '#2563eb' : '#60a5fa'}
+                    stroke={isActive ? '#047857' : '#34d399'}
                     strokeWidth={isActive ? 3 : 2}
                     className={`animate-spoke-flow ${isActive ? 'opacity-100' : 'opacity-40'}`}
                   />
 
                   {/* Travelling pulse particle when active */}
                   {isActive && (
-                    <circle r="4" fill="#2563eb" className="filter drop-shadow-[0_0_6px_#3b82f6]">
+                    <circle r="4" fill="#059669" className="filter drop-shadow-[0_0_6px_#10b981]">
                       <animate
                         attributeName="cx"
                         from={n.spoke.x1}
@@ -295,10 +295,10 @@ export function EcosystemRadialHub({ isAr = true }: EcosystemRadialHubProps) {
             <div className="col-start-2 row-start-2 z-20">
               <div className="relative group cursor-pointer transition-transform duration-300 hover:scale-105">
                 {/* Glowing ambient pulse ring */}
-                <div className="absolute -inset-3 bg-gradient-to-r from-blue-500/25 via-indigo-500/20 to-teal-400/25 rounded-[2.8rem] blur-xl -z-10 animate-hub-aura" />
+                <div className="absolute -inset-3 bg-gradient-to-r from-teal-500/20 via-emerald-500/20 to-teal-400/20 rounded-[2.8rem] blur-xl -z-10 animate-hub-aura" />
 
                 {/* Main White Center Card */}
-                <div className="w-40 h-44 rounded-[2.2rem] bg-white border border-slate-200/90 shadow-2xl shadow-slate-300/80 p-4 flex flex-col items-center justify-center gap-2.5 transition-all duration-300 group-hover:shadow-blue-500/20">
+                <div className="w-40 h-44 rounded-[2.2rem] bg-white border border-slate-200/90 shadow-2xl shadow-slate-300/80 p-4 flex flex-col items-center justify-center gap-2.5 transition-all duration-300 group-hover:shadow-emerald-500/20">
                   {/* Dark indigo emblem box with Al-Zaeem Logo (matching Image 2) */}
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-b from-[#21135c] via-[#1b104c] to-[#120a37] p-2 flex flex-col items-center justify-center shadow-md shadow-indigo-950/30">
                     <img
@@ -381,10 +381,10 @@ export function EcosystemRadialHub({ isAr = true }: EcosystemRadialHubProps) {
                   key={node.id}
                   onClick={() => setHoveredNode(node.id)}
                   className={`rounded-2xl border bg-white p-3.5 shadow-xs text-center space-y-1 transition-all duration-300 ${
-                    isActive ? 'border-blue-400 ring-2 ring-blue-100 shadow-md scale-[1.02]' : 'border-slate-200'
+                    isActive ? 'border-emerald-400 ring-2 ring-emerald-100 shadow-md scale-[1.02]' : 'border-slate-200'
                   }`}
                 >
-                  <div className="size-2 rounded-full bg-blue-500 mx-auto mb-1 animate-dot-pulse" />
+                  <div className="size-2 rounded-full bg-emerald-500 mx-auto mb-1 animate-dot-pulse" />
                   <h4 className="font-extrabold text-xs text-slate-900">{node.title}</h4>
                   <p className="text-[10px] text-slate-500 leading-tight">{node.subtitle}</p>
                 </div>
@@ -414,20 +414,20 @@ function NodeCard({ node, isActive, onHover }: NodeCardProps) {
       onMouseLeave={() => onHover(null)}
       className={`w-48 sm:w-52 rounded-2xl border bg-white p-4 text-center transition-all duration-300 cursor-pointer ${
         isActive
-          ? 'border-blue-400 -translate-y-1.5 shadow-xl shadow-blue-500/15 ring-2 ring-blue-200/80 scale-105'
-          : 'border-slate-200/85 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5'
+          ? 'border-emerald-400 -translate-y-1.5 shadow-xl shadow-emerald-500/15 ring-2 ring-emerald-200/80 scale-105'
+          : 'border-slate-200/85 hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5'
       }`}
     >
-      {/* Top Blue Indicator Dot (matching Image 2 with Pulse) */}
+      {/* Top Emerald Indicator Dot with Pulse */}
       <div className="relative size-2 mx-auto mb-2 flex items-center justify-center">
         <span
-          className={`absolute inset-0 rounded-full bg-blue-400 ${
+          className={`absolute inset-0 rounded-full bg-emerald-400 ${
             isActive ? 'animate-ping opacity-75' : 'opacity-0'
           }`}
         />
         <span
           className={`size-2 rounded-full transition-colors duration-300 ${
-            isActive ? 'bg-blue-600 shadow-[0_0_8px_#2563eb]' : 'bg-blue-500'
+            isActive ? 'bg-emerald-600 shadow-[0_0_8px_#059669]' : 'bg-emerald-500'
           }`}
         />
       </div>
