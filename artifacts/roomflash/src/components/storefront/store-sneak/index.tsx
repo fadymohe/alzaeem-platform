@@ -1,11 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ShoppingBag, Search, Star, ArrowLeft, Truck, ShieldCheck,
-  Sparkles, Crown, Footprints, Flame
+  Sparkles, Crown, Footprints, Flame, Check, Loader2, User
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
 import type { ThemeComponentProps } from '../store-classic';
+import {
+  ThemeShopView,
+  ThemeCategoriesView,
+  ThemeCartCheckoutView,
+  ThemeAccountView,
+  ThemeContactView,
+  ThemeProductDetailView,
+  getProductImage,
+  STORE_PLACEHOLDER_IMAGE,
+  formatPriceInteger
+} from '../theme-common/ThemePages';
 
 export function StoreSneakTheme({
   storeName,
@@ -14,38 +25,100 @@ export function StoreSneakTheme({
   products,
   filteredProducts,
   cartCount,
+  cartItems = [],
+  onOpenCart,
+  onOpenProductDetail,
+  onOpenCustomerAuth,
+  currentCustomer,
   selectedCategory,
   onSelectCategory,
   searchQuery,
   onSearchChange,
   onQuickBuy,
-  logoUrl
+  onAddToCart,
+  logoUrl,
+  customization
 }: ThemeComponentProps) {
+  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact' | 'product'>('home');
+  const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
+  const brandColor = customization?.brandColor || '#dc2626';
+  const announcement = customization?.announcementText || 'أحذية وسنيكرز رياضية أصلية • شحن سريع لجميع المحافظات مع ميزة فحص وتجربة القياس قبل الدفع';
+  const heroTitle = customization?.heroTitle || 'انطلق بأقصى طاقة وأناقة رياضية لا تتوقف';
+  const heroSubtitle = customization?.heroSubtitle || 'سنيكرز، أطقم رياضية ومستلزمات تدريب أصلية مع ميزة المعاينة وتجربة المقاس قبل الاستلام والدفع.';
+  const heroBtnText = customization?.heroButtonText || 'تسوق السنيكرز الآن';
+
+  const handleOpenProduct = (product: StoreProduct) => {
+    setSelectedProduct(product);
+    setCurrentPage('product');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAddToCartWithFeedback = (product: StoreProduct, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setAddingId(product.id);
+    onAddToCart?.(product);
+    setToastMsg(`تمت إضافة "${product.name}" إلى السلة`);
+    setTimeout(() => setAddingId(null), 600);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const sharedPageProps = {
+    storeName,
+    subdomain,
+    fullDomain,
+    brandColor,
+    products,
+    cartItems,
+    onAddToCart,
+    onQuickBuy,
+    onOpenProductDetail: handleOpenProduct,
+    onNavigatePage: (page: any) => {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#0d0707] text-slate-100 font-sans antialiased selection:bg-red-600 selection:text-white">
+    <div className="min-h-screen bg-[#0d0707] text-slate-100 font-sans antialiased selection:bg-red-600 selection:text-white flex flex-col" dir="rtl">
+      {/* Toast Feedback */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a0a0a] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-red-600/30 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div className="size-6 rounded-full bg-red-600 grid place-items-center text-white shrink-0">
+            <Check className="size-3.5" />
+          </div>
+          <span className="text-xs font-bold">{toastMsg}</span>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-red-600 via-rose-700 to-red-800 text-white font-black text-xs py-2 px-4 text-center flex items-center justify-center gap-2 shadow-md">
-        <Crown className="size-4" />
-        <span>ثيم سنيك الرياضي (PRO) • أحذية وملابس رياضية أصلية وشحن سريع لجميع المحافظات</span>
+        <Sparkles className="size-4 animate-pulse" />
+        <span>{announcement}</span>
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#170c0c]/90 backdrop-blur-lg border-b border-red-600/20 px-4 md:px-8 py-4 shadow-2xl">
+      <header className="sticky top-0 z-40 bg-[#170c0c]/90 backdrop-blur-lg border-b border-red-600/20 px-4 md:px-8 py-3.5 shadow-2xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer select-none"
+            onClick={() => setCurrentPage('home')}
+          >
             {logoUrl ? (
               <img src={logoUrl} alt={storeName} className="size-11 rounded-2xl object-cover border border-red-500/40" />
             ) : (
               <div className="size-11 rounded-2xl bg-gradient-to-tr from-red-600 to-orange-500 text-white font-black grid place-items-center text-xl shadow-lg">
-                {storeName.charAt(0).toUpperCase()}
+                <Footprints className="size-6 text-white" />
               </div>
             )}
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-black text-base text-white leading-none">{storeName}</h1>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-600 text-white">PRO SNEAK</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-600 text-white">SNEAK</span>
               </div>
               <span className="text-[11px] font-mono text-red-400 dir-ltr block mt-1">
                 https://{fullDomain}
@@ -53,8 +126,48 @@ export function StoreSneakTheme({
             </div>
           </div>
 
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-2 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setCurrentPage('home')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'home' ? 'bg-red-600 text-white shadow-md' : 'text-red-200 hover:text-white'
+              }`}
+            >
+              الرئيسية
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('shop')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'shop' ? 'bg-red-600 text-white shadow-md' : 'text-red-200 hover:text-white'
+              }`}
+            >
+              المتجر
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('categories')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'categories' ? 'bg-red-600 text-white shadow-md' : 'text-red-200 hover:text-white'
+              }`}
+            >
+              التصنيفات
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('contact')}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                currentPage === 'contact' ? 'bg-red-600 text-white shadow-md' : 'text-red-200 hover:text-white'
+              }`}
+            >
+              تواصل معنا
+            </button>
+          </nav>
+
           <div className="flex items-center gap-3">
-            <div className="relative hidden md:block w-72">
+            <div className="relative hidden md:block w-52">
               <Search className="absolute right-3.5 top-2.5 size-4 text-red-400/60" />
               <input
                 type="text"
@@ -67,6 +180,15 @@ export function StoreSneakTheme({
 
             <button
               type="button"
+              onClick={() => setCurrentPage('account')}
+              className="size-9 rounded-full bg-red-950 border border-red-800/50 grid place-items-center text-red-200 hover:text-white transition-colors"
+            >
+              <User className="size-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage('cart')}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-xs shadow-lg transition-transform hover:scale-105"
             >
               <ShoppingBag className="size-4" />
@@ -76,133 +198,193 @@ export function StoreSneakTheme({
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#210d0d] via-[#2d1212] to-[#180a0a] border border-red-600/30 p-8 md:p-12 min-h-[300px] flex items-center shadow-2xl">
-          <div className="absolute top-0 right-10 size-80 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 max-w-xl space-y-4 text-right">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black bg-red-950 border border-red-700 text-red-300">
-              <Flame className="size-3.5 text-red-400 fill-red-400" />
-              أقوى تشكيلات السنيكرز والملابس الرياضية
-            </span>
-            <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
-              انطلق بأقصى طاقة وأناقة رياضية لا تتوقف
-            </h2>
-            <p className="text-xs md:text-sm text-red-200/80 leading-relaxed">
-              سنيكرز، أطقم رياضية ومستلزمات تدريب أصلية 100% مع ميزة المعاينة قبل الاستلام والدفع عند الباب.
-            </p>
-            <div className="pt-2 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('sneak-products');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-6 py-3 rounded-2xl text-xs font-black bg-red-600 hover:bg-red-500 text-white shadow-lg flex items-center gap-2 transition-transform hover:scale-105"
-              >
-                <span>تسوق التشكيلة الآن</span>
-                <ArrowLeft className="size-4" />
-              </button>
-              <span className="text-xs font-bold text-red-300 flex items-center gap-1.5 bg-red-950/60 px-3 py-2 rounded-xl border border-red-800/40">
-                <Truck className="size-4 text-red-400" /> توصيل سريع لجميع المحافظات
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Main Pages Content */}
+      <main className="flex-1">
+        {currentPage === 'shop' && (
+          <ThemeShopView
+            {...sharedPageProps}
+            selectedCategory={selectedCategory}
+            onSelectCategory={onSelectCategory}
+            searchQuery={searchQuery}
+            onSearchChange={onSearchChange}
+          />
+        )}
 
-      {/* Category Pills */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-8">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => onSelectCategory(cat)}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all border shrink-0 ${
-                selectedCategory === cat
-                  ? 'bg-red-600 text-white border-red-400 shadow-md scale-105'
-                  : 'bg-[#170c0c] text-red-200 border-red-950 hover:border-red-800'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </section>
+        {currentPage === 'categories' && (
+          <ThemeCategoriesView
+            {...sharedPageProps}
+            onSelectCategory={(cat) => {
+              onSelectCategory(cat);
+              setCurrentPage('shop');
+            }}
+          />
+        )}
 
-      {/* Products Grid */}
-      <section id="sneak-products" className="max-w-7xl mx-auto px-4 md:px-8 mt-8">
-        <div className="flex items-center justify-between mb-6 pb-2 border-b border-red-900/30">
+        {(currentPage === 'cart' || currentPage === 'checkout') && (
+          <ThemeCartCheckoutView {...sharedPageProps} />
+        )}
+
+        {currentPage === 'account' && (
+          <ThemeAccountView {...sharedPageProps} />
+        )}
+
+        {currentPage === 'contact' && (
+          <ThemeContactView {...sharedPageProps} />
+        )}
+
+        {currentPage === 'product' && selectedProduct && (
+          <ThemeProductDetailView
+            {...sharedPageProps}
+            product={selectedProduct}
+            onAddToCart={(prod, qty) => {
+              for (let i = 0; i < qty; i++) onAddToCart?.(prod);
+            }}
+          />
+        )}
+
+        {currentPage === 'home' && (
           <div>
-            <h3 className="font-black text-xl text-white">الأحذية والمنتجات الرياضية</h3>
-            <p className="text-xs text-red-300/60 mt-0.5">أفضل الموديلات المتوفرة حالياً</p>
-          </div>
-          <span className="text-xs font-mono font-bold text-red-400 bg-red-950/80 px-3 py-1 rounded-full border border-red-800/40">
-            {filteredProducts.length} منتج
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-3xl border border-red-900/40 bg-[#170c0c] overflow-hidden shadow-xl flex flex-col justify-between group transition-all duration-300 hover:border-red-500/50 hover:shadow-2xl hover:shadow-red-500/5 hover:-translate-y-1"
-            >
-              <div>
-                <div className="h-64 bg-[#0d0707] relative overflow-hidden">
-                  <img
-                    src={p.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700&auto=format&fit=crop&q=80'}
-                    alt={p.name}
-                    className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <span className="absolute top-3 right-3 text-[10px] font-black bg-slate-950/80 backdrop-blur-md text-red-300 px-3 py-1 rounded-full border border-red-500/30">
-                    {p.category}
+            {/* Hero Section */}
+            <section className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
+              <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#210d0d] via-[#2d1212] to-[#180a0a] border border-red-600/30 p-8 md:p-12 min-h-[300px] flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl">
+                <div className="absolute top-0 right-10 size-80 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative z-10 max-w-xl space-y-4 text-center md:text-right">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black bg-red-950 border border-red-700 text-red-300">
+                    <Flame className="size-3.5 text-red-400 fill-red-400" />
+                    أقوى تشكيلات السنيكرز والملابس الرياضية
                   </span>
-                  <span className="absolute top-3 left-3 text-[10px] font-black bg-red-600 text-white px-2.5 py-1 rounded-full">
-                    شحن لجميع المحافظات
-                  </span>
+                  <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
+                    {heroTitle}
+                  </h2>
+                  <p className="text-xs md:text-sm text-red-200/80 leading-relaxed">
+                    {heroSubtitle}
+                  </p>
+                  <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage('shop')}
+                      className="px-6 py-3 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-xs md:text-sm shadow-xl transition-all flex items-center gap-2"
+                    >
+                      <span>{heroBtnText}</span>
+                      <ArrowLeft className="size-4" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="p-5 text-right space-y-2">
-                  <h4 className="font-black text-base text-white line-clamp-1 group-hover:text-red-400 transition-colors">
-                    {p.name}
-                  </h4>
-                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                    {p.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق والدفع عند الاستلام.'}
-                  </p>
+                <div className="relative z-10 shrink-0 w-full max-w-[260px] aspect-square rounded-2xl overflow-hidden border border-red-600/40 shadow-2xl bg-white/5 flex items-center justify-center p-4">
+                  <img
+                    src={getProductImage(products[0])}
+                    onError={(e) => { e.currentTarget.src = STORE_PLACEHOLDER_IMAGE; }}
+                    alt={storeName}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               </div>
+            </section>
 
-              <div className="p-5 border-t border-red-900/30 bg-[#120808] flex items-center justify-between">
+            {/* Products Grid */}
+            <section className="max-w-7xl mx-auto px-4 md:px-8 mt-12 mb-16">
+              <div className="flex items-center justify-between mb-8 pb-3 border-b border-red-900/30">
                 <div>
-                  <span className="text-base font-black font-mono text-red-400 block">{formatIQD(p.price)}</span>
-                  {p.compareAtPrice && (
-                    <span className="text-xs text-slate-500 line-through font-mono">{formatIQD(p.compareAtPrice)}</span>
-                  )}
+                  <h3 className="text-2xl font-black text-white flex items-center gap-2">
+                    <Footprints className="size-6 text-red-500" />
+                    <span>أحدث السنيكرز والأحذية الرياضية</span>
+                  </h3>
+                  <p className="text-xs text-red-300/60 mt-1">موديلات أصلية مع ميزة تجربة المقاس قبل الدفع</p>
                 </div>
-
                 <button
                   type="button"
-                  onClick={() => onQuickBuy(p)}
-                  className="px-4 py-2.5 rounded-2xl text-xs font-black bg-red-600 hover:bg-red-500 text-white shadow-md flex items-center gap-1.5 transition-all hover:scale-105"
+                  onClick={() => setCurrentPage('shop')}
+                  className="text-xs font-black text-red-400 hover:text-red-300 flex items-center gap-1"
                 >
-                  <span>شراء فوري</span>
+                  <span>عرض الكل ({products.length})</span>
                   <ArrowLeft className="size-3.5" />
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {products.slice(0, 8).map((p) => {
+                  const isAdding = addingId === p.id;
+                  const hasDiscount = !!p.originalPrice && p.originalPrice > p.price;
+                  return (
+                    <div
+                      key={p.id}
+                      className="bg-[#170c0c] border border-red-900/40 hover:border-red-600 rounded-3xl overflow-hidden shadow-lg hover:shadow-red-600/10 transition-all duration-300 flex flex-col justify-between group"
+                    >
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => handleOpenProduct(p)}
+                      >
+                        <div className="h-60 bg-[#120707] relative overflow-hidden flex items-center justify-center p-4">
+                          <img
+                            src={getProductImage(p)}
+                            onError={(e) => { e.currentTarget.src = STORE_PLACEHOLDER_IMAGE; }}
+                            alt={p.name}
+                            className="size-full object-contain group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <span className="absolute top-3 right-3 text-[10px] font-black bg-red-600 text-white px-2.5 py-1 rounded-full shadow-md">
+                            {p.category || 'رياضي'}
+                          </span>
+                        </div>
+
+                        <div className="p-5 text-right space-y-1.5">
+                          <h4 className="font-black text-sm text-white line-clamp-1 group-hover:text-red-400 transition-colors">
+                            {p.name}
+                          </h4>
+                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                            {p.description || 'حذاء رياضي أصلي مريح وعالي الجودة مع شحن سريع ومعاينة قبل الدفع.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-5 border-t border-red-900/30 bg-[#0e0505] flex items-center justify-between gap-2">
+                        <div>
+                          <span className="text-base font-black font-mono text-red-400 block">
+                            {formatPriceInteger(p.price)}
+                          </span>
+                          {hasDiscount && p.originalPrice && (
+                            <span className="text-xs text-slate-500 line-through font-mono">
+                              {formatPriceInteger(p.originalPrice)}
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={isAdding}
+                          onClick={(e) => handleAddToCartWithFeedback(p, e)}
+                          className="px-4 py-2 rounded-full text-xs font-black bg-red-600 hover:bg-red-500 text-white shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
+                        >
+                          {isAdding ? (
+                            <>
+                              <Loader2 className="size-3.5 animate-spin" />
+                              <span>جاري الإضافة...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="size-3.5" />
+                              <span>أضف للسلة</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
 
       {/* Footer */}
-      <footer className="mt-20 border-t border-red-900/40 bg-[#070303] py-10 px-4 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة • مدعوم بواسطة منصة الزعيم</p>
-          <div className="flex items-center gap-4 text-red-400 text-xs">
-            <span className="flex items-center gap-1"><Truck className="size-3.5" /> توصيل سريع</span>
-            <span className="flex items-center gap-1"><ShieldCheck className="size-3.5" /> دفع عند الاستلام</span>
+      <footer className="bg-[#080303] text-slate-400 text-xs py-10 px-4 border-t border-red-950 mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <p>© {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة</p>
+          <div className="flex items-center gap-4 text-red-400">
+            <span>شحن سريع لكافة المحافظات</span>
+            <span>•</span>
+            <span>تجربة المقاس قبل الدفع</span>
           </div>
         </div>
       </footer>

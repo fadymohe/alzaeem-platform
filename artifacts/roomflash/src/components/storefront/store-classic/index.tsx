@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   ShoppingBag, Search, Star, ArrowLeft, Truck, ShieldCheck,
   Sparkles, Heart, Clock, Check, User, ArrowRight, X, Phone, MapPin,
-  Flame, Award, Shield, PhoneCall, Plus, Tag
+  Flame, Award, Shield, PhoneCall, Plus, Tag, RefreshCw
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
@@ -11,7 +11,11 @@ import {
   ThemeCategoriesView,
   ThemeCartCheckoutView,
   ThemeAccountView,
-  ThemeContactView
+  ThemeContactView,
+  ThemeProductDetailView,
+  getProductImage,
+  formatPriceInteger,
+  STORE_PLACEHOLDER_IMAGE
 } from '../theme-common/ThemePages';
 
 export interface ThemeComponentProps {
@@ -30,7 +34,7 @@ export interface ThemeComponentProps {
   onSelectCategory: (category: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onQuickBuy: (product: StoreProduct) => void;
+  onQuickBuy?: (product: StoreProduct) => void;
   onAddToCart?: (product: StoreProduct) => void;
   logoUrl?: string;
   storeCode?: string;
@@ -57,13 +61,14 @@ export function StoreClassicTheme({
   onSelectCategory,
   searchQuery,
   onSearchChange,
-  onQuickBuy,
   onAddToCart,
   logoUrl,
   customization
 }: ThemeComponentProps) {
-  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact' | 'product'>('home');
+  const [selectedProduct, setSelectedProduct] = useState<StoreProduct>(products[0] || {} as StoreProduct);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [addingId, setAddingId] = useState<number | null>(null);
 
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
@@ -75,6 +80,19 @@ export function StoreClassicTheme({
   const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Handcrafted essences and purest blends delivered with Iraqi Cash On Delivery and hand inspection.' : 'مجموعات حصرية من العود الملكي، والمسك الصافي، والعطور الفرنسية المنتقاة بعناية فائقة، مع إمكانية تجربة الرائحة قبل إتمام الدفع.');
   const heroBtnText = customization?.heroButtonText || (isEn ? 'Explore Fragrances' : 'استكشف التشكيلة العطرية');
 
+  const handleOpenProduct = (prod: StoreProduct) => {
+    setSelectedProduct(prod);
+    setCurrentPage('product');
+    if (onOpenProductDetail) onOpenProductDetail(prod);
+  };
+
+  const handleAddToCartWithFeedback = (prod: StoreProduct) => {
+    if (addingId !== null) return;
+    setAddingId(prod.id);
+    if (onAddToCart) onAddToCart(prod);
+    setTimeout(() => setAddingId(null), 500);
+  };
+
   const sharedPageProps = {
     storeName,
     subdomain,
@@ -84,8 +102,7 @@ export function StoreClassicTheme({
     products,
     cartItems,
     onAddToCart,
-    onQuickBuy,
-    onOpenProductDetail,
+    onOpenProductDetail: handleOpenProduct,
     onNavigatePage: (page: any) => setCurrentPage(page)
   };
 
@@ -145,7 +162,7 @@ export function StoreClassicTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('home')}
-              className={`px-4 py-1.5 rounded-full transition-all ${
+              className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${
                 currentPage === 'home'
                   ? 'bg-[#0f172a] text-white shadow-sm'
                   : 'text-slate-700 hover:text-slate-950'
@@ -156,7 +173,7 @@ export function StoreClassicTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('shop')}
-              className={`px-4 py-1.5 rounded-full transition-all ${
+              className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${
                 currentPage === 'shop'
                   ? 'bg-[#0f172a] text-white shadow-sm'
                   : 'text-slate-700 hover:text-slate-950'
@@ -167,7 +184,7 @@ export function StoreClassicTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('categories')}
-              className={`px-4 py-1.5 rounded-full transition-all ${
+              className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${
                 currentPage === 'categories'
                   ? 'bg-[#0f172a] text-white shadow-sm'
                   : 'text-slate-700 hover:text-slate-950'
@@ -178,7 +195,7 @@ export function StoreClassicTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('cart')}
-              className={`px-4 py-1.5 rounded-full transition-all ${
+              className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${
                 currentPage === 'cart' || currentPage === 'checkout'
                   ? 'bg-[#0f172a] text-white shadow-sm'
                   : 'text-slate-700 hover:text-slate-950'
@@ -189,7 +206,7 @@ export function StoreClassicTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('account')}
-              className={`px-4 py-1.5 rounded-full transition-all ${
+              className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${
                 currentPage === 'account'
                   ? 'bg-[#0f172a] text-white shadow-sm'
                   : 'text-slate-700 hover:text-slate-950'
@@ -200,7 +217,7 @@ export function StoreClassicTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('contact')}
-              className={`px-4 py-1.5 rounded-full transition-all ${
+              className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${
                 currentPage === 'contact'
                   ? 'bg-[#0f172a] text-white shadow-sm'
                   : 'text-slate-700 hover:text-slate-950'
@@ -215,7 +232,7 @@ export function StoreClassicTheme({
             <button
               type="button"
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+              className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
               title="بحث"
             >
               <Search className="size-4" />
@@ -223,8 +240,11 @@ export function StoreClassicTheme({
 
             <button
               type="button"
-              onClick={() => setCurrentPage('account')}
-              className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+              onClick={() => {
+                if (onOpenCustomerAuth) onOpenCustomerAuth();
+                else setCurrentPage('account');
+              }}
+              className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
               title="حسابي"
             >
               <User className="size-4" />
@@ -233,7 +253,7 @@ export function StoreClassicTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('cart')}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0f172a] hover:bg-slate-800 text-white font-sans font-bold text-xs shadow-md shadow-slate-900/20 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0f172a] hover:bg-slate-800 text-white font-sans font-bold text-xs shadow-md shadow-slate-900/20 transition-all cursor-pointer"
             >
               <ShoppingBag className="size-4" />
               <span>الحقيبة</span>
@@ -267,7 +287,7 @@ export function StoreClassicTheme({
               <button
                 type="button"
                 onClick={() => setSearchOpen(false)}
-                className="text-xs text-slate-600 hover:text-slate-950 px-2 py-1 font-sans"
+                className="text-xs text-slate-600 hover:text-slate-950 px-2 py-1 font-sans cursor-pointer"
               >
                 إغلاق
               </button>
@@ -278,43 +298,40 @@ export function StoreClassicTheme({
 
       {/* Main Pages Switcher */}
       <main className="flex-1">
+        {currentPage === 'product' && selectedProduct && (
+          <ThemeProductDetailView
+            {...sharedPageProps}
+            product={selectedProduct}
+          />
+        )}
+
         {currentPage === 'shop' && (
           <ThemeShopView
             {...sharedPageProps}
-            themeStyle="luxury"
-            initialCategory={selectedCategory}
-            initialSearch={searchQuery}
           />
         )}
 
         {currentPage === 'categories' && (
           <ThemeCategoriesView
             {...sharedPageProps}
-            onSelectCategory={(cat) => {
-              onSelectCategory(cat);
-              setCurrentPage('shop');
-            }}
           />
         )}
 
         {currentPage === 'cart' && (
           <ThemeCartCheckoutView
             {...sharedPageProps}
-            initialStep="cart"
           />
         )}
 
         {currentPage === 'checkout' && (
           <ThemeCartCheckoutView
             {...sharedPageProps}
-            initialStep="checkout"
           />
         )}
 
         {currentPage === 'account' && (
           <ThemeAccountView
             {...sharedPageProps}
-            currentCustomer={currentCustomer}
           />
         )}
 
@@ -364,7 +381,7 @@ export function StoreClassicTheme({
                     <button
                       type="button"
                       onClick={() => setCurrentPage('shop')}
-                      className="px-8 py-3.5 rounded-full bg-[#0f172a] hover:bg-slate-800 text-white font-bold text-sm shadow-xl shadow-slate-900/20 flex items-center gap-2 group transition-all"
+                      className="px-8 py-3.5 rounded-full bg-[#0f172a] hover:bg-slate-800 text-white font-bold text-sm shadow-xl shadow-slate-900/20 flex items-center gap-2 group transition-all cursor-pointer"
                     >
                       <span>{heroBtnText}</span>
                       <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
@@ -372,7 +389,7 @@ export function StoreClassicTheme({
                     <button
                       type="button"
                       onClick={() => setCurrentPage('categories')}
-                      className="px-6 py-3.5 rounded-full bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 font-bold text-sm shadow-sm transition-all"
+                      className="px-6 py-3.5 rounded-full bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 font-bold text-sm shadow-sm transition-all cursor-pointer"
                     >
                       استكشف الروائح
                     </button>
@@ -382,11 +399,18 @@ export function StoreClassicTheme({
                 {/* Hero Feature Showcase */}
                 <div className="lg:col-span-5 relative">
                   <div className="relative rounded-3xl overflow-hidden border border-[#d4af37]/30 shadow-2xl bg-white p-4">
-                    <div className="aspect-[4/5] rounded-2xl overflow-hidden relative mb-4 bg-slate-900">
+                    <div
+                      className="aspect-[4/5] rounded-2xl overflow-hidden relative mb-4 bg-slate-900 cursor-pointer p-4 flex items-center justify-center"
+                      onClick={() => products[0] && handleOpenProduct(products[0])}
+                    >
                       <img
-                        src={products[0]?.image || 'https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=800&q=80'}
+                        src={getProductImage(products[0])}
                         alt="Botiga Luxury Fragrance"
-                        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).onerror = null;
+                          (e.currentTarget as HTMLImageElement).src = STORE_PLACEHOLDER_IMAGE;
+                        }}
+                        className="w-full h-full object-contain transform hover:scale-105 transition-transform duration-700"
                       />
                       <div className="absolute top-3 right-3 bg-[#0f172a] text-[#d4af37] text-[10px] font-sans font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-[#d4af37]/40 shadow-md">
                         الأكثر طلباً
@@ -400,7 +424,7 @@ export function StoreClassicTheme({
                       </div>
                       <div className="text-left">
                         <div className="text-base font-black text-[#0f172a]">
-                          {products[0]?.price ? formatIQD(products[0].price) : '55,000 د.ع'}
+                          {products[0]?.price ? formatPriceInteger(products[0].price) : '55,000 د.ع'}
                         </div>
                         <span className="text-[10px] text-slate-500">معاينة قبل الدفع</span>
                       </div>
@@ -422,7 +446,7 @@ export function StoreClassicTheme({
                         onSelectCategory(cat);
                         setCurrentPage('shop');
                       }}
-                      className={`px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+                      className={`px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
                         selectedCategory === cat
                           ? 'bg-[#0f172a] text-white shadow-md'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
@@ -451,7 +475,7 @@ export function StoreClassicTheme({
                 <button
                   type="button"
                   onClick={() => setCurrentPage('shop')}
-                  className="text-xs font-bold text-[#0f172a] hover:text-[#d4af37] font-sans flex items-center gap-1"
+                  className="text-xs font-bold text-[#0f172a] hover:text-[#d4af37] font-sans flex items-center gap-1 cursor-pointer"
                 >
                   <span>عرض الكل ({products.length})</span>
                   <ArrowLeft className="size-3.5" />
@@ -460,20 +484,24 @@ export function StoreClassicTheme({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 font-sans">
                 {products.slice(0, 8).map((product) => {
-                  const hasDiscount = !!product.originalPrice && product.originalPrice > product.price;
+                  const hasDiscount = !!product.compareAtPrice && product.compareAtPrice > product.price;
                   return (
                     <div
                       key={product.id}
                       className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-[#d4af37]/60 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
                     >
                       <div
-                        className="relative aspect-square overflow-hidden bg-slate-100 cursor-pointer"
-                        onClick={() => onOpenProductDetail?.(product)}
+                        className="relative aspect-square overflow-hidden bg-slate-50 p-2 flex items-center justify-center cursor-pointer"
+                        onClick={() => handleOpenProduct(product)}
                       >
                         <img
-                          src={product.image}
+                          src={getProductImage(product)}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).onerror = null;
+                            (e.currentTarget as HTMLImageElement).src = STORE_PLACEHOLDER_IMAGE;
+                          }}
+                          className="size-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-700"
                         />
                         {hasDiscount && (
                           <div className="absolute top-2.5 right-2.5 bg-[#0f172a] text-[#d4af37] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#d4af37]/40 shadow-md">
@@ -496,7 +524,7 @@ export function StoreClassicTheme({
 
                           <h4
                             className="font-bold text-sm text-[#0f172a] line-clamp-1 cursor-pointer hover:text-[#d4af37] transition-colors font-serif"
-                            onClick={() => onOpenProductDetail?.(product)}
+                            onClick={() => handleOpenProduct(product)}
                           >
                             {product.name}
                           </h4>
@@ -511,35 +539,37 @@ export function StoreClassicTheme({
                             <div>
                               <span className="text-[10px] text-slate-500 block">السعر</span>
                               <div className="text-base font-black text-[#0f172a]">
-                                {formatIQD(product.price)}
+                                {formatPriceInteger(product.price)}
                               </div>
                             </div>
-                            {hasDiscount && product.originalPrice && (
+                            {hasDiscount && product.compareAtPrice && (
                               <div className="text-left">
                                 <span className="text-[10px] text-slate-400 line-through block">
-                                  {formatIQD(product.originalPrice)}
+                                  {formatPriceInteger(product.compareAtPrice)}
                                 </span>
                               </div>
                             )}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => onAddToCart?.(product)}
-                              className="w-full py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-slate-200"
-                            >
-                              <ShoppingBag className="size-3.5" />
-                              <span>للحقيبة</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onQuickBuy?.(product)}
-                              className="w-full py-2 rounded-full bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-md shadow-slate-900/20"
-                            >
-                              طلب فوري
-                            </button>
-                          </div>
+                          {/* Single Add to Cart Action */}
+                          <button
+                            type="button"
+                            onClick={() => handleAddToCartWithFeedback(product)}
+                            disabled={addingId === product.id}
+                            className="w-full py-2 rounded-full bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md shadow-slate-900/20 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-75"
+                          >
+                            {addingId === product.id ? (
+                              <>
+                                <RefreshCw className="size-3.5 animate-spin text-[#d4af37]" />
+                                <span>تمت الإضافة للحقيبة...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ShoppingBag className="size-3.5" />
+                                <span>أضف للحقيبة</span>
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -598,7 +628,7 @@ export function StoreClassicTheme({
         )}
       </main>
 
-      {/* 7. Classic Luxury Footer */}
+      {/* 7. Classic Luxury Footer (White-Labeled) */}
       <footer className="bg-[#0f172a] text-slate-300 text-xs mt-auto font-sans">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -625,7 +655,7 @@ export function StoreClassicTheme({
                         onSelectCategory(cat);
                         setCurrentPage('shop');
                       }}
-                      className="hover:text-[#d4af37] transition-colors"
+                      className="hover:text-[#d4af37] transition-colors cursor-pointer"
                     >
                       {cat}
                     </button>
@@ -638,22 +668,22 @@ export function StoreClassicTheme({
               <h5 className="font-bold text-white text-sm mb-3">روابط وتصفح</h5>
               <ul className="space-y-2 text-[11px]">
                 <li>
-                  <button type="button" onClick={() => setCurrentPage('shop')} className="hover:text-[#d4af37] transition-colors">
+                  <button type="button" onClick={() => setCurrentPage('shop')} className="hover:text-[#d4af37] transition-colors cursor-pointer">
                     جميع العطور
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => setCurrentPage('cart')} className="hover:text-[#d4af37] transition-colors">
+                  <button type="button" onClick={() => setCurrentPage('cart')} className="hover:text-[#d4af37] transition-colors cursor-pointer">
                     حقيبة التسوق
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => setCurrentPage('account')} className="hover:text-[#d4af37] transition-colors">
+                  <button type="button" onClick={() => setCurrentPage('account')} className="hover:text-[#d4af37] transition-colors cursor-pointer">
                     حسابي وسجل الطلبات
                   </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => setCurrentPage('contact')} className="hover:text-[#d4af37] transition-colors">
+                  <button type="button" onClick={() => setCurrentPage('contact')} className="hover:text-[#d4af37] transition-colors cursor-pointer">
                     تواصل معنا
                   </button>
                 </li>
@@ -676,7 +706,7 @@ export function StoreClassicTheme({
 
           <div className="mt-8 pt-6 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-500">
             <div>
-              © {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة • مدعوم بواسطة الزعيم Al-Zaeem
+              © {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة.
             </div>
             <div className="flex items-center gap-3">
               <span>سياسة الخصوصية والاسترجاع</span>
@@ -689,3 +719,4 @@ export function StoreClassicTheme({
     </div>
   );
 }
+export default StoreClassicTheme;

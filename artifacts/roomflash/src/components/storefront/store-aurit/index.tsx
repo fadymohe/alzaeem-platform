@@ -3,7 +3,7 @@ import {
   ShoppingBag, Search, Star, ArrowLeft, Truck, ShieldCheck,
   Sparkles, Heart, Clock, Check, User, ChevronDown, Flame, Tag,
   Headphones, RefreshCw, Smartphone, Shirt, Layers, Grid, Home,
-  Tv, Dumbbell, Package, ShoppingCart, Award, PhoneCall, Plus
+  Tv, Dumbbell, Package, ShoppingCart, Award, PhoneCall, Plus, Loader2
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
@@ -13,7 +13,11 @@ import {
   ThemeCategoriesView,
   ThemeCartCheckoutView,
   ThemeAccountView,
-  ThemeContactView
+  ThemeContactView,
+  ThemeProductDetailView,
+  getProductImage,
+  STORE_PLACEHOLDER_IMAGE,
+  formatPriceInteger
 } from '../theme-common/ThemePages';
 
 /**
@@ -41,18 +45,21 @@ export function StoreAuritTheme({
   logoUrl,
   customization
 }: ThemeComponentProps) {
-  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact' | 'product'>('home');
+  const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
   const brandColor = customization?.brandColor || '#2563eb';
   const fontFamily = "'Cairo', 'Outfit', sans-serif";
   const isEn = customization?.defaultLanguage === 'en';
-  const announcement = customization?.announcementText || 'ميجا ستور عراقي متكامل • وفر حتى 20% بكود ZAEEM20 مع توصيل سريع لكافة المحافظات والدفع عند الاستلام';
+  const announcement = customization?.announcementText || 'ميجا ستور متكامل • توصيل سريع لكافة المحافظات مع ميزة فحص المنتج قبل الدفع عند الاستلام';
   const heroTitle = customization?.heroTitle || (isEn ? 'Mega Deals & Everyday Essentials' : 'عروض وتخفيضات كبرى على آلاف المنتجات');
-  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Everything you need from trendy fashion, electronics, and home items with Iraqi COD.' : 'تسوق أفضل السلع الاستهلاكية، الإلكترونيات، والأزياء بأسعار الجملة، مع التوصيل السريع لجميع محافظات العراق وإمكانية فحص طلبك قبل الدفع.');
-  const heroBtnText = customization?.heroButtonText || (isEn ? 'Explore Mega Deals' : 'استكشف عروض الميجا ستور');
+  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Everything you need with fast COD delivery.' : 'تسوق أفضل السلع الاستهلاكية، الإلكترونيات، والأزياء بأسعار الجملة، مع التوصيل السريع لجميع محافظات العراق وإمكانية فحص طلبك قبل الدفع.');
+  const heroBtnText = customization?.heroButtonText || (isEn ? 'Explore Mega Deals' : 'استكشف العروض الكبرى');
 
   const popularCatAvatars = [
     { name: 'عروض اليوم', badge: 'خصم 30%', icon: '🔥', cat: 'الكل' },
@@ -62,6 +69,21 @@ export function StoreAuritTheme({
     { name: 'منزل وديكور', badge: 'تخفيضات', icon: '🛋️', cat: 'منزل' },
     { name: 'إكسسوارات وساعات', badge: 'VIP', icon: '⌚', cat: 'إكسسوارات' }
   ];
+
+  const handleOpenProduct = (product: StoreProduct) => {
+    setSelectedProduct(product);
+    setCurrentPage('product');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAddToCartWithFeedback = (product: StoreProduct, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setAddingId(product.id);
+    onAddToCart?.(product);
+    setToastMsg(`تمت إضافة "${product.name}" إلى السلة بنجاح`);
+    setTimeout(() => setAddingId(null), 600);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
 
   const sharedPageProps = {
     storeName,
@@ -73,17 +95,30 @@ export function StoreAuritTheme({
     cartItems,
     onAddToCart,
     onQuickBuy,
-    onOpenProductDetail,
-    onNavigatePage: (page: any) => setCurrentPage(page)
+    onOpenProductDetail: handleOpenProduct,
+    onNavigatePage: (page: any) => {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   return (
     <div
       className="min-h-screen bg-[#f8fafc] text-slate-900 antialiased selection:bg-blue-600 selection:text-white flex flex-col"
       style={{ fontFamily }}
-      dir={isEn ? 'ltr' : 'rtl'}
+      dir="rtl"
     >
-      {/* 1. Top Coupon Banner */}
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-950 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-blue-500/30 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div className="size-6 rounded-full bg-blue-600 grid place-items-center text-white shrink-0">
+            <Check className="size-3.5" />
+          </div>
+          <span className="text-xs font-bold">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* 1. Top Announcement Banner */}
       <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-600 text-white text-xs py-2 px-4 select-none shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 overflow-hidden truncate">
@@ -91,7 +126,7 @@ export function StoreAuritTheme({
             <span className="text-[11px] font-bold truncate">{announcement}</span>
           </div>
           <div className="hidden md:flex items-center gap-4 text-[11px] font-mono shrink-0">
-            <span className="bg-white/20 px-2 py-0.5 rounded font-bold">كوبون: ZAEEM</span>
+            <span className="bg-white/20 px-2 py-0.5 rounded font-bold">دفع عند الاستلام</span>
             <span>|</span>
             <span className="font-bold text-white">https://{fullDomain}</span>
           </div>
@@ -99,9 +134,9 @@ export function StoreAuritTheme({
       </div>
 
       {/* 2. Mega Store Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+      <header className="bg-white sticky top-0 z-40 shadow-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
-          {/* Logo */}
+          {/* Brand Logo */}
           <div
             className="flex items-center gap-3 cursor-pointer select-none"
             onClick={() => setCurrentPage('home')}
@@ -110,154 +145,53 @@ export function StoreAuritTheme({
               <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[140px] object-contain" />
             ) : (
               <div className="flex items-center gap-2.5">
-                <div className="size-10 rounded-xl bg-blue-600 text-white grid place-items-center shadow-md shadow-blue-600/25">
+                <div className="size-10 rounded-xl bg-blue-600 text-white grid place-items-center shadow-md shadow-blue-600/30 font-black">
                   <ShoppingBag className="size-5" />
                 </div>
                 <div>
-                  <h1 className="font-black text-xl text-slate-950 tracking-tight leading-none">{storeName}</h1>
+                  <h1 className="font-black text-xl text-slate-900 tracking-tight leading-none">{storeName}</h1>
                   <span className="text-[10px] font-bold text-blue-600 block mt-0.5 tracking-wider uppercase">
-                    SHOPWELL MEGA STORE
+                    MEGA STORE
                   </span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Search Bar with Category Select (Mega Style) */}
-          <div className="hidden lg:flex items-center flex-1 max-w-xl mx-4 border-2 border-blue-600 rounded-xl overflow-hidden bg-white shadow-sm">
-            <select
-              value={selectedCategory}
-              onChange={(e) => {
-                onSelectCategory(e.target.value);
-                if (currentPage !== 'shop') setCurrentPage('shop');
-              }}
-              className="h-10 px-3 bg-slate-50 text-xs font-bold text-slate-700 border-l border-slate-200 outline-none cursor-pointer"
-            >
-              {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <div className="relative flex-1">
+          {/* Search Bar */}
+          <div className="flex-1 max-w-xl hidden md:block">
+            <div className="relative flex items-center">
               <input
                 type="text"
-                placeholder="ابحث عن أي منتج، ماركة، أو فئة..."
                 value={searchQuery}
-                onChange={(e) => {
-                  onSearchChange(e.target.value);
-                  if (currentPage !== 'shop') setCurrentPage('shop');
-                }}
-                className="w-full h-10 px-3 text-xs text-slate-900 outline-none"
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="ابحث عن أكثر من 1000+ منتج بأسعار مميزة..."
+                className="w-full bg-slate-100 border border-slate-200 focus:border-blue-600 focus:bg-white rounded-2xl py-2 px-4 pr-10 text-xs text-slate-800 transition-all outline-none"
               />
+              <Search className="size-4 text-slate-400 absolute right-3.5 pointer-events-none" />
             </div>
-            <button
-              type="button"
-              onClick={() => setCurrentPage('shop')}
-              className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1 transition-colors"
-            >
-              <Search className="size-4" />
-              <span>بحث</span>
-            </button>
           </div>
 
-          {/* Center Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => setCurrentPage('home')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                currentPage === 'home'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-950'
-              }`}
-            >
-              الرئيسية
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage('shop')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                currentPage === 'shop'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-950'
-              }`}
-            >
-              كل العروض
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage('categories')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                currentPage === 'categories'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-950'
-              }`}
-            >
-              الأقسام
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage('cart')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                currentPage === 'cart' || currentPage === 'checkout'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-950'
-              }`}
-            >
-              السلة
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage('account')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                currentPage === 'account'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-950'
-              }`}
-            >
-              حسابي
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage('contact')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                currentPage === 'contact'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-950'
-              }`}
-            >
-              اتصل بنا
-            </button>
-          </nav>
-
-          {/* Action Buttons */}
+          {/* Action Navigation */}
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="lg:hidden p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
-              title="بحث"
-            >
-              <Search className="size-4" />
-            </button>
-
-            <button
-              type="button"
               onClick={() => setCurrentPage('account')}
-              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
-              title="حسابي"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 text-xs font-bold transition-colors"
             >
-              <User className="size-4" />
+              <User className="size-4 text-slate-600" />
+              <span className="hidden sm:inline">حسابي</span>
             </button>
 
             <button
               type="button"
               onClick={() => setCurrentPage('cart')}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/25 transition-all"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-600/25"
             >
               <ShoppingCart className="size-4" />
-              <span>السلة</span>
+              <span className="hidden sm:inline">السلة</span>
               {cartCount > 0 && (
-                <span className="bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full text-[10px] font-black">
+                <span className="bg-amber-400 text-slate-900 text-[10px] font-black size-5 rounded-full grid place-items-center">
                   {cartCount}
                 </span>
               )}
@@ -265,44 +199,72 @@ export function StoreAuritTheme({
           </div>
         </div>
 
-        {/* Mobile Search Flyout */}
-        {searchOpen && (
-          <div className="lg:hidden bg-slate-50 border-t border-slate-200 p-3 px-4">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="size-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="ابحث عن منتج..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    onSearchChange(e.target.value);
-                    if (currentPage !== 'shop') setCurrentPage('shop');
-                  }}
-                  className="w-full bg-white border border-slate-300 rounded-xl pr-10 pl-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600"
-                  autoFocus
-                />
-              </div>
+        {/* Categories Bar */}
+        <div className="bg-slate-50 border-t border-slate-200 px-4 md:px-8 py-2">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 text-xs font-bold text-slate-700">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               <button
                 type="button"
-                onClick={() => setSearchOpen(false)}
-                className="text-xs text-slate-600 hover:text-slate-950 px-2 py-1"
+                onClick={() => setCurrentPage('home')}
+                className={`px-3 py-1 rounded-lg transition-colors shrink-0 ${
+                  currentPage === 'home' ? 'bg-blue-600 text-white' : 'hover:bg-slate-200'
+                }`}
               >
-                إغلاق
+                الرئيسية
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage('shop')}
+                className={`px-3 py-1 rounded-lg transition-colors shrink-0 ${
+                  currentPage === 'shop' ? 'bg-blue-600 text-white' : 'hover:bg-slate-200'
+                }`}
+              >
+                جميع العروض
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage('categories')}
+                className={`px-3 py-1 rounded-lg transition-colors shrink-0 ${
+                  currentPage === 'categories' ? 'bg-blue-600 text-white' : 'hover:bg-slate-200'
+                }`}
+              >
+                الأقسام
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage('contact')}
+                className={`px-3 py-1 rounded-lg transition-colors shrink-0 ${
+                  currentPage === 'contact' ? 'bg-blue-600 text-white' : 'hover:bg-slate-200'
+                }`}
+              >
+                خدمة العملاء
               </button>
             </div>
+
+            <div className="hidden lg:flex items-center gap-4 text-[11px] text-slate-500 font-semibold shrink-0">
+              <span className="flex items-center gap-1 text-emerald-600">
+                <ShieldCheck className="size-3.5" />
+                <span>فحص عند الاستلام</span>
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-blue-600">
+                <Truck className="size-3.5" />
+                <span>شحن سريع لـ 18 محافظة</span>
+              </span>
+            </div>
           </div>
-        )}
+        </div>
       </header>
 
-      {/* Main Pages Switcher */}
+      {/* Main Pages Content */}
       <main className="flex-1">
         {currentPage === 'shop' && (
           <ThemeShopView
             {...sharedPageProps}
-            themeStyle="modern"
-            initialCategory={selectedCategory}
-            initialSearch={searchQuery}
+            selectedCategory={selectedCategory}
+            onSelectCategory={onSelectCategory}
+            searchQuery={searchQuery}
+            onSearchChange={onSearchChange}
           />
         )}
 
@@ -316,97 +278,91 @@ export function StoreAuritTheme({
           />
         )}
 
-        {currentPage === 'cart' && (
-          <ThemeCartCheckoutView
-            {...sharedPageProps}
-            initialStep="cart"
-          />
-        )}
-
-        {currentPage === 'checkout' && (
-          <ThemeCartCheckoutView
-            {...sharedPageProps}
-            initialStep="checkout"
-          />
+        {(currentPage === 'cart' || currentPage === 'checkout') && (
+          <ThemeCartCheckoutView {...sharedPageProps} />
         )}
 
         {currentPage === 'account' && (
-          <ThemeAccountView
-            {...sharedPageProps}
-            currentCustomer={currentCustomer}
-          />
+          <ThemeAccountView {...sharedPageProps} />
         )}
 
         {currentPage === 'contact' && (
-          <ThemeContactView
+          <ThemeContactView {...sharedPageProps} />
+        )}
+
+        {currentPage === 'product' && selectedProduct && (
+          <ThemeProductDetailView
             {...sharedPageProps}
+            product={selectedProduct}
+            onAddToCart={(prod, qty) => {
+              for (let i = 0; i < qty; i++) onAddToCart?.(prod);
+            }}
           />
         )}
 
         {currentPage === 'home' && (
           <div>
-            {/* 3. Mega Store Hero Banner */}
-            <section className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white py-14 md:py-20 px-4 md:px-8">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.25),transparent_50%)] pointer-events-none" />
-
-              <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-                <div className="lg:col-span-7 space-y-5 text-right">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-sky-200 text-xs font-bold">
-                    <Sparkles className="size-3.5 text-amber-300" />
-                    <span>مهرجان التخفيضات الأسبوعي • حتى 40% خصم</span>
+            {/* 3. Hero Mega Banner */}
+            <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-950 text-white py-12 md:py-16 relative overflow-hidden">
+              <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+                <div className="lg:col-span-7 space-y-5 text-center lg:text-right">
+                  <div className="inline-flex items-center gap-2 bg-blue-500/30 border border-blue-400/30 px-3 py-1.5 rounded-full text-xs font-bold text-amber-300">
+                    <Flame className="size-4 animate-bounce" />
+                    <span>تخفيضات موسمية كبرى</span>
                   </div>
 
-                  <h1 className="text-3xl md:text-5xl font-black text-white leading-tight">
+                  <h2 className="text-3xl sm:text-5xl font-black leading-tight tracking-tight">
                     {heroTitle}
-                  </h1>
+                  </h2>
 
-                  <p className="text-sm md:text-base text-blue-100 max-w-xl leading-relaxed">
+                  <p className="text-xs sm:text-sm text-blue-100 max-w-xl leading-relaxed">
                     {heroSubtitle}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => setCurrentPage('shop')}
-                      className="px-8 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-sm shadow-xl shadow-black/20 flex items-center gap-2 group transition-all"
+                      className="px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-black shadow-xl shadow-amber-400/25 transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
                     >
                       <span>{heroBtnText}</span>
-                      <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
+                      <ArrowLeft className="size-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setCurrentPage('categories')}
-                      className="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-sm transition-all"
+                      className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold border border-white/20 transition-colors"
                     >
-                      تصفح الأقسام
+                      تصفح حسب القسم
                     </button>
                   </div>
                 </div>
 
-                {/* Hero Feature Box */}
+                {/* Hero Showcase Display */}
                 <div className="lg:col-span-5 relative">
-                  <div className="bg-white rounded-3xl p-5 text-slate-900 shadow-2xl border border-slate-100">
-                    <div className="aspect-[4/3] rounded-2xl overflow-hidden relative mb-4 bg-slate-100">
+                  <div className="bg-white/10 backdrop-blur-md rounded-3xl p-4 border border-white/20 shadow-2xl">
+                    <div className="aspect-[4/3] rounded-2xl overflow-hidden relative bg-white/5 mb-3 flex items-center justify-center">
                       <img
-                        src={products[0]?.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80'}
-                        alt="ShopWell Featured Deal"
-                        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                        src={getProductImage(products[0])}
+                        onError={(e) => { e.currentTarget.src = STORE_PLACEHOLDER_IMAGE; }}
+                        alt="Mega Deal Showcase"
+                        className="w-full h-full object-contain p-4"
                       />
-                      <div className="absolute top-3 right-3 bg-red-600 text-white text-[11px] font-black px-2.5 py-1 rounded-md shadow-md">
-                        صفقة اليوم 🔥
+                      <div className="absolute top-3 right-3 bg-rose-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+                        عرض محدود
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between px-2">
                       <div>
-                        <span className="text-xs text-blue-600 font-bold">عرض خاص حصري</span>
-                        <h4 className="font-bold text-slate-900 text-base mt-0.5">{products[0]?.name || 'ساعة ذكية مقاومة للماء'}</h4>
+                        <span className="text-xs text-amber-300 font-bold block">صفقة مميزة اليوم</span>
+                        <h4 className="font-bold text-white text-sm mt-0.5">{products[0]?.name || 'منتج مختار بعناية'}</h4>
                       </div>
                       <div className="text-left">
-                        <div className="text-base font-black text-blue-600">
-                          {products[0]?.price ? formatIQD(products[0].price) : '35,000 د.ع'}
+                        <div className="text-lg font-black text-amber-300">
+                          {products[0]?.price ? formatPriceInteger(products[0].price) : '25,000 د.ع'}
                         </div>
-                        <span className="text-[10px] text-slate-500">الدفع عند الاستلام</span>
+                        <span className="text-[10px] text-blue-200">الدفع عند الاستلام</span>
                       </div>
                     </div>
                   </div>
@@ -414,39 +370,23 @@ export function StoreAuritTheme({
               </div>
             </section>
 
-            {/* 4. Popular Category Circle Avatars */}
+            {/* 4. Popular Category Icons */}
             <section className="py-8 bg-white border-b border-slate-200">
               <div className="max-w-7xl mx-auto px-4 md:px-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
-                    <Grid className="size-4 text-blue-600" />
-                    <span>تسوق حسب الأقسام الشائعة</span>
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage('categories')}
-                    className="text-xs font-bold text-blue-600 hover:underline"
-                  >
-                    عرض كل الأقسام
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                  {popularCatAvatars.map((item, idx) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {popularCatAvatars.map((cat, idx) => (
                     <div
                       key={idx}
                       onClick={() => {
-                        onSelectCategory(item.cat);
+                        onSelectCategory(cat.cat);
                         setCurrentPage('shop');
                       }}
-                      className="flex flex-col items-center p-3 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 cursor-pointer transition-all group text-center"
+                      className="group cursor-pointer p-3 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all text-center flex flex-col items-center justify-between relative"
                     >
-                      <div className="size-12 rounded-full bg-blue-100 text-xl grid place-items-center mb-2 group-hover:scale-110 transition-transform">
-                        <span>{item.icon}</span>
-                      </div>
-                      <span className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</span>
-                      <span className="text-[10px] font-bold text-blue-600 mt-0.5 bg-blue-100/60 px-2 py-0.5 rounded-full">
-                        {item.badge}
+                      <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">{cat.icon}</span>
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{cat.name}</span>
+                      <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mt-1.5">
+                        {cat.badge}
                       </span>
                     </div>
                   ))}
@@ -454,17 +394,15 @@ export function StoreAuritTheme({
               </div>
             </section>
 
-            {/* 5. Featured Products Grid */}
-            <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 md:px-8">
+            {/* 5. Featured Mega Products Grid */}
+            <section className="py-12 max-w-7xl mx-auto px-4 md:px-8">
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                    <Flame className="size-6 text-orange-500" />
-                    <span>المنتجات الأكثر مبيعاً في العراق</span>
+                    <Sparkles className="size-6 text-blue-600" />
+                    <span>أحدث العروض والمنتجات</span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    أفضل الصفقات بضمان الجودة وميزة الدفع عند الاستلام بعد الفحص
-                  </p>
+                  <p className="text-xs text-slate-500 mt-1">تصفح أفضل المنتجات المختارة بأعلى تقييمات</p>
                 </div>
                 <button
                   type="button"
@@ -479,26 +417,28 @@ export function StoreAuritTheme({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {products.slice(0, 8).map((product) => {
                   const hasDiscount = !!product.originalPrice && product.originalPrice > product.price;
+                  const isAdding = addingId === product.id;
                   return (
                     <div
                       key={product.id}
-                      className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-500 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+                      className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col"
                     >
                       <div
-                        className="relative aspect-square overflow-hidden bg-slate-100 cursor-pointer"
-                        onClick={() => onOpenProductDetail?.(product)}
+                        className="relative aspect-square overflow-hidden bg-slate-50 p-4 cursor-pointer flex items-center justify-center"
+                        onClick={() => handleOpenProduct(product)}
                       >
                         <img
-                          src={product.image}
+                          src={getProductImage(product)}
+                          onError={(e) => { e.currentTarget.src = STORE_PLACEHOLDER_IMAGE; }}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
                         />
                         {hasDiscount && (
-                          <div className="absolute top-2.5 right-2.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-md">
+                          <div className="absolute top-2.5 right-2.5 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-md">
                             تخفيض
                           </div>
                         )}
-                        <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm text-[10px] font-bold text-blue-600 px-2 py-0.5 rounded-md border border-slate-200">
+                        <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm text-[10px] font-bold text-blue-700 px-2 py-0.5 rounded-md border border-slate-200">
                           {product.category || 'عام'}
                         </div>
                       </div>
@@ -509,55 +449,56 @@ export function StoreAuritTheme({
                             {[...Array(5)].map((_, i) => (
                               <Star key={i} className="size-3 fill-amber-500" />
                             ))}
-                            <span className="text-[10px] text-slate-400 mr-1">(4.8)</span>
+                            <span className="text-[10px] text-slate-400 mr-1">(4.9)</span>
                           </div>
 
                           <h4
                             className="font-bold text-sm text-slate-900 line-clamp-1 cursor-pointer hover:text-blue-600 transition-colors"
-                            onClick={() => onOpenProductDetail?.(product)}
+                            onClick={() => handleOpenProduct(product)}
                           >
                             {product.name}
                           </h4>
 
                           <p className="text-[11px] text-slate-500 line-clamp-1 mt-1">
-                            {product.description || 'منتج أصلي عالي الجودة مضمون'}
+                            {product.description || 'منتج أصلي عالي الجودة مع ضمان الفحص والتوصيل السريع'}
                           </p>
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-100">
                           <div className="flex items-center justify-between mb-3">
                             <div>
-                              <span className="text-[10px] text-slate-500 block">السعر</span>
+                              <span className="text-[10px] text-slate-400 block">السعر</span>
                               <div className="text-base font-black text-blue-600">
-                                {formatIQD(product.price)}
+                                {formatPriceInteger(product.price)}
                               </div>
                             </div>
                             {hasDiscount && product.originalPrice && (
                               <div className="text-left">
                                 <span className="text-[10px] text-slate-400 line-through block">
-                                  {formatIQD(product.originalPrice)}
+                                  {formatPriceInteger(product.originalPrice)}
                                 </span>
                               </div>
                             )}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => onAddToCart?.(product)}
-                              className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-slate-200"
-                            >
-                              <ShoppingCart className="size-3.5" />
-                              <span>للسلة</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onQuickBuy?.(product)}
-                              className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-md shadow-blue-600/20"
-                            >
-                              طلب فوري
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            disabled={isAdding}
+                            onClick={(e) => handleAddToCartWithFeedback(product, e)}
+                            className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 disabled:opacity-50"
+                          >
+                            {isAdding ? (
+                              <>
+                                <Loader2 className="size-4 animate-spin" />
+                                <span>جاري الإضافة...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ShoppingCart className="size-4" />
+                                <span>أضف إلى السلة</span>
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -628,7 +569,7 @@ export function StoreAuritTheme({
                 <h4 className="font-black text-white text-base">{storeName}</h4>
               </div>
               <p className="text-[11px] leading-relaxed text-slate-400">
-                منصتك العراقية المتكاملة للتسوق الإلكتروني، نوفر لك آلاف المنتجات مع الشحن السريع والفحص قبل الدفع.
+                منصتك المتكاملة للتسوق الإلكتروني، نوفر لك آلاف المنتجات مع الشحن السريع والفحص قبل الدفع.
               </p>
             </div>
 
@@ -679,7 +620,7 @@ export function StoreAuritTheme({
             </div>
 
             <div className="space-y-3">
-              <h5 className="font-bold text-white text-sm">التوصيل وخدمة العراق</h5>
+              <h5 className="font-bold text-white text-sm">التوصيل وخدمة الشحن</h5>
               <p className="text-[11px] text-slate-400">
                 شحن لجميع المحافظات: بغداد، البصرة، أربيل، النجف، كربلاء وكافة المدن.
               </p>
@@ -687,14 +628,14 @@ export function StoreAuritTheme({
                 📞 0770 000 0000
               </div>
               <div className="text-[10px] text-slate-500">
-                الدفع: نقد عند الاستلام (COD) • زين كاش • ماستركارد
+                الدفع: نقد عند الاستلام (COD) • دفع إلكتروني آمن
               </div>
             </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-500">
             <div>
-              © {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة • مدعوم بواسطة الزعيم Al-Zaeem
+              © {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة
             </div>
             <div className="flex items-center gap-3">
               <span>سياسة الخصوصية</span>

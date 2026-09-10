@@ -3,7 +3,7 @@ import {
   ShoppingBag, Search, Heart, User, ArrowLeft, ArrowRight,
   Truck, ShieldCheck, Sparkles, Star, ChevronDown, CheckCircle2,
   PhoneCall, Baby, Leaf, Sun, Flower2, HeartHandshake, MessageCircle,
-  Clock, Shield, Tag, Plus, Check
+  Clock, Shield, Tag, Plus, Check, RefreshCw
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
@@ -13,7 +13,11 @@ import {
   ThemeCategoriesView,
   ThemeCartCheckoutView,
   ThemeAccountView,
-  ThemeContactView
+  ThemeContactView,
+  ThemeProductDetailView,
+  getProductImage,
+  formatPriceInteger,
+  STORE_PLACEHOLDER_IMAGE
 } from '../theme-common/ThemePages';
 
 export function StoreSproutTheme({
@@ -32,13 +36,14 @@ export function StoreSproutTheme({
   onSelectCategory,
   searchQuery,
   onSearchChange,
-  onQuickBuy,
   onAddToCart,
   logoUrl,
   customization
 }: ThemeComponentProps) {
-  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact' | 'product'>('home');
+  const [selectedProduct, setSelectedProduct] = useState<StoreProduct>(products[0] || {} as StoreProduct);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [addingId, setAddingId] = useState<number | null>(null);
 
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
@@ -50,6 +55,19 @@ export function StoreSproutTheme({
   const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Organic fabrics and playful designs with safe inspection before payment' : 'خامات قطنية فائقة النعومة وتصاميم بروح البهجة، نوفرها لك مع ميزة فحص الشحنة قبل الاستلام والدفع عند الاستلام.');
   const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Collection' : 'تسوق التشكيلة الآن');
 
+  const handleOpenProduct = (prod: StoreProduct) => {
+    setSelectedProduct(prod);
+    setCurrentPage('product');
+    if (onOpenProductDetail) onOpenProductDetail(prod);
+  };
+
+  const handleAddToCartWithFeedback = (prod: StoreProduct) => {
+    if (addingId !== null) return;
+    setAddingId(prod.id);
+    if (onAddToCart) onAddToCart(prod);
+    setTimeout(() => setAddingId(null), 500);
+  };
+
   const sharedPageProps = {
     storeName,
     subdomain,
@@ -59,8 +77,7 @@ export function StoreSproutTheme({
     products,
     cartItems,
     onAddToCart,
-    onQuickBuy,
-    onOpenProductDetail,
+    onOpenProductDetail: handleOpenProduct,
     onNavigatePage: (page: any) => setCurrentPage(page)
   };
 
@@ -116,7 +133,7 @@ export function StoreSproutTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('home')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                 currentPage === 'home'
                   ? 'bg-[#4a6b47] text-white shadow-sm'
                   : 'text-[#606c38] hover:text-[#283618]'
@@ -127,7 +144,7 @@ export function StoreSproutTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('shop')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                 currentPage === 'shop'
                   ? 'bg-[#4a6b47] text-white shadow-sm'
                   : 'text-[#606c38] hover:text-[#283618]'
@@ -138,7 +155,7 @@ export function StoreSproutTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('categories')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                 currentPage === 'categories'
                   ? 'bg-[#4a6b47] text-white shadow-sm'
                   : 'text-[#606c38] hover:text-[#283618]'
@@ -149,7 +166,7 @@ export function StoreSproutTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('contact')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                 currentPage === 'contact'
                   ? 'bg-[#4a6b47] text-white shadow-sm'
                   : 'text-[#606c38] hover:text-[#283618]'
@@ -167,7 +184,7 @@ export function StoreSproutTheme({
                 if (currentPage !== 'shop') setCurrentPage('shop');
                 setSearchOpen(!searchOpen);
               }}
-              className="size-9 rounded-xl bg-[#f4f3ee] hover:bg-[#e9edc9] text-[#283618] grid place-items-center transition-colors"
+              className="size-9 rounded-xl bg-[#f4f3ee] hover:bg-[#e9edc9] text-[#283618] grid place-items-center transition-colors cursor-pointer"
               title="بحث سريع"
             >
               <Search className="size-4" />
@@ -179,7 +196,7 @@ export function StoreSproutTheme({
                 if (onOpenCustomerAuth) onOpenCustomerAuth();
                 else setCurrentPage('account');
               }}
-              className="size-9 rounded-xl bg-[#f4f3ee] hover:bg-[#e9edc9] text-[#283618] grid place-items-center transition-colors"
+              className="size-9 rounded-xl bg-[#f4f3ee] hover:bg-[#e9edc9] text-[#283618] grid place-items-center transition-colors cursor-pointer"
               title="حسابي"
             >
               <User className="size-4" />
@@ -187,11 +204,8 @@ export function StoreSproutTheme({
 
             <button
               type="button"
-              onClick={() => {
-                if (onOpenCart) onOpenCart();
-                else setCurrentPage('cart');
-              }}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#4a6b47] hover:bg-[#385336] text-white font-black text-xs transition-all shadow-md shadow-[#4a6b47]/20 active:scale-95"
+              onClick={() => setCurrentPage('cart')}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#4a6b47] hover:bg-[#385336] text-white font-black text-xs transition-all shadow-md shadow-[#4a6b47]/20 active:scale-95 cursor-pointer"
             >
               <ShoppingBag className="size-4" />
               <span>السلة</span>
@@ -205,6 +219,12 @@ export function StoreSproutTheme({
 
       {/* 3. Main Body Routing */}
       <main className="flex-1">
+        {currentPage === 'product' && selectedProduct && (
+          <ThemeProductDetailView
+            {...sharedPageProps}
+            product={selectedProduct}
+          />
+        )}
         {currentPage === 'shop' && <ThemeShopView {...sharedPageProps} />}
         {currentPage === 'categories' && <ThemeCategoriesView {...sharedPageProps} />}
         {currentPage === 'cart' && <ThemeCartCheckoutView {...sharedPageProps} />}
@@ -236,7 +256,7 @@ export function StoreSproutTheme({
                     <button
                       type="button"
                       onClick={() => setCurrentPage('shop')}
-                      className="px-7 py-3.5 rounded-2xl bg-[#4a6b47] hover:bg-[#385336] text-white font-black text-sm shadow-xl shadow-[#4a6b47]/25 transition-all flex items-center gap-2 hover:scale-[1.02]"
+                      className="px-7 py-3.5 rounded-2xl bg-[#4a6b47] hover:bg-[#385336] text-white font-black text-sm shadow-xl shadow-[#4a6b47]/25 transition-all flex items-center gap-2 hover:scale-[1.02] cursor-pointer"
                     >
                       <span>{heroBtnText}</span>
                       <ArrowLeft className="size-4" />
@@ -244,7 +264,7 @@ export function StoreSproutTheme({
                     <button
                       type="button"
                       onClick={() => setCurrentPage('categories')}
-                      className="px-6 py-3.5 rounded-2xl bg-white border border-[#ccd5ae] text-[#283618] hover:bg-[#f4f3ee] font-black text-sm transition-all"
+                      className="px-6 py-3.5 rounded-2xl bg-white border border-[#ccd5ae] text-[#283618] hover:bg-[#f4f3ee] font-black text-sm transition-all cursor-pointer"
                     >
                       تصفح الأقسام
                     </button>
@@ -278,10 +298,17 @@ export function StoreSproutTheme({
 
                 {/* Hero Showcase Images */}
                 <div className="lg:col-span-5 relative">
-                  <div className="relative aspect-[4/5] rounded-[36px] overflow-hidden border-4 border-white shadow-2xl bg-white">
+                  <div
+                    className="relative aspect-[4/5] rounded-[36px] overflow-hidden border-4 border-white shadow-2xl bg-white cursor-pointer"
+                    onClick={() => products[0] && handleOpenProduct(products[0])}
+                  >
                     <img
-                      src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=800&auto=format&fit=crop&q=80"
+                      src={getProductImage(products[0])}
                       alt="Sprout Kids"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).onerror = null;
+                        (e.currentTarget as HTMLImageElement).src = STORE_PLACEHOLDER_IMAGE;
+                      }}
                       className="size-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -290,7 +317,7 @@ export function StoreSproutTheme({
                         الأكثر طلباً للأمهات
                       </span>
                       <h3 className="text-xl font-black">أطقم رضع ناعمة وأنيقة</h3>
-                      <p className="text-xs text-[#fefae0]">توصيل مباشر مع شركة الزعيم للشحن</p>
+                      <p className="text-xs text-[#fefae0]">توصيل مباشر مع ضمان الفحص باليد قبل الدفع</p>
                     </div>
                   </div>
 
@@ -313,7 +340,7 @@ export function StoreSproutTheme({
                 <button
                   type="button"
                   onClick={() => setCurrentPage('categories')}
-                  className="text-xs font-black text-[#4a6b47] hover:underline flex items-center gap-1"
+                  className="text-xs font-black text-[#4a6b47] hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <span>عرض كل الأقسام</span>
                   <ArrowLeft className="size-3" />
@@ -349,7 +376,7 @@ export function StoreSproutTheme({
                 <button
                   type="button"
                   onClick={() => setCurrentPage('shop')}
-                  className="px-4 py-2 rounded-xl bg-[#4a6b47] text-white font-black text-xs hover:bg-[#385336] transition-colors"
+                  className="px-4 py-2 rounded-xl bg-[#4a6b47] text-white font-black text-xs hover:bg-[#385336] transition-colors cursor-pointer"
                 >
                   عرض الكتالوج الكامل
                 </button>
@@ -362,13 +389,17 @@ export function StoreSproutTheme({
                     className="rounded-3xl border border-[#e9edc9] bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
                   >
                     <div
-                      className="relative aspect-square overflow-hidden bg-[#f4f3ee] cursor-pointer"
-                      onClick={() => onOpenProductDetail?.(prod)}
+                      className="relative aspect-square overflow-hidden bg-[#f4f3ee] cursor-pointer p-2 flex items-center justify-center"
+                      onClick={() => handleOpenProduct(prod)}
                     >
                       <img
-                        src={prod.imageUrl}
+                        src={getProductImage(prod)}
                         alt={prod.name}
-                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).onerror = null;
+                          (e.currentTarget as HTMLImageElement).src = STORE_PLACEHOLDER_IMAGE;
+                        }}
+                        className="size-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                       />
                       <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#4a6b47] text-white">
@@ -380,7 +411,7 @@ export function StoreSproutTheme({
                       <div>
                         <h4
                           className="font-black text-xs md:text-sm text-[#283618] line-clamp-2 cursor-pointer hover:text-[#4a6b47]"
-                          onClick={() => onOpenProductDetail?.(prod)}
+                          onClick={() => handleOpenProduct(prod)}
                         >
                           {prod.name}
                         </h4>
@@ -390,31 +421,34 @@ export function StoreSproutTheme({
                       <div className="pt-2 border-t border-[#e9edc9] space-y-2">
                         <div className="flex items-baseline justify-between">
                           <span className="font-mono font-black text-sm md:text-base text-[#283618]">
-                            {formatIQD(prod.price)}
+                            {formatPriceInteger(prod.price)}
                           </span>
                           {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
                             <span className="font-mono text-[10px] text-slate-400 line-through">
-                              {formatIQD(prod.compareAtPrice)}
+                              {formatPriceInteger(prod.compareAtPrice)}
                             </span>
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => onQuickBuy(prod)}
-                            className="py-2 rounded-xl text-xs font-black bg-[#4a6b47] hover:bg-[#385336] text-white shadow-sm transition-all"
-                          >
-                            شراء سريع
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onAddToCart?.(prod)}
-                            className="py-2 rounded-xl text-xs font-bold bg-[#f4f3ee] hover:bg-[#e9edc9] text-[#283618] transition-all"
-                          >
-                            + السلة
-                          </button>
-                        </div>
+                        {/* Single Add to Cart Action */}
+                        <button
+                          type="button"
+                          onClick={() => handleAddToCartWithFeedback(prod)}
+                          disabled={addingId === prod.id}
+                          className="w-full py-2.5 rounded-xl text-xs font-black bg-[#4a6b47] hover:bg-[#385336] text-white shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-75"
+                        >
+                          {addingId === prod.id ? (
+                            <>
+                              <RefreshCw className="size-3.5 animate-spin" />
+                              <span>تمت الإضافة...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="size-3.5" />
+                              <span>أضف إلى السلة</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -425,7 +459,7 @@ export function StoreSproutTheme({
         )}
       </main>
 
-      {/* 4. Rich Sprout Nature Footer */}
+      {/* 4. Rich Sprout Nature Footer (White-Labeled) */}
       <footer className="bg-[#283618] text-[#fefae0] pt-12 pb-6 px-4 md:px-8 border-t border-[#385336]">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-8 border-b border-[#385336] text-right">
           <div className="space-y-3">
@@ -441,10 +475,10 @@ export function StoreSproutTheme({
           <div className="space-y-2 text-xs">
             <h5 className="font-black text-white text-sm">روابط المتجر</h5>
             <div className="flex flex-col gap-1.5 text-[#dad7cd]">
-              <button type="button" onClick={() => setCurrentPage('home')} className="hover:text-white text-right">الرئيسية</button>
-              <button type="button" onClick={() => setCurrentPage('shop')} className="hover:text-white text-right">جميع المنتجات</button>
-              <button type="button" onClick={() => setCurrentPage('categories')} className="hover:text-white text-right">التصنيفات</button>
-              <button type="button" onClick={() => setCurrentPage('contact')} className="hover:text-white text-right">تواصل معنا</button>
+              <button type="button" onClick={() => setCurrentPage('home')} className="hover:text-white text-right cursor-pointer">الرئيسية</button>
+              <button type="button" onClick={() => setCurrentPage('shop')} className="hover:text-white text-right cursor-pointer">جميع المنتجات</button>
+              <button type="button" onClick={() => setCurrentPage('categories')} className="hover:text-white text-right cursor-pointer">التصنيفات</button>
+              <button type="button" onClick={() => setCurrentPage('contact')} className="hover:text-white text-right cursor-pointer">تواصل معنا</button>
             </div>
           </div>
 
@@ -453,7 +487,7 @@ export function StoreSproutTheme({
             <div className="flex flex-col gap-1.5 text-[#dad7cd]">
               <span>✓ فحص الشحنة قبل الاستلام</span>
               <span>✓ قطن عضوي آمن بنسبة 100%</span>
-              <span>✓ توصيل لكافة محافظات العراق مع شركة الزعيم</span>
+              <span>✓ توصيل لكافة محافظات العراق</span>
               <span>✓ دفع آمن عند الاستلام</span>
             </div>
           </div>
@@ -469,8 +503,7 @@ export function StoreSproutTheme({
         </div>
 
         <div className="max-w-7xl mx-auto pt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-[#dad7cd]">
-          <span>© {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة • مدعوم بواسطة الزعيم</span>
-          <span className="font-mono text-[11px] text-[#a3b18a]">قالب سبراوت المعتمد — Sprout Organic</span>
+          <span>© {new Date().getFullYear()} {storeName}. جميع الحقوق محفوظة.</span>
         </div>
       </footer>
     </div>

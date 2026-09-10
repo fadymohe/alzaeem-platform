@@ -2,11 +2,22 @@ import React, { useState } from 'react';
 import {
   ShoppingBag, Search, Heart, User, ArrowLeft, ArrowRight,
   Truck, ShieldCheck, Sparkles, Star, ChevronDown, CheckCircle2,
-  PhoneCall, Sparkle, Wand2, Eye, MessageCircle
+  PhoneCall, Sparkle, Wand2, Eye, MessageCircle, Check, Loader2
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
 import type { ThemeComponentProps } from '../store-classic';
+import {
+  ThemeShopView,
+  ThemeCategoriesView,
+  ThemeCartCheckoutView,
+  ThemeAccountView,
+  ThemeContactView,
+  ThemeProductDetailView,
+  getProductImage,
+  STORE_PLACEHOLDER_IMAGE,
+  formatPriceInteger
+} from '../theme-common/ThemePages';
 
 export function StoreManeTheme({
   storeName,
@@ -15,6 +26,7 @@ export function StoreManeTheme({
   products,
   filteredProducts,
   cartCount,
+  cartItems = [],
   onOpenCart,
   onOpenProductDetail,
   onOpenCustomerAuth,
@@ -28,61 +40,83 @@ export function StoreManeTheme({
   logoUrl,
   customization
 }: ThemeComponentProps) {
-  const [activeTab, setActiveTab] = useState('الرئيسية');
+  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact' | 'product'>('home');
+  const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
   const brandColor = customization?.brandColor || '#6b0f24';
-  const isEn = customization?.defaultLanguage === 'en';
   const isSticky = customization?.isHeaderSticky !== false;
-  const showTrust = customization?.showTrustFeatures !== false;
   const showBanner = customization?.showHeroBanner !== false;
-  const announcement = customization?.announcementText || (isEn ? 'Signature Salon & Clinical Skincare — Fast delivery across all Iraqi governorates' : 'مستحضرات صالون وعناية متقدمة — توصيل سريع لجميع محافظات العراق والدفع عند الاستلام');
-  const heroTitle = customization?.heroTitle || (isEn ? 'Signature Beauty & Salon Care' : 'أبرز المجموعات والعناية المتكاملة');
-  const heroSubtitle = customization?.heroSubtitle || (isEn ? 'Clinical formulas & natural essences crafted for radiant skin & revitalized hair' : 'تركيبات علاجية ومستخلصات نقية تمنح بشرتك وشعرك النضارة والإشراقة الدائمة.');
-  const heroBtnText = customization?.heroButtonText || (isEn ? 'Explore Collection' : 'تسوق التشكيلة');
-  const gridCols = customization?.productGridCols || 4;
-  const showDiscount = customization?.showDiscountBadge !== false;
-  const showStock = customization?.showStockStatus !== false;
-  const enableQuick = customization?.enableQuickBuy !== false;
-  const urgencyTicker = customization?.showUrgencyTicker !== false;
-  const copyright = customization?.footerCopyright || `© ${new Date().getFullYear()} ${storeName}. جميع الحقوق محفوظة • مدعوم بواسطة الزعيم`;
-  const showBadges = customization?.showPaymentBadges !== false;
-  const enableWa = customization?.enableWhatsAppFloating !== false;
-  const waNumber = customization?.whatsAppNumber || '+9647700000000';
-  const enableStickyCart = customization?.enableStickyCartBar !== false;
+  const announcement = customization?.announcementText || 'مستحضرات صالون وعناية متقدمة — توصيل سريع لجميع محافظات العراق والدفع عند الاستلام';
+  const heroTitle = customization?.heroTitle || 'أبرز المجموعات والعناية المتكاملة';
+  const heroSubtitle = customization?.heroSubtitle || 'تركيبات علاجية ومستخلصات نقية تمنح بشرتك وشعرك النضارة والإشراقة الدائمة مع ضمان الفحص قبل الاستلام.';
+  const heroBtnText = customization?.heroButtonText || 'تسوق التشكيلة';
+  const copyright = customization?.footerCopyright || `© ${new Date().getFullYear()} ${storeName}. جميع الحقوق محفوظة`;
 
-  const getColsClass = () => {
-    switch (gridCols) {
-      case 2: return 'grid-cols-1 sm:grid-cols-2';
-      case 3: return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
-      case 4:
-      default: return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+  const handleOpenProduct = (product: StoreProduct) => {
+    setSelectedProduct(product);
+    setCurrentPage('product');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAddToCartWithFeedback = (product: StoreProduct, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setAddingId(product.id);
+    onAddToCart?.(product);
+    setToastMsg(`تمت إضافة "${product.name}" إلى السلة`);
+    setTimeout(() => setAddingId(null), 600);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const sharedPageProps = {
+    storeName,
+    subdomain,
+    fullDomain,
+    brandColor,
+    products,
+    cartItems,
+    onAddToCart,
+    onQuickBuy,
+    onOpenProductDetail: handleOpenProduct,
+    onNavigatePage: (page: any) => {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   return (
     <div
-      className="min-h-screen bg-[#faf5f6] text-slate-900 font-sans antialiased selection:bg-[#6b0f24] selection:text-white"
-      dir={isEn ? 'ltr' : 'rtl'}
+      className="min-h-screen bg-[#faf5f6] text-slate-900 font-sans antialiased selection:bg-[#6b0f24] selection:text-white flex flex-col"
+      dir="rtl"
     >
-      
-      {/* 1. Top Announcement Bar */}
-      {customization?.showAnnouncement !== false && (
-        <div className="bg-[#540b0e] text-pink-100 text-[11px] font-bold py-2 px-4 md:px-8 text-center shadow-sm">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 mx-auto sm:mx-0">
-              <Sparkles className="size-3.5 text-pink-300" />
-              <span>{announcement}</span>
-            </span>
-            <div className="hidden sm:flex items-center gap-4 text-xs font-bold text-pink-200">
-              <span>{isEn ? 'COD Available' : 'دفع عند الاستلام'}</span>
-              <span>|</span>
-              <span>{isEn ? '100% Authentic' : 'ضمان الأصالة والجودة'}</span>
-            </div>
+      {/* Toast Feedback */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#240010] text-pink-100 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-pink-500/30 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div className="size-6 rounded-full bg-[#6b0f24] grid place-items-center text-white shrink-0">
+            <Check className="size-3.5" />
           </div>
+          <span className="text-xs font-bold">{toastMsg}</span>
         </div>
       )}
+
+      {/* 1. Top Announcement Bar */}
+      <div className="bg-[#540b0e] text-pink-100 text-[11px] font-bold py-2 px-4 md:px-8 text-center shadow-sm">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 mx-auto sm:mx-0">
+            <Sparkles className="size-3.5 text-pink-300 animate-pulse" />
+            <span>{announcement}</span>
+          </span>
+          <div className="hidden sm:flex items-center gap-4 text-xs font-bold text-pink-200">
+            <span>دفع عند الاستلام</span>
+            <span>|</span>
+            <span>ضمان الأصالة والجودة 100%</span>
+          </div>
+        </div>
+      </div>
 
       {/* 2. Deep Burgundy Header */}
       <header
@@ -90,13 +124,15 @@ export function StoreManeTheme({
         style={{ backgroundColor: brandColor }}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
-          
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer select-none"
+            onClick={() => setCurrentPage('home')}
+          >
             {logoUrl ? (
               <img src={logoUrl} alt={storeName} className="h-10 w-auto max-w-[140px] object-contain rounded-xl border border-white/20 bg-white/10" />
             ) : (
               <div className="flex items-center gap-2.5">
-                <div className="size-10 rounded-2xl bg-white/20 text-white font-black grid place-items-center text-lg backdrop-blur-sm">
+                <div className="size-10 rounded-2xl bg-white/20 text-white font-black grid place-items-center text-lg backdrop-blur-sm shadow-inner">
                   <Wand2 className="size-5" />
                 </div>
                 <div>
@@ -109,233 +145,284 @@ export function StoreManeTheme({
             )}
           </div>
 
-          {/* Navigation Categories */}
-          <nav className="hidden lg:flex items-center gap-4 text-xs font-bold text-pink-100">
-            {categories.slice(0, 6).map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => onSelectCategory(cat === 'الكل' ? 'all' : cat)}
-                className={`py-1 px-3 rounded-full transition-all hover:bg-white/15 relative ${
-                  (selectedCategory === cat || (cat === 'الكل' && (!selectedCategory || selectedCategory === 'all'))) ? 'bg-white text-[#6b0f24] font-black' : ''
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          {/* Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-2 text-xs font-bold text-pink-100">
+            <button
+              type="button"
+              onClick={() => setCurrentPage('home')}
+              className={`py-1.5 px-3.5 rounded-full transition-all ${
+                currentPage === 'home' ? 'bg-white text-[#6b0f24] font-black shadow-sm' : 'hover:bg-white/15'
+              }`}
+            >
+              الرئيسية
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('shop')}
+              className={`py-1.5 px-3.5 rounded-full transition-all ${
+                currentPage === 'shop' ? 'bg-white text-[#6b0f24] font-black shadow-sm' : 'hover:bg-white/15'
+              }`}
+            >
+              المتجر
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('categories')}
+              className={`py-1.5 px-3.5 rounded-full transition-all ${
+                currentPage === 'categories' ? 'bg-white text-[#6b0f24] font-black shadow-sm' : 'hover:bg-white/15'
+              }`}
+            >
+              التصنيفات
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('contact')}
+              className={`py-1.5 px-3.5 rounded-full transition-all ${
+                currentPage === 'contact' ? 'bg-white text-[#6b0f24] font-black shadow-sm' : 'hover:bg-white/15'
+              }`}
+            >
+              تواصل معنا
+            </button>
           </nav>
 
           {/* Search & Actions */}
           <div className="flex items-center gap-2.5">
             <div className="relative hidden sm:block w-48">
-              <Search className={`absolute ${isEn ? 'left-3' : 'right-3'} top-2.5 size-3.5 text-pink-200`} />
+              <Search className="absolute right-3 top-2.5 size-3.5 text-pink-200" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder={isEn ? 'Search...' : 'ابحث عن منتج...'}
-                className={`w-full h-8 ${isEn ? 'pl-9 pr-3' : 'pr-9 pl-3'} rounded-full border border-white/20 bg-white/10 text-xs text-white placeholder:text-pink-200/60 focus:outline-none focus:bg-white/20`}
+                placeholder="ابحث عن منتج..."
+                className="w-full h-8 pr-9 pl-3 rounded-full border border-white/20 bg-white/10 text-xs text-white placeholder:text-pink-200/60 focus:outline-none focus:bg-white/20"
               />
             </div>
 
-            {/* Customer Account Button */}
-            {onOpenCustomerAuth && (
-              <button
-                type="button"
-                onClick={onOpenCustomerAuth}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/30 text-white font-bold text-xs hover:bg-white/15 transition-all"
-                title={isEn ? 'Account' : 'حسابي / طلباتي'}
-              >
-                <User className="size-3.5" />
-                <span className="hidden md:inline">{isEn ? 'Account' : 'حسابي'}</span>
-              </button>
-            )}
-
-            {/* Cart Button */}
             <button
               type="button"
-              onClick={() => {
-                if (onOpenCart) {
-                  onOpenCart();
-                } else {
-                  const el = document.getElementById('mane-grid');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
+              onClick={() => setCurrentPage('account')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/30 text-white font-bold text-xs hover:bg-white/15 transition-all"
+            >
+              <User className="size-3.5" />
+              <span className="hidden md:inline">حسابي</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage('cart')}
               className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-[#6b0f24] font-black text-xs shadow-md transition-all hover:scale-105"
             >
               <ShoppingBag className="size-3.5" />
-              <span>{isEn ? 'Cart' : 'السلة'} ({cartCount})</span>
+              <span>السلة ({cartCount})</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* 3. Hero Section (Matching Screenshot 2 Mane) */}
-      {showBanner && (
-        <section className="max-w-7xl mx-auto px-4 md:px-8 mt-5">
-          <div className="text-center space-y-2 py-4">
-            <h2 className="text-2xl md:text-4xl font-black text-[#540b0e]">
-              {isEn ? 'Featured Collections' : 'أبرز المجموعات'}
-            </h2>
-            <p className="text-xs text-slate-500 font-medium">
-              {isEn ? 'Radiance and clinical nourishment for your skin' : 'مستحضرات صالون وعناية متقدمة بأعلى معايير النقاء'}
-            </p>
-          </div>
-        </section>
-      )}
+      {/* Main Pages Content */}
+      <main className="flex-1">
+        {currentPage === 'shop' && (
+          <ThemeShopView
+            {...sharedPageProps}
+            selectedCategory={selectedCategory}
+            onSelectCategory={onSelectCategory}
+            searchQuery={searchQuery}
+            onSearchChange={onSearchChange}
+          />
+        )}
 
-      {/* 4. Products Grid */}
-      <section id="mane-grid" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
-        <div className={`grid ${getColsClass()} gap-6`}>
-          {filteredProducts.map((p) => (
-            <div
-              key={p.id}
-              className="bg-white border border-pink-100 rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#6b0f24]/40 transition-all duration-300 flex flex-col justify-between group"
-            >
-              <div
-                className="cursor-pointer"
-                onClick={() => onOpenProductDetail ? onOpenProductDetail(p) : onQuickBuy(p)}
-              >
-                <div className="h-72 bg-gradient-to-b from-[#f9f2f4] to-white relative overflow-hidden flex items-center justify-center p-4">
-                  <img
-                    src={p.imageUrl || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=700&auto=format&fit=crop&q=80'}
-                    alt={p.name}
-                    className="size-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
-                  />
-                  {showDiscount && p.compareAtPrice && (
-                    <span className="absolute top-3 right-3 text-[10px] font-black bg-[#6b0f24] text-white px-2.5 py-1 rounded-full shadow-sm">
-                      {isEn ? 'PROMO' : 'خصم'}
-                    </span>
-                  )}
-                  {showStock && (
-                    <span className="absolute bottom-3 left-3 text-[9px] font-black bg-white/90 text-slate-700 px-2.5 py-0.5 rounded-full shadow-sm">
-                      {isEn ? 'Genuine Stock' : 'أصلي 100%'}
-                    </span>
-                  )}
-                  <span className="absolute bottom-3 right-3 text-[10px] font-bold bg-pink-100 text-[#6b0f24] px-2.5 py-0.5 rounded-full">
-                    {p.category}
-                  </span>
-                </div>
+        {currentPage === 'categories' && (
+          <ThemeCategoriesView
+            {...sharedPageProps}
+            onSelectCategory={(cat) => {
+              onSelectCategory(cat);
+              setCurrentPage('shop');
+            }}
+          />
+        )}
 
-                <div className="p-5 text-right space-y-1.5">
-                  <h4 className="font-black text-sm text-slate-900 line-clamp-1 group-hover:text-[#6b0f24] transition-colors">
-                    {p.name}
-                  </h4>
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                    {p.description || 'مستحضر فاخر للعناية الفائقة مع ضمان الأصالة والتسليم السريع.'}
-                  </p>
+        {(currentPage === 'cart' || currentPage === 'checkout') && (
+          <ThemeCartCheckoutView {...sharedPageProps} />
+        )}
 
-                  {urgencyTicker && (
-                    <div className="pt-1 text-[10px] font-bold text-pink-700 flex items-center gap-1">
-                      <Sparkle className="size-3 text-pink-600" />
-                      <span>{isEn ? 'Trending item • Dermatologist tested' : 'الأكثر طلباً • تم اختباره سريرياً'}</span>
+        {currentPage === 'account' && (
+          <ThemeAccountView {...sharedPageProps} />
+        )}
+
+        {currentPage === 'contact' && (
+          <ThemeContactView {...sharedPageProps} />
+        )}
+
+        {currentPage === 'product' && selectedProduct && (
+          <ThemeProductDetailView
+            {...sharedPageProps}
+            product={selectedProduct}
+            onAddToCart={(prod, qty) => {
+              for (let i = 0; i < qty; i++) onAddToCart?.(prod);
+            }}
+          />
+        )}
+
+        {currentPage === 'home' && (
+          <div>
+            {/* 3. Hero Section */}
+            {showBanner && (
+              <section className="max-w-7xl mx-auto px-4 md:px-8 mt-8 mb-6">
+                <div className="bg-gradient-to-r from-[#540b0e] to-[#6b0f24] text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden text-center md:text-right flex flex-col md:flex-row items-center justify-between gap-8">
+                  <div className="space-y-4 max-w-xl z-10">
+                    <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-pink-200">
+                      <Sparkles className="size-3.5" />
+                      <span>مجموعة الصالون والعناية الفائقة</span>
                     </div>
-                  )}
-                </div>
-              </div>
+                    <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
+                      {heroTitle}
+                    </h2>
+                    <p className="text-xs md:text-sm text-pink-100/90 leading-relaxed font-medium">
+                      {heroSubtitle}
+                    </p>
+                    <div className="pt-2 flex flex-wrap gap-3 justify-center md:justify-start">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage('shop')}
+                        className="px-6 py-3 rounded-full bg-white text-[#6b0f24] font-black text-xs md:text-sm shadow-lg hover:bg-pink-50 transition-all flex items-center gap-2"
+                      >
+                        <span>{heroBtnText}</span>
+                        <ArrowLeft className="size-4" />
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="p-5 border-t border-pink-50 bg-[#fdfafb] flex items-center justify-between gap-2">
+                  <div className="relative z-10 shrink-0 w-full max-w-[280px] aspect-square rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-white/10 flex items-center justify-center p-3">
+                    <img
+                      src={getProductImage(products[0])}
+                      onError={(e) => { e.currentTarget.src = STORE_PLACEHOLDER_IMAGE; }}
+                      alt={storeName}
+                      className="w-full h-full object-contain mix-blend-multiply"
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* 4. Products Grid */}
+            <section className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <span className="text-base font-black font-mono text-[#6b0f24] block">
-                    {formatIQD(p.price)}
-                  </span>
-                  {p.compareAtPrice && (
-                    <span className="text-xs text-slate-400 line-through font-mono">
-                      {formatIQD(p.compareAtPrice)}
-                    </span>
-                  )}
+                  <h3 className="text-2xl font-black text-[#540b0e] flex items-center gap-2">
+                    <Sparkles className="size-5 text-[#6b0f24]" />
+                    <span>أبرز المنتجات والمستحضرات</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">منتجات أصلية معتمدة مع التوصيل السريع لجميع المحافظات</p>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  {onAddToCart && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddToCart(p);
-                      }}
-                      className="p-2.5 rounded-2xl border border-pink-200 bg-white text-[#6b0f24] hover:bg-pink-50 transition-colors shadow-sm"
-                      title={isEn ? 'Add to cart' : 'أضف للسلة'}
-                    >
-                      <ShoppingBag className="size-4" />
-                    </button>
-                  )}
-                  {enableQuick && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onOpenProductDetail) {
-                          onOpenProductDetail(p);
-                        } else {
-                          onQuickBuy(p);
-                        }
-                      }}
-                      className="px-4 py-2.5 rounded-2xl text-xs font-black text-white shadow-md flex items-center gap-1 transition-all hover:scale-105"
-                      style={{ backgroundColor: brandColor }}
-                    >
-                      <span>{isEn ? 'Order' : 'اطلب الآن'}</span>
-                      <ArrowLeft className={`size-3 ${isEn ? 'rotate-180' : ''}`} />
-                    </button>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('shop')}
+                  className="text-xs font-black text-[#6b0f24] hover:underline flex items-center gap-1"
+                >
+                  <span>عرض الكل ({products.length})</span>
+                  <ArrowLeft className="size-3.5" />
+                </button>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {products.slice(0, 8).map((p) => {
+                  const isAdding = addingId === p.id;
+                  const hasDiscount = !!p.originalPrice && p.originalPrice > p.price;
+                  return (
+                    <div
+                      key={p.id}
+                      className="bg-white border border-pink-100 rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#6b0f24]/40 transition-all duration-300 flex flex-col justify-between group"
+                    >
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => handleOpenProduct(p)}
+                      >
+                        <div className="h-64 bg-gradient-to-b from-[#faf0f2] to-white relative overflow-hidden flex items-center justify-center p-4">
+                          <img
+                            src={getProductImage(p)}
+                            onError={(e) => { e.currentTarget.src = STORE_PLACEHOLDER_IMAGE; }}
+                            alt={p.name}
+                            className="size-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+                          />
+                          {hasDiscount && (
+                            <span className="absolute top-3 right-3 text-[10px] font-black bg-[#6b0f24] text-white px-2.5 py-1 rounded-full shadow-sm">
+                              خصم
+                            </span>
+                          )}
+                          <span className="absolute bottom-3 left-3 text-[9px] font-black bg-white/90 text-slate-700 px-2.5 py-0.5 rounded-full shadow-sm">
+                            أصلي 100%
+                          </span>
+                          <span className="absolute bottom-3 right-3 text-[10px] font-bold bg-pink-100 text-[#6b0f24] px-2.5 py-0.5 rounded-full">
+                            {p.category || 'عناية'}
+                          </span>
+                        </div>
+
+                        <div className="p-5 text-right space-y-1.5">
+                          <h4 className="font-black text-sm text-slate-900 line-clamp-1 group-hover:text-[#6b0f24] transition-colors">
+                            {p.name}
+                          </h4>
+                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                            {p.description || 'مستحضر فاخر للعناية الفائقة مع ضمان الأصالة والتسليم السريع.'}
+                          </p>
+
+                          <div className="pt-1 text-[10px] font-bold text-pink-700 flex items-center gap-1">
+                            <Sparkle className="size-3 text-pink-600" />
+                            <span>الأكثر طلباً • تم اختباره سريرياً</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-5 border-t border-pink-50 bg-[#fdfafb] flex items-center justify-between gap-2">
+                        <div>
+                          <span className="text-base font-black font-mono text-[#6b0f24] block">
+                            {formatPriceInteger(p.price)}
+                          </span>
+                          {hasDiscount && p.originalPrice && (
+                            <span className="text-xs text-slate-400 line-through font-mono">
+                              {formatPriceInteger(p.originalPrice)}
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={isAdding}
+                          onClick={(e) => handleAddToCartWithFeedback(p, e)}
+                          className="px-4 py-2 rounded-2xl text-xs font-black text-white shadow-md flex items-center gap-1.5 transition-all hover:scale-105 disabled:opacity-50"
+                          style={{ backgroundColor: brandColor }}
+                        >
+                          {isAdding ? (
+                            <>
+                              <Loader2 className="size-3.5 animate-spin" />
+                              <span>جاري الإضافة...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="size-3.5" />
+                              <span>أضف للسلة</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
 
       {/* 5. Footer */}
-      <footer className="bg-[#240010] text-pink-100/70 py-10 px-4 text-xs">
+      <footer className="bg-[#240010] text-pink-100/70 py-10 px-4 text-xs mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>{copyright}</p>
-          {showBadges && (
-            <div className="flex items-center gap-3 font-bold text-pink-200 text-xs">
-              <span className="px-2.5 py-1 rounded bg-white/10 border border-white/20">الدفع عند الاستلام</span>
-              <span className="px-2.5 py-1 rounded bg-white/10 border border-white/20">ضمان النقاء 100%</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3 font-bold text-pink-200 text-xs">
+            <span className="px-2.5 py-1 rounded bg-white/10 border border-white/20">الدفع عند الاستلام</span>
+            <span className="px-2.5 py-1 rounded bg-white/10 border border-white/20">ضمان النقاء 100%</span>
+          </div>
         </div>
       </footer>
-
-      {/* 6. WhatsApp Floating */}
-      {enableWa && (
-        <a
-          href={`https://wa.me/${waNumber.replace(/[^0-9]/g, '')}`}
-          target="_blank"
-          rel="noreferrer"
-          className="fixed bottom-6 left-6 z-40 size-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl grid place-items-center transition-transform hover:scale-110"
-        >
-          <MessageCircle className="size-6 fill-white" />
-        </a>
-      )}
-
-      {/* 7. Sticky Cart */}
-      {enableStickyCart && cartCount > 0 && (
-        <div
-          className="fixed bottom-0 inset-x-0 text-white px-4 py-3 z-30 shadow-2xl flex items-center justify-between"
-          style={{ backgroundColor: brandColor }}
-        >
-          <div className="flex items-center gap-3">
-            <ShoppingBag className="size-4" />
-            <span className="text-xs font-bold">
-              {isEn ? `${cartCount} items in cart` : `لديك ${cartCount} مستحضرات في السلة`}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const el = document.getElementById('mane-grid');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="px-4 py-1.5 rounded-lg bg-white text-[#6b0f24] font-black text-xs hover:bg-pink-50 transition-colors"
-          >
-            {isEn ? 'Checkout' : 'إتمام الطلب'}
-          </button>
-        </div>
-      )}
-
     </div>
   );
 }

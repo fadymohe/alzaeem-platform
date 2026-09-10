@@ -3,7 +3,7 @@ import {
   ShoppingBag, Search, Heart, User, ArrowLeft, ArrowRight,
   Truck, ShieldCheck, Sparkles, Star, ChevronDown, CheckCircle2,
   PhoneCall, Shirt, SlidersHorizontal, ArrowUpDown, RotateCcw,
-  MessageCircle, Lock, Check, Flame, Zap
+  MessageCircle, Lock, Check, Flame, Zap, RefreshCw
 } from 'lucide-react';
 import { formatIQD } from '../../../data/iraqData';
 import type { StoreProduct } from '../../../data/storeState';
@@ -13,7 +13,11 @@ import {
   ThemeCategoriesView,
   ThemeCartCheckoutView,
   ThemeAccountView,
-  ThemeContactView
+  ThemeContactView,
+  ThemeProductDetailView,
+  getProductImage,
+  formatPriceInteger,
+  STORE_PLACEHOLDER_IMAGE
 } from '../theme-common/ThemePages';
 
 export function StoreWardrobeTheme({
@@ -32,13 +36,13 @@ export function StoreWardrobeTheme({
   onSelectCategory,
   searchQuery,
   onSearchChange,
-  onQuickBuy,
   onAddToCart,
   logoUrl,
   customization
 }: ThemeComponentProps) {
-  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact'>('home');
-  const [activeGender, setActiveGender] = useState('الكل');
+  const [currentPage, setCurrentPage] = useState<'home' | 'shop' | 'categories' | 'cart' | 'checkout' | 'account' | 'contact' | 'product'>('home');
+  const [selectedProduct, setSelectedProduct] = useState<StoreProduct>(products[0] || {} as StoreProduct);
+  const [addingId, setAddingId] = useState<number | null>(null);
 
   const categories = ['الكل', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
@@ -50,6 +54,19 @@ export function StoreWardrobeTheme({
   const heroSubtitle = customization?.heroSubtitle || (isEn ? 'The pieces you wear on repeat' : 'القطع التي ترتديها فقط — تسوق أحدث خطوط الكاجوال اليومية والستريت وير.');
   const heroBtnText = customization?.heroButtonText || (isEn ? 'Shop Now' : 'تسوق التشكيلة');
 
+  const handleOpenProduct = (prod: StoreProduct) => {
+    setSelectedProduct(prod);
+    setCurrentPage('product');
+    if (onOpenProductDetail) onOpenProductDetail(prod);
+  };
+
+  const handleAddToCartWithFeedback = (prod: StoreProduct) => {
+    if (addingId !== null) return;
+    setAddingId(prod.id);
+    if (onAddToCart) onAddToCart(prod);
+    setTimeout(() => setAddingId(null), 500);
+  };
+
   const sharedPageProps = {
     storeName,
     subdomain,
@@ -59,8 +76,7 @@ export function StoreWardrobeTheme({
     products,
     cartItems,
     onAddToCart,
-    onQuickBuy,
-    onOpenProductDetail,
+    onOpenProductDetail: handleOpenProduct,
     onNavigatePage: (page: any) => setCurrentPage(page)
   };
 
@@ -78,7 +94,7 @@ export function StoreWardrobeTheme({
             <span className="font-bold text-[11px] truncate tracking-wide">{announcement}</span>
           </div>
           <div className="hidden md:flex items-center gap-4 text-[11px] font-mono shrink-0 text-slate-300">
-            <span className="font-bold text-white">توصيل لجميع المحافظات مع الزعيم</span>
+            <span>توصيل لجميع المحافظات مع ضمان الفحص باليد</span>
             <span>|</span>
             <span className="font-bold text-[#e63946]">{fullDomain}</span>
           </div>
@@ -98,23 +114,27 @@ export function StoreWardrobeTheme({
             ) : (
               <div className="flex items-center gap-2.5">
                 <div className="size-9 bg-black text-white font-black grid place-items-center rounded-lg shadow-sm">
-                  <Shirt className="size-5" />
+                  <Shirt className="size-5 text-[#e63946]" />
                 </div>
                 <div>
-                  <h1 className="font-black text-lg text-black tracking-tighter uppercase leading-none">{storeName}</h1>
-                  <span className="text-[10px] font-mono text-slate-500 block mt-0.5">{fullDomain}</span>
+                  <h1 className="font-black text-xl text-black tracking-tight uppercase leading-none font-mono">
+                    {storeName}
+                  </h1>
+                  <span className="text-[9px] font-mono text-slate-500 block uppercase tracking-widest mt-0.5">
+                    STREETWEAR & ESSENTIALS
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-black uppercase tracking-wider text-slate-700">
+          {/* Center Navigation */}
+          <nav className="hidden md:flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
             <button
               type="button"
               onClick={() => setCurrentPage('home')}
-              className={`py-1 transition-colors hover:text-black ${
-                currentPage === 'home' ? 'text-black border-b-2 border-black' : ''
+              className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer ${
+                currentPage === 'home' ? 'bg-black text-white' : 'text-slate-600 hover:text-black hover:bg-slate-100'
               }`}
             >
               الرئيسية
@@ -122,29 +142,29 @@ export function StoreWardrobeTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('shop')}
-              className={`py-1 transition-colors hover:text-black ${
-                currentPage === 'shop' ? 'text-black border-b-2 border-black' : ''
+              className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer ${
+                currentPage === 'shop' ? 'bg-black text-white' : 'text-slate-600 hover:text-black hover:bg-slate-100'
               }`}
             >
-              جميع المنتجات
+              المتجر
             </button>
             <button
               type="button"
               onClick={() => setCurrentPage('categories')}
-              className={`py-1 transition-colors hover:text-black ${
-                currentPage === 'categories' ? 'text-black border-b-2 border-black' : ''
+              className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer ${
+                currentPage === 'categories' ? 'bg-black text-white' : 'text-slate-600 hover:text-black hover:bg-slate-100'
               }`}
             >
-              التصنيفات
+              الأقسام
             </button>
             <button
               type="button"
               onClick={() => setCurrentPage('contact')}
-              className={`py-1 transition-colors hover:text-black ${
-                currentPage === 'contact' ? 'text-black border-b-2 border-black' : ''
+              className={`px-3.5 py-2 rounded-lg transition-colors cursor-pointer ${
+                currentPage === 'contact' ? 'bg-black text-white' : 'text-slate-600 hover:text-black hover:bg-slate-100'
               }`}
             >
-              اتصل بنا
+              تواصل معنا
             </button>
           </nav>
 
@@ -153,7 +173,7 @@ export function StoreWardrobeTheme({
             <button
               type="button"
               onClick={() => setCurrentPage('shop')}
-              className="size-9 rounded-lg border border-slate-200 hover:bg-slate-100 grid place-items-center transition-colors"
+              className="size-9 rounded-lg border border-slate-200 hover:bg-slate-100 grid place-items-center transition-colors cursor-pointer"
               title="بحث في المتجر"
             >
               <Search className="size-4 text-slate-700" />
@@ -165,7 +185,7 @@ export function StoreWardrobeTheme({
                 if (onOpenCustomerAuth) onOpenCustomerAuth();
                 else setCurrentPage('account');
               }}
-              className="size-9 rounded-lg border border-slate-200 hover:bg-slate-100 grid place-items-center transition-colors"
+              className="size-9 rounded-lg border border-slate-200 hover:bg-slate-100 grid place-items-center transition-colors cursor-pointer"
               title="حساب العميل"
             >
               <User className="size-4 text-slate-700" />
@@ -173,11 +193,8 @@ export function StoreWardrobeTheme({
 
             <button
               type="button"
-              onClick={() => {
-                if (onOpenCart) onOpenCart();
-                else setCurrentPage('cart');
-              }}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-black hover:bg-slate-800 text-white font-black text-xs transition-all active:scale-95"
+              onClick={() => setCurrentPage('cart')}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-black hover:bg-slate-800 text-white font-black text-xs transition-all active:scale-95 cursor-pointer"
             >
               <ShoppingBag className="size-4" />
               <span>السلة</span>
@@ -191,6 +208,12 @@ export function StoreWardrobeTheme({
 
       {/* 3. Main Body Routing */}
       <main className="flex-1">
+        {currentPage === 'product' && selectedProduct && (
+          <ThemeProductDetailView
+            {...sharedPageProps}
+            product={selectedProduct}
+          />
+        )}
         {currentPage === 'shop' && <ThemeShopView {...sharedPageProps} />}
         {currentPage === 'categories' && <ThemeCategoriesView {...sharedPageProps} />}
         {currentPage === 'cart' && <ThemeCartCheckoutView {...sharedPageProps} />}
@@ -221,7 +244,7 @@ export function StoreWardrobeTheme({
                     <button
                       type="button"
                       onClick={() => setCurrentPage('shop')}
-                      className="px-8 py-4 rounded-xl bg-[#e63946] hover:bg-rose-700 text-white font-black text-sm tracking-wider uppercase transition-all shadow-xl shadow-rose-900/30 flex items-center gap-2 hover:scale-[1.02]"
+                      className="px-8 py-4 rounded-xl bg-[#e63946] hover:bg-rose-700 text-white font-black text-sm tracking-wider uppercase transition-all shadow-xl shadow-rose-900/30 flex items-center gap-2 hover:scale-[1.02] cursor-pointer"
                     >
                       <span>{heroBtnText}</span>
                       <ArrowLeft className="size-4" />
@@ -229,7 +252,7 @@ export function StoreWardrobeTheme({
                     <button
                       type="button"
                       onClick={() => setCurrentPage('categories')}
-                      className="px-6 py-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-black text-sm transition-all"
+                      className="px-6 py-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-black text-sm transition-all cursor-pointer"
                     >
                       تصفح الأقسام
                     </button>
@@ -237,10 +260,17 @@ export function StoreWardrobeTheme({
                 </div>
 
                 <div className="lg:col-span-5 relative">
-                  <div className="aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900">
+                  <div
+                    className="aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900 cursor-pointer"
+                    onClick={() => products[0] && handleOpenProduct(products[0])}
+                  >
                     <img
-                      src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80"
+                      src={getProductImage(products[0])}
                       alt="Wardrobe Fashion"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).onerror = null;
+                        (e.currentTarget as HTMLImageElement).src = STORE_PLACEHOLDER_IMAGE;
+                      }}
                       className="size-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -262,7 +292,7 @@ export function StoreWardrobeTheme({
                 <div className="flex items-center gap-3">
                   <Truck className="size-6 text-[#e63946] shrink-0" />
                   <div>
-                    <h4 className="font-black text-black">توصيل سريع مع الزعيم</h4>
+                    <h4 className="font-black text-black">توصيل سريع وموثوق</h4>
                     <p className="text-slate-500 mt-0.5">تغطية شاملة لجميع محافظات العراق الـ 18</p>
                   </div>
                 </div>
@@ -295,7 +325,7 @@ export function StoreWardrobeTheme({
                   <button
                     type="button"
                     onClick={() => setCurrentPage('shop')}
-                    className="text-xs font-black text-black hover:text-[#e63946] flex items-center gap-1.5 transition-colors"
+                    className="text-xs font-black text-black hover:text-[#e63946] flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <span>عرض الكتالوج الكامل</span>
                     <ArrowLeft className="size-4" />
@@ -310,13 +340,17 @@ export function StoreWardrobeTheme({
                     className="border border-slate-200 rounded-xl overflow-hidden hover:border-black transition-all duration-300 flex flex-col justify-between group"
                   >
                     <div
-                      className="relative aspect-[3/4] overflow-hidden bg-slate-100 cursor-pointer"
-                      onClick={() => onOpenProductDetail?.(prod)}
+                      className="relative aspect-[3/4] overflow-hidden bg-slate-100 cursor-pointer p-2 flex items-center justify-center"
+                      onClick={() => handleOpenProduct(prod)}
                     >
                       <img
-                        src={prod.imageUrl}
+                        src={getProductImage(prod)}
                         alt={prod.name}
-                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).onerror = null;
+                          (e.currentTarget as HTMLImageElement).src = STORE_PLACEHOLDER_IMAGE;
+                        }}
+                        className="size-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                       />
                       {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
@@ -331,7 +365,7 @@ export function StoreWardrobeTheme({
                         <span className="text-[10px] font-mono text-slate-500 block uppercase">{prod.category || 'CASUAL'}</span>
                         <h4
                           className="font-bold text-xs md:text-sm text-black line-clamp-1 cursor-pointer hover:underline mt-0.5"
-                          onClick={() => onOpenProductDetail?.(prod)}
+                          onClick={() => handleOpenProduct(prod)}
                         >
                           {prod.name}
                         </h4>
@@ -340,31 +374,34 @@ export function StoreWardrobeTheme({
                       <div className="pt-2 border-t border-slate-100 space-y-2">
                         <div className="flex items-baseline justify-between font-mono">
                           <span className="font-black text-sm md:text-base text-black">
-                            {formatIQD(prod.price)}
+                            {formatPriceInteger(prod.price)}
                           </span>
                           {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
                             <span className="text-[10px] text-slate-400 line-through">
-                              {formatIQD(prod.compareAtPrice)}
+                              {formatPriceInteger(prod.compareAtPrice)}
                             </span>
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onQuickBuy(prod)}
-                            className="py-2 rounded-lg text-xs font-black bg-black hover:bg-slate-800 text-white transition-colors"
-                          >
-                            شراء سريع
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onAddToCart?.(prod)}
-                            className="py-2 rounded-lg text-xs font-bold border border-slate-300 hover:bg-slate-100 text-black transition-colors"
-                          >
-                            + السلة
-                          </button>
-                        </div>
+                        {/* Single Add to Cart Action */}
+                        <button
+                          type="button"
+                          onClick={() => handleAddToCartWithFeedback(prod)}
+                          disabled={addingId === prod.id}
+                          className="w-full py-2.5 rounded-lg text-xs font-black bg-black hover:bg-slate-800 text-white transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-75"
+                        >
+                          {addingId === prod.id ? (
+                            <>
+                              <RefreshCw className="size-3.5 animate-spin" />
+                              <span>تمت الإضافة...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="size-3.5" />
+                              <span>أضف إلى السلة</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -375,7 +412,7 @@ export function StoreWardrobeTheme({
         )}
       </main>
 
-      {/* 4. Minimal Streetwear Footer */}
+      {/* 4. Minimal Streetwear Footer (White-Labeled) */}
       <footer className="bg-black text-white pt-14 pb-8 px-4 md:px-8 border-t border-slate-800">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-10 border-b border-slate-800 text-right">
           <div className="space-y-3">
@@ -391,17 +428,17 @@ export function StoreWardrobeTheme({
           <div className="space-y-2 text-xs">
             <h5 className="font-black text-white text-sm uppercase tracking-wider">روابط سريعة</h5>
             <div className="flex flex-col gap-1.5 text-slate-400">
-              <button type="button" onClick={() => setCurrentPage('home')} className="hover:text-white text-right">الرئيسية</button>
-              <button type="button" onClick={() => setCurrentPage('shop')} className="hover:text-white text-right">المتجر والكتالوج</button>
-              <button type="button" onClick={() => setCurrentPage('categories')} className="hover:text-white text-right">أقسام الأزياء</button>
-              <button type="button" onClick={() => setCurrentPage('contact')} className="hover:text-white text-right">تواصل مع الإدارة</button>
+              <button type="button" onClick={() => setCurrentPage('home')} className="hover:text-white text-right cursor-pointer">الرئيسية</button>
+              <button type="button" onClick={() => setCurrentPage('shop')} className="hover:text-white text-right cursor-pointer">المتجر والكتالوج</button>
+              <button type="button" onClick={() => setCurrentPage('categories')} className="hover:text-white text-right cursor-pointer">أقسام الأزياء</button>
+              <button type="button" onClick={() => setCurrentPage('contact')} className="hover:text-white text-right cursor-pointer">تواصل مع الإدارة</button>
             </div>
           </div>
 
           <div className="space-y-2 text-xs">
             <h5 className="font-black text-white text-sm uppercase tracking-wider">خدمات الشحن</h5>
             <div className="flex flex-col gap-1.5 text-slate-400">
-              <span>✓ شحن لجميع المحافظات مع شركة الزعيم</span>
+              <span>✓ شحن لجميع المحافظات</span>
               <span>✓ فحص ومعاينة الشحنة قبل الاستلام</span>
               <span>✓ استبدال فوري للمقاسات</span>
               <span>✓ دفع نقدي أو إلكتروني عند الاستلام</span>
@@ -419,8 +456,7 @@ export function StoreWardrobeTheme({
         </div>
 
         <div className="max-w-7xl mx-auto pt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 font-mono">
-          <span>© {new Date().getFullYear()} {storeName}. ALL RIGHTS RESERVED • POWERED BY ZAEEM</span>
-          <span className="text-slate-400 font-bold">WARDROBE MINIMAL THEME</span>
+          <span>© {new Date().getFullYear()} {storeName}. ALL RIGHTS RESERVED.</span>
         </div>
       </footer>
     </div>
