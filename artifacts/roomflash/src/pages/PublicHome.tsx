@@ -6,7 +6,6 @@ import { DashboardMockupHero } from '../components/home/DashboardMockupHero';
 import { PlatformVideoShowcase } from '../components/home/PlatformVideoShowcase';
 import { TransformationDiagram } from '../components/home/TransformationDiagram';
 import { EcosystemRadialHub } from '../components/home/EcosystemRadialHub';
-import { TemplatesShowcase } from '../components/home/TemplatesShowcase';
 import {
   Sparkles, ArrowLeft, ArrowRight, CheckCircle2, XCircle, ShoppingBag,
 
@@ -129,13 +128,6 @@ export function PublicHomePage() {
               </button>
               <button
                 type="button"
-                onClick={() => scrollToSection('templates')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
-              >
-                {t.navTemplates}
-              </button>
-              <button
-                type="button"
                 onClick={() => scrollToSection('stories')}
                 className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
               >
@@ -253,12 +245,7 @@ export function PublicHomePage() {
         <EcosystemRadialHub isAr={isAr} />
 
         {/* ========================================================================= */}
-        {/* 5️⃣ TEMPLATES SHOWCASE SECTION (from Image 2 & 3 with Downward Scrolling) */}
-        {/* ========================================================================= */}
-        <TemplatesShowcase isAr={isAr} />
-
-        {/* ========================================================================= */}
-        {/* 6️⃣ REAL MERCHANT STORIES SECTION (from Image 1) */}
+        {/* 5️⃣ REAL MERCHANT STORIES SECTION (from Image 1) */}
         {/* ========================================================================= */}
         <section id="stories" className="bg-slate-50 py-20 px-4 border-y border-slate-200/60">
           <div className="mx-auto max-w-6xl text-center">
