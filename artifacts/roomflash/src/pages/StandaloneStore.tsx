@@ -35,6 +35,8 @@ export function StandaloneStorePage() {
 
   const cleanSub = rawSub.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
+  const isPreviewMode = isTemplatePreview(cleanSub) || Boolean(TEMPLATES_MAP[cleanSub as TemplateId]) || Boolean(TEMPLATES_MAP[`store-${cleanSub}` as TemplateId]);
+
   const initialNormalized = normalizeTemplateId(cleanSub);
   const initialTmpl: TemplateId = TEMPLATES_MAP[cleanSub as TemplateId]
     ? (cleanSub as TemplateId)
