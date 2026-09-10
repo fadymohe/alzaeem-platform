@@ -36,6 +36,10 @@ export function SignUpPage() {
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
 
+  // Email Validation & Uniqueness State
+  const [emailChecking, setEmailChecking] = useState(false);
+  const [emailExistsWarning, setEmailExistsWarning] = useState('');
+
   // Phone Validation & Uniqueness State
   const [phoneChecking, setPhoneChecking] = useState(false);
   const [phoneExistsWarning, setPhoneExistsWarning] = useState('');
@@ -254,6 +258,59 @@ export function SignUpPage() {
   const pwdStrength = calculatePasswordStrength(password);
 
 
+
+  // Email Availability Checker
+  const checkEmailAvailability = async (emailToTest: string): Promise<boolean> => {
+    const normalized = emailToTest.trim().toLowerCase();
+    if (!normalized || !/\S+@\S+\.\S+/.test(normalized)) {
+      setEmailExistsWarning('');
+      return true;
+    }
+    setEmailChecking(true);
+    try {
+      let isTaken = await checkCloudEmailExists(normalized);
+      if (!isTaken) {
+        try {
+          const checkRes = await fetch('/api/auth/check-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalized })
+          });
+          if (checkRes.ok) {
+            const data = await checkRes.json();
+            if (data?.exists) isTaken = true;
+          }
+        } catch (e) {}
+      }
+
+      if (isTaken) {
+        const msg = isAr
+          ? `يوجد حساب مسجل بالفعل بهذا البريد الإلكتروني (${normalized}). يرجى تسجيل الدخول.`
+          : `An account is already registered with this email (${normalized}). Please sign in.`;
+        setEmailExistsWarning(msg);
+        setErrors((prev) => ({
+          ...prev,
+          email: isAr ? 'البريد الإلكتروني مسجل مسبقاً' : 'Email already registered'
+        }));
+        setEmailChecking(false);
+        return false;
+      } else {
+        setEmailExistsWarning('');
+        setErrors((prev) => {
+          const next = { ...prev };
+          if (next.email === 'البريد الإلكتروني مسجل مسبقاً' || next.email === 'Email already registered' || next.email === 'هذا البريد مسجل مسبقاً') {
+            delete next.email;
+          }
+          return next;
+        });
+        setEmailChecking(false);
+        return true;
+      }
+    } catch (err) {
+      setEmailChecking(false);
+      return true;
+    }
+  };
 
   // Phone Number Uniqueness Checker
   const checkPhoneAvailability = async (phoneToTest: string): Promise<boolean> => {
@@ -491,6 +548,8 @@ export function SignUpPage() {
     // 2. Email & OTP Verification
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
       errs.email = isAr ? 'يرجى إدخال بريد إلكتروني صحيح' : 'Invalid email';
+    } else if (emailExistsWarning) {
+      errs.email = isAr ? 'البريد الإلكتروني مسجل مسبقاً' : 'Email already registered';
     } else if (!emailVerified) {
       errs.email = isAr ? 'يجب التحقق من البريد الإلكتروني عبر إدخال كود التحقق أولاً' : 'Please verify your email with OTP';
     }
@@ -501,6 +560,8 @@ export function SignUpPage() {
       errs.phone = isAr ? 'رقم الهاتف مطلوب' : 'Phone is required';
     } else if (!iraqPhoneRegex.test(phoneBody)) {
       errs.phone = isAr ? 'يجب إدخال 10 أرقام ويبدأ بـ 770 أو 780 أو 790' : 'Must be 10 digits starting with 770, 780, or 790';
+    } else if (phoneExistsWarning) {
+      errs.phone = isAr ? 'رقم الهاتف مسجل مسبقاً' : 'Phone already registered';
     }
 
     // 3. Password: min 8 chars, letters, numbers, and symbols
@@ -524,6 +585,47 @@ export function SignUpPage() {
 
     setLoading(true);
     setErrors({});
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const cleanPhoneDigits = phoneBody.replace(/\D/g, '');
+
+    // Strict Double Check against duplicates before proceeding
+    try {
+      const [emailTaken, phoneRes] = await Promise.all([
+        checkCloudEmailExists(normalizedEmail).catch(() => false),
+        checkCloudPhoneExists(cleanPhoneDigits).catch(() => ({ exists: false }))
+      ]);
+
+      if (emailTaken) {
+        setLoading(false);
+        const msg = isAr
+          ? `يوجد حساب مسجل بالفعل بهذا البريد الإلكتروني (${normalizedEmail}). يرجى تسجيل الدخول.`
+          : `An account is already registered with this email (${normalizedEmail}). Please sign in.`;
+        setEmailExistsWarning(msg);
+        setErrors((prev) => ({
+          ...prev,
+          email: isAr ? 'البريد الإلكتروني مسجل مسبقاً' : 'Email already registered',
+          general: isAr ? 'لا يمكن إنشاء حساب جديد: البريد الإلكتروني مستخدم مسبقاً.' : 'Email already registered.'
+        }));
+        return;
+      }
+
+      if (phoneRes.exists) {
+        setLoading(false);
+        const msg = isAr
+          ? `يوجد حساب مسجل بالفعل برقم الهاتف هذا (+964${cleanPhoneDigits}). يرجى تسجيل الدخول بدلاً من ذلك.`
+          : `An account is already registered with this phone number (+964${cleanPhoneDigits}). Please sign in instead.`;
+        setPhoneExistsWarning(msg);
+        setErrors((prev) => ({
+          ...prev,
+          phone: isAr ? 'رقم الهاتف مسجل مسبقاً' : 'Phone already registered',
+          general: isAr ? 'لا يمكن إنشاء حساب جديد: رقم الهاتف مستخدم مسبقاً.' : 'Phone already registered.'
+        }));
+        return;
+      }
+    } catch (e) {
+      // Proceed if check fails
+    }
 
     const formattedPhone = `+964${phoneBody}`;
 
@@ -834,9 +936,17 @@ export function SignUpPage() {
 
             {/* 2. Email Address (Clean Label) & Guaranteed OTP */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block">
-                {isAr ? 'البريد الإلكتروني *' : 'Email Address *'}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 block">
+                  {isAr ? 'البريد الإلكتروني *' : 'Email Address *'}
+                </label>
+                {emailChecking && (
+                  <span className="text-[10px] text-teal-600 font-bold flex items-center gap-1">
+                    <span className="size-1.5 rounded-full bg-teal-500 animate-ping" />
+                    جاري التحقق من البريد...
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <input
                   type="email"
@@ -844,21 +954,32 @@ export function SignUpPage() {
                   disabled={emailVerified}
                   value={email}
                   onChange={(e) => {
-                    setEmail(e.target.value);
+                    const val = e.target.value;
+                    setEmail(val);
                     setEmailVerified(false);
                     setOtpSent(false);
+                    if (val.includes('@') && val.includes('.')) {
+                      checkEmailAvailability(val);
+                    } else {
+                      setEmailExistsWarning('');
+                    }
+                  }}
+                  onBlur={() => {
+                    if (email) {
+                      checkEmailAvailability(email);
+                    }
                   }}
                   placeholder="merchant@store.com"
                   dir="ltr"
                   className={`flex-1 rounded-2xl border px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none transition-all ${
-                    errors.email ? 'border-red-400 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 focus:border-teal-600 focus:bg-white'
+                    emailExistsWarning || errors.email ? 'border-red-400 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 focus:border-teal-600 focus:bg-white'
                   } ${emailVerified ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900 font-bold' : ''}`}
                 />
 
                 {!emailVerified && (
                   <button
                     type="button"
-                    disabled={otpLoading || !email}
+                    disabled={otpLoading || !email || Boolean(emailExistsWarning)}
                     onClick={handleSendOtp}
                     className="px-3.5 py-2 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white text-[11px] font-bold shrink-0 shadow-sm cursor-pointer disabled:opacity-50 transition-colors flex items-center gap-1.5"
                   >
@@ -874,9 +995,25 @@ export function SignUpPage() {
                 )}
               </div>
 
-              {errors.email && <p className="text-[10px] text-red-500 font-bold">{errors.email}</p>}
-              {otpSuccess && <p className="text-[10px] text-emerald-600 font-bold">{otpSuccess}</p>}
-              {otpError && <p className="text-[10px] text-red-500 font-bold">{otpError}</p>}
+              {emailExistsWarning && (
+                <div className="p-2.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold flex flex-col gap-1.5 animate-fadeIn">
+                  <div className="flex items-start gap-1.5">
+                    <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-600" />
+                    <span className="leading-snug">{emailExistsWarning}</span>
+                  </div>
+                  <Link
+                    href="/sign-in"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black py-1.5 px-3 text-[11px] shadow-sm transition-all text-center mt-1"
+                  >
+                    <span>الانتقال لتسجيل الدخول إلى حسابك</span>
+                    <ArrowLeft className="size-3" />
+                  </Link>
+                </div>
+              )}
+
+              {errors.email && !emailExistsWarning && <p className="text-[10px] text-red-500 font-bold">{errors.email}</p>}
+              {otpSuccess && !emailExistsWarning && <p className="text-[10px] text-emerald-600 font-bold">{otpSuccess}</p>}
+              {otpError && !emailExistsWarning && <p className="text-[10px] text-red-500 font-bold">{otpError}</p>}
 
               {/* 6 to 8-Digit OTP Code Input Box */}
               {otpSent && !emailVerified && (
