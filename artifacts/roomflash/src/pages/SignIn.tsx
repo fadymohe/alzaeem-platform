@@ -1413,36 +1413,12 @@ export function SignInPage() {
                     </div>
                   </div>
 
-                  {/* Form to enter OTP code */}
-                  <form onSubmit={handleVerifyOtpLogin} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-700">
-                          {isAr ? 'أدخل كود التحقق المستلم' : 'Enter Received OTP Code'}
-                        </label>
-                        <span className="text-[10px] text-slate-400">راجع صندوق الوارد أو Spam</span>
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        maxLength={8}
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                        placeholder="••••••••"
-                        dir="ltr"
-                        className="w-full rounded-2xl border border-teal-300 bg-teal-50/20 px-4 py-3 text-center text-xl font-mono font-black tracking-widest text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={otpLoading || otpCode.length < 6}
-                      className="w-full flex items-center justify-center gap-2 rounded-2xl bg-teal-700 hover:bg-teal-800 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-teal-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
-                    >
-                      <span>{otpLoading ? (isAr ? 'جاري التحقق والدخول...' : 'Verifying & Signing In...') : (isAr ? 'تأكيد الرمز والدخول إلى لوحة التحكم' : 'Verify & Sign In')}</span>
-                      {isAr ? <ArrowLeft className="size-4" /> : null}
-                    </button>
-                  </form>
+                  {/* Instructions Note */}
+                  <p className="text-[11px] text-slate-500 text-center font-medium leading-relaxed bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+                    {isAr
+                      ? '📩 تم إرسال رابط الدخول الآمن إلى بريدك. يرجى فتح البريد والضغط على الرابط لتسجيل الدخول مباشرة إلى متجرك.'
+                      : '📩 A secure sign-in link has been sent to your email. Please click the link to log in directly.'}
+                  </p>
                 </div>
               )}
             </div>
@@ -1629,23 +1605,23 @@ export function SignInPage() {
               </form>
             )}
 
-            {/* STEP 2: Enter OTP */}
+            {/* STEP 2: Instructions & Email Action */}
             {recoveryStep === 2 && (
-              <form onSubmit={handleVerifyRecoveryOtp} className="space-y-4">
-                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-right space-y-2">
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-right space-y-3">
                   <div className="flex items-center gap-2 text-emerald-800">
                     <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
                     <h4 className="text-xs font-extrabold">تم إرسال رسالة في البريد الإلكتروني</h4>
                   </div>
                   <p className="text-[11px] text-emerald-700 font-medium leading-relaxed">
-                    تم إرسال رمز التحقق إلى: <span dir="ltr" className="font-mono font-bold text-slate-900 bg-white px-1.5 py-0.5 rounded border border-emerald-200 inline-block">{recoveryEmail}</span>
+                    تم إرسال رسالة استعادة الحساب إلى: <span dir="ltr" className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-emerald-200 inline-block">{recoveryEmail}</span>
                   </p>
-                  <div className="pt-1.5 flex flex-wrap items-center gap-2 border-t border-emerald-200/60 text-xs">
+                  <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-emerald-200/60 text-xs">
                     <a
                       href={getEmailProviderUrl(recoveryEmail)}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[11px] shadow-sm transition-all"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[11px] shadow-sm transition-all"
                     >
                       <ExternalLink className="size-3" />
                       <span>الانتقال إلى البريد الإلكتروني</span>
@@ -1654,7 +1630,7 @@ export function SignInPage() {
                       type="button"
                       disabled={recoveryLoading}
                       onClick={handleSendRecoveryOtp}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-[11px] cursor-pointer"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-[11px] transition-colors cursor-pointer"
                     >
                       <RefreshCw className={`size-3 ${recoveryLoading ? 'animate-spin' : ''}`} />
                       <span>أرسل مجدداً</span>
@@ -1670,30 +1646,10 @@ export function SignInPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700">كود التحقق</label>
-                    <span className="text-[10px] font-medium text-slate-400">راجع بريدك الوارد / Spam</span>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    maxLength={8}
-                    value={recoveryOtp}
-                    onChange={(e) => setRecoveryOtp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="12345678"
-                    dir="ltr"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-mono font-bold tracking-widest text-slate-900 focus:border-teal-600 focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={recoveryLoading || recoveryOtp.length < 6}
-                  className="w-full py-3 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {recoveryLoading ? 'جاري التحقق...' : 'تأكيد الكود ومتابعة'}
-                </button>
-              </form>
+                <p className="text-[11px] text-slate-500 text-center font-medium leading-relaxed bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+                  يرجى تفقد بريدك الوارد (أو مجلد الرسائل غير المرغوب فيها Spam) والضغط على رابط إعادة التعيين لإنشاء كلمة مرور جديدة لحسابك.
+                </p>
+              </div>
             )}
 
             {/* STEP 3: Enter New Password */}
