@@ -14,16 +14,25 @@ import {
 } from '../data/storeState';
 
 const TEMPLATE_NAMES: Record<string, string> = {
-  'shoppingcart.1.2.7': 'سلة التسوق الشاملة (shoppingcart.1.2.7)',
+  'store-aurit': 'شوب ويل (أوريت) — ShopWell Mega Store',
+  'shoppingcart.1.2.7': 'شوب ويل (أوريت) — ShopWell Mega Store',
+  'shopwell': 'شوب ويل (أوريت) — ShopWell Mega Store',
+  'store-sprout': 'سبراوت (Sprout Garden)',
+  'store-wardrobe': 'واردروب (Wardrobe Minimal)',
+  'store-stride': 'سترايد للأحذية (Stride)',
+  'store-chic': 'شيك بوتيك (Chic)',
+  'store-nova': 'إيشوب كيت (نوفا)',
+  'store-brick': 'شوب واي (بريك)',
+  'store-classic': 'بوتيجا كلاسيك للعطور (Classic Luxury)',
   'volt': 'فولت إكسبريس للتقنية (Volt Tech)',
   'rose': 'روز أتيليه للأزياء والجمال (Rose Atelier)',
   'nitro': 'نيترو سبورت الرياضي (Nitro Sports)',
   'sepia': 'هاير الملكي للساعات والعطور (Royal Sepia)',
-  'oret': 'أوريت إكسبريس (Oret Express)',
+  'oret': 'شوب ويل (أوريت) — ShopWell Mega Store',
   'easyorders-flash': 'فلاش لاندينج للشراء الفوري (EasyOrders Flash)',
   'nova': 'نوفا الملكي للأزياء (Nova Royal)',
   'classic': 'كلاسيك الفاخر للعطور (Classic Luxury)',
-  'aurit': 'أوريت التقني للإلكترونيات (Aurit Tech)',
+  'aurit': 'شوب ويل (أوريت) — ShopWell Mega Store',
   'brick': 'بريك التجاري المتقدم (Brick Commerce)',
 };
 
@@ -46,6 +55,7 @@ export function DashboardPage() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [customers, setCustomers] = useState<StoreCustomer[]>([]);
   const [isStoreActive, setIsStoreActive] = useState(true);
+  const [hasWarehouseAddress, setHasWarehouseAddress] = useState(true);
 
   // Real Store Information Loaded from Onboarding / Settings
   const [storeInfo, setStoreInfo] = useState<{
@@ -61,7 +71,7 @@ export function DashboardPage() {
     storeName: 'متجر الزعيم',
     subdomain: 'shop',
     storeCode: 'ZAEEM-882194',
-    templateId: 'shoppingcart.1.2.7',
+    templateId: 'store-aurit',
     freeShipmentsRemaining: 5
   });
   const [copiedCode, setCopiedCode] = useState(false);
@@ -90,11 +100,23 @@ export function DashboardPage() {
         .trim();
       const code = parsedOnb?.storeCode || `ZAEEM-${cleanSub.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+      const rawSender = localStorage.getItem('zaeem_sender_shipping_info');
+      if (rawSender) {
+        try {
+          const s = JSON.parse(rawSender);
+          setHasWarehouseAddress(Boolean(s.senderAddress && s.senderAddress.trim().length > 3));
+        } catch {
+          setHasWarehouseAddress(false);
+        }
+      } else {
+        setHasWarehouseAddress(false);
+      }
+
       setStoreInfo({
         storeName: parsedOnb?.storeName || parsedUser?.storeName || `متجر ${cleanSub}`,
         subdomain: cleanSub,
         storeCode: code,
-        templateId: parsedOnb?.templateId || parsedOnb?.selectedTheme || 'shoppingcart.1.2.7',
+        templateId: parsedOnb?.templateId || parsedOnb?.selectedTheme || 'store-aurit',
         logoUrl: parsedOnb?.logoUrl,
         bannerUrl: parsedOnb?.bannerUrl,
         product: parsedOnb?.product,
@@ -202,6 +224,32 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Mandatory Warehouse Address Notification Banner */}
+      {!hasWarehouseAddress && (
+        <div className="relative overflow-hidden rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 p-4 md:p-5 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-pulse">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-500 shrink-0">
+              <MapPin className="size-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-amber-950 dark:text-amber-100 flex items-center gap-2">
+                <span>تنبيه إجباري: يرجى إضافة عنوان مستودعك / مخزنك لاستلام الشحنات</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black">مطلوب</span>
+              </h3>
+              <p className="text-xs text-amber-800/90 dark:text-amber-200/80 mt-0.5">
+                لتتمكن من إرسال شحناتك واستلام الكباتن للبضاعة من موقعك وتوصيلها للزبائن، يرجى ملء بيانات الراسل والعنوان في الإعدادات.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/settings"
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-black text-xs rounded-xl transition-all shrink-0 text-center shadow-sm"
+          >
+            إضافة عنوان المخزن الآن ←
+          </Link>
+        </div>
+      )}
 
       {/* Main KPI Cards (IQD) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

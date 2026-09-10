@@ -19,6 +19,7 @@ import { getStoredProducts, saveStoredProducts, type StoreProduct } from '../dat
 import { validateProductImageSafety } from '../utils/nsfwDetector';
 import { StoreTemplates, TEMPLATES_MAP, type TemplateId, normalizeTemplateId } from '../components/storefront/StoreTemplates';
 import { StoreIframePreview } from '../components/storefront/StoreIframePreview';
+import { addAppNotification } from '../utils/notificationStore';
 
 export interface RealTemplateOption {
   id: string;
@@ -44,6 +45,28 @@ export interface RealTemplateOption {
 }
 
 export const REAL_STORE_TEMPLATES: RealTemplateOption[] = [
+  {
+    id: 'store-aurit',
+    name: 'شوب ويل (ShopWell)',
+    nameEn: 'ShopWell Mega Store',
+    categoryTitle: 'ميجا ستور شامل، أزياء، وإلكترونيات',
+    categoryKey: 'all',
+    badge: 'القالب الافتراضي الأكثر طلباً ⭐',
+    tagline: 'واجهة ميجا ستور حديثة زرقاء فائقة السرعة مع شريط إعلانات أكواد الخصم، وتصنيفات مرئية وشيك أوت فوري.',
+    features: ['القالب الافتراضي المعتمد لمنصة الزعيم', 'تصفح حسب الأقسام وعروض فلاش', 'شحن وتتبع فوري عبر الزعيم'],
+    heroImage: '/templates/store-aurit.jpg',
+    accentColor: 'blue',
+    borderActive: 'border-blue-600',
+    ringColor: 'ring-blue-500/40',
+    previewBg: 'bg-[#f0f7ff]',
+    headerBg: 'bg-[#0f172a] border-blue-900',
+    cardBg: 'bg-white border-blue-100',
+    pillBg: 'bg-blue-50 text-blue-800 border-blue-200',
+    priceColor: 'text-blue-700',
+    btnBg: 'bg-blue-600 hover:bg-blue-500 text-white',
+    colorDot: 'bg-[#2563eb]',
+    palette: ['#0f172a', '#2563eb', '#38bdf8', '#f8fafc']
+  },
   {
     id: 'store-sprout',
     name: 'سبراوت (Sprout)',
@@ -541,16 +564,16 @@ export function OnboardingPage() {
     return null;
   })();
 
-  const [selectedTheme, setSelectedTheme] = useState(() => initialThemeFromUrl || 'store-classic');
+  const [selectedTheme, setSelectedTheme] = useState(() => initialThemeFromUrl || 'store-aurit');
   const [selectedNiche, setSelectedNiche] = useState(() => {
     if (initialThemeFromUrl === 'store-nova') return 'electronics';
-    if (initialThemeFromUrl === 'store-aurit') return 'fashion';
-    return 'perfumes';
+    if (initialThemeFromUrl === 'store-classic') return 'perfumes';
+    return 'fashion';
   });
   const [categories, setCategories] = useState<string[]>(() => {
     if (initialThemeFromUrl === 'store-nova') return ['شواحن وكفرات', 'ساعات ذكية', 'سماعات صوتية', 'أجهزة إلكترونية'];
-    if (initialThemeFromUrl === 'store-aurit') return ['أزياء رجالي', 'فساتين وعبايات', 'أحذية رياضية', 'حقائب وإكسسوارات'];
-    return ['عطور فرنسية', 'دهن عود وبخور', 'عناية بالبشرة'];
+    if (initialThemeFromUrl === 'store-classic') return ['عطور فرنسية', 'دهن عود وبخور', 'عناية بالبشرة'];
+    return ['أزياء رجالي', 'فساتين وعبايات', 'أحذية رياضية', 'حقائب وإكسسوارات'];
   });
   const [newCatInput, setNewCatInput] = useState('');
 
@@ -1027,6 +1050,22 @@ export function OnboardingPage() {
     }
 
     setIsLaunching(false);
+
+    // 2.5 Dispatch mandatory warehouse address notification to merchant
+    try {
+      addAppNotification({
+        title: '⚠️ تنبيه إجباري: يرجى إضافة عنوان المخزن لاستلام الشحنات',
+        desc: 'لتتمكن من إرسال شحناتك واستلام الكباتن للبضاعة وتوصيلها للزبائن، يرجى ملء بيانات المستودع وعنوان الراسل في الإعدادات.',
+        type: 'system',
+        link: '/settings'
+      });
+      addAppNotification({
+        title: `🎉 مبروك! تم إطلاق ${storeName} بنجاح`,
+        desc: `متجرك الإلكتروني أصبح متاحاً الآن بقالب ${activeTheme.name} على الرابط https://${cleanSub}.za3em.shop`,
+        type: 'system',
+        link: '/dashboard'
+      });
+    } catch {}
 
     // 3. Show Launch Success Celebration Modal
     const activeT = REAL_STORE_TEMPLATES.find(t => t.id === selectedTheme) || REAL_STORE_TEMPLATES[0];

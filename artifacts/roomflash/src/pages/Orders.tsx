@@ -498,7 +498,7 @@ export function OrdersPage() {
                     setAddress(e.target.value);
                     if (formErrors.address) setFormErrors((prev) => ({ ...prev, address: '' }));
                   }}
-                  placeholder="المنطقة، الشارع، أقرب نقطة دالة"
+                  placeholder="المنطقة، الشارع، العلامة المميزة"
                   className={`w-full rounded-xl border ${
                     formErrors.address ? 'border-rose-500 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800'
                   } bg-slate-50 dark:bg-slate-950 p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-600`}

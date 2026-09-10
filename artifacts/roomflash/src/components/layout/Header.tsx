@@ -173,7 +173,14 @@ export function Header({ onOpenMobile }: HeaderProps) {
         {/* Notification Center Trigger */}
         <div className="relative">
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={() => {
+              const next = !showNotifications;
+              setShowNotifications(next);
+              if (next) {
+                markAllNotificationsRead();
+                reloadNotifs();
+              }
+            }}
             className="relative p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             title="الإشعارات والتنبيهات"
           >

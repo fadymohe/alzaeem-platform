@@ -1009,7 +1009,7 @@ export function ShipmentsPage() {
                     <span className="font-bold text-slate-800 dark:text-slate-200">{trackedShipment.governorate} - {trackedShipment.district}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-400 block text-[10px] font-bold">أقرب نقطة دالة</span>
+                    <span className="text-slate-400 block text-[10px] font-bold">العلامة المميزة</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">{trackedShipment.nearestLandmark || 'غير محددة'}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
@@ -1208,13 +1208,6 @@ export function ShipmentsPage() {
                   >
                     <span>🚚</span> شحن المحافظات
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleAutoFillFromLatestOrder}
-                    className="px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 transition-colors flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Sparkles className="size-3.5" /> تعبئة من أحدث طلب بالمتجر
-                  </button>
                 </div>
               </div>
 
@@ -1311,20 +1304,20 @@ export function ShipmentsPage() {
                       type="text"
                       value={form.district}
                       onChange={(e) => handleNoSymbolChange('district', e.target.value)}
-                      placeholder="مثال: الكرادة / المنصور / الزبير"
+                      placeholder="اسم المدينة أو القضاء"
                       className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      المنطقة / الحي
+                      المنطقة
                     </label>
                     <input
                       type="text"
                       value={form.neighborhood}
                       onChange={(e) => handleNoSymbolChange('neighborhood', e.target.value)}
-                      placeholder="مثال: شارع فلسطين"
+                      placeholder="اسم المنطقة"
                       className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
                     />
                   </div>
@@ -1339,21 +1332,21 @@ export function ShipmentsPage() {
                       type="text"
                       value={form.address}
                       onChange={(e) => setForm({ ...form, address: e.target.value })}
-                      placeholder="مثال: زقاق 12 دار 45"
+                      placeholder="الشارع ورقم الدار أو الزقاق"
                       className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      أقرب نقطة دالة (العلامة المميزة) <span className="text-red-500">*</span>
+                      العلامة المميزة <span className="text-red-500">*</span>
                     </label>
                     <input
                       required
                       type="text"
                       value={form.nearestLandmark}
                       onChange={(e) => handleNoSymbolChange('nearestLandmark', e.target.value)}
-                      placeholder="مثال: قرب جامع الحكيم / مقابل مستشفى العلوية"
+                      placeholder="أقرب علامة مميزة (مدرسة، مجمع، مستشفى...)"
                       className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
                     />
                   </div>

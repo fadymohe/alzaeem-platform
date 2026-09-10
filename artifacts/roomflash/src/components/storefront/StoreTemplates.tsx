@@ -306,6 +306,10 @@ export function normalizeTemplateId(id?: string): TemplateId {
     case 'loftora':
       return 'store-loftora';
     case 'shoppingcart.1.2.7':
+    case 'shopwell':
+    case 'oret':
+    case 'aurit':
+      return 'store-aurit';
     case 'classic':
     case 'sepia':
       return 'store-classic';
@@ -316,9 +320,6 @@ export function normalizeTemplateId(id?: string): TemplateId {
       return 'store-nova';
     case 'nitro':
       return 'store-sneak';
-    case 'oret':
-    case 'aurit':
-      return 'store-aurit';
     case 'brick':
       return 'store-brick';
     case 'novatrend':
@@ -330,7 +331,7 @@ export function normalizeTemplateId(id?: string): TemplateId {
     case 'nexora':
       return 'store-nexora';
     default:
-      return 'store-sprout';
+      return 'store-aurit';
   }
 }
 
@@ -1878,7 +1879,7 @@ export function StoreTemplates({
                             required
                             value={custAddress}
                             onChange={(e) => setCustAddress(e.target.value)}
-                            placeholder="المنطقة، الشارع، أقرب نقطة دالة"
+                            placeholder="المنطقة، الشارع، أقرب علامة مميزة"
                             className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none"
                           />
                         </div>
@@ -2409,7 +2410,7 @@ export function StoreTemplates({
                   required
                   value={custAddress}
                   onChange={(e) => setCustAddress(e.target.value)}
-                  placeholder="المنطقة، الشارع، أقرب نقطة دالة"
+                  placeholder="المنطقة، الشارع، أقرب علامة مميزة"
                   className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>

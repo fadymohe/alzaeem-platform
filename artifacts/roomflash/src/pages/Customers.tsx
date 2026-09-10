@@ -171,7 +171,7 @@ export function CustomersPage() {
       errs.governorate = 'يرجى اختيار المحافظة';
     }
     if (!city.trim()) {
-      errs.city = 'المنطقة أو القضاء إجباري ومطلوب (مثال: الكرادة أو المنصور)';
+      errs.city = 'المنطقة أو القضاء إجباري ومطلوب';
     }
 
     // 4. عنوان التوصيل: لا يقل عن 20 حرفاً ولا يزيد عن 200 حرف
@@ -600,7 +600,7 @@ export function CustomersPage() {
                       setCity(e.target.value);
                       if (errors.city) setErrors((prev) => ({ ...prev, city: '' }));
                     }}
-                    placeholder="مثال: الكرادة أو المنصور"
+                    placeholder="اسم المنطقة أو القضاء"
                     className={`w-full rounded-xl border ${
                       errors.city ? 'border-rose-500 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950'
                     } p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-600`}
@@ -631,7 +631,7 @@ export function CustomersPage() {
                     setAddress(e.target.value);
                     if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
                   }}
-                  placeholder="مثال: بغداد — الكرادة، شارع العرصات قرب مرطبات الفردوس، زقاق 14 دار 2"
+                  placeholder="اسم المحافظة، المنطقة، الشارع، أقرب علامة مميزة"
                   className={`w-full rounded-xl border ${
                     errors.address ? 'border-rose-500 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950'
                   } p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-600 leading-relaxed`}

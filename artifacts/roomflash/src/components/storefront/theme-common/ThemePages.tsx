@@ -703,13 +703,13 @@ export function ThemeCartCheckoutView({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">العنوان بالتفصيل وأقرب نقطة دالة *</label>
+                <label className="text-xs font-bold text-slate-300 block">العنوان بالتفصيل والعلامة المميزة *</label>
                 <input
                   type="text"
                   required
                   value={custAddress}
                   onChange={(e) => setCustAddress(e.target.value)}
-                  placeholder="المنطقة، الشارع، قرب جامع أو مدرسة..."
+                  placeholder="المنطقة، الشارع، أقرب علامة مميزة..."
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-inherit focus:outline-none focus:border-emerald-500"
                 />
               </div>
