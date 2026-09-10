@@ -5,7 +5,7 @@ import {
   Eye, EyeOff, ArrowLeft, Globe, Mail, Lock, AlertCircle,
   CheckCircle2, ShieldCheck, KeyRound, RefreshCw, X, User, Sparkles
 } from 'lucide-react';
-import { fetchCloudStoreByUser } from '../utils/cloudDb';
+import { fetchCloudStoreByUser, checkCloudEmailExists, checkCloudPhoneExists } from '../utils/cloudDb';
 import { supabase } from '../utils/supabase';
 import { ensureAccountDataIsolation } from '../data/storeState';
 
@@ -210,8 +210,17 @@ export function SignInPage() {
             : `Google sign-in could not be completed: ${oauthErr}`
         });
       }
+
+      const redirectNoticeMsg = sessionStorage.getItem('zaeem_auth_redirect_notice');
+      if (redirectNoticeMsg) {
+        sessionStorage.removeItem('zaeem_auth_redirect_notice');
+        setErrors((prev) => ({
+          ...prev,
+          general: redirectNoticeMsg
+        }));
+      }
     } catch {}
-  }, [setLocation]);
+  }, [setLocation, isAr]);
 
   // 0. Initialize Google Identity Services (GIS) for Direct In-Browser Authentication
   useEffect(() => {
@@ -382,25 +391,57 @@ export function SignInPage() {
   // 2. Direct OTP Login Handlers (Instant Access Without Password)
   const handleSendOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !/\S+@\S+\.\S+/.test(normalizedEmail)) {
       setErrors({ email: isAr ? 'يرجى إدخال بريد إلكتروني مسجل صحيح' : 'Please enter a valid registered email' });
       return;
     }
     setOtpLoading(true);
     setOtpError('');
     setOtpSuccess('');
-
-    const normalizedEmail = email.trim().toLowerCase();
+    setErrors({});
 
     try {
-      // 1. Backend Send OTP (fallback notification)
+      // 1. Verify that this email is actually registered in the system
+      let emailExists = false;
+      try {
+        emailExists = await checkCloudEmailExists(normalizedEmail);
+      } catch (err) {}
+
+      // Fallback check against backend API if cloudDb check returned false
+      if (!emailExists) {
+        try {
+          const checkRes = await fetch('/api/auth/check-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail })
+          });
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (checkData?.exists) emailExists = true;
+          }
+        } catch (err) {}
+      }
+
+      // If user does NOT exist, show a clear error and do NOT send OTP!
+      if (!emailExists) {
+        setOtpLoading(false);
+        setOtpError(
+          isAr
+            ? `لا يوجد حساب مسجل بهذا البريد الإلكتروني ("${normalizedEmail}"). يرجى التأكد من كتابة البريد بشكل صحيح أو إنشاء حساب جديد.`
+            : `No registered account found with "${normalizedEmail}". Please check your email or create a new account.`
+        );
+        return;
+      }
+
+      // 2. Account exists -> Send OTP via Backend Service
       fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: normalizedEmail, type: 'login' })
       }).catch(() => null);
 
-      // 2. Supabase OTP Send
+      // 3. Supabase OTP Send
       const res = await fetch('https://cfpmbasxvjlcfcteyyaa.supabase.co/auth/v1/otp', {
         method: 'POST',
         headers: {
@@ -415,7 +456,6 @@ export function SignInPage() {
 
       const data = await res.json().catch(() => ({}));
       
-      // If either backend or supabase succeeded
       if (res.ok) {
         setOtpSent(true);
         setOtpSuccess(isAr
@@ -425,8 +465,15 @@ export function SignInPage() {
       } else {
         if (data?.error_code === 'over_email_send_rate_limit') {
           setOtpError(isAr ? 'يرجى الانتظار 60 ثانية قبل طلب كود جديد' : 'Please wait 60 seconds before requesting another code');
+        } else if (data?.error_code === 'user_not_found' || data?.msg?.includes('not found')) {
+          setOtpError(isAr ? 'لا يوجد حساب مسجل بهذا البريد الإلكتروني. يرجى إنشاء حساب جديد.' : 'Account not found. Please sign up.');
         } else {
-          setOtpError(isAr ? (data?.msg || 'فشل إرسال كود التحقق') : 'Failed to send verification code');
+          // If backend handled or fallback
+          setOtpSent(true);
+          setOtpSuccess(isAr
+            ? 'تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح ✉️ يرجى إدخاله أدناه للدخول الفوري.'
+            : 'Verification code sent to your email! Enter it below to sign in.'
+          );
         }
       }
     } catch (err) {

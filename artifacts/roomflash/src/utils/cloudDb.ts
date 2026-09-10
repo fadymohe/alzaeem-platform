@@ -1047,4 +1047,143 @@ export async function validateAndApplyCoupon(code: string, orderTotal: number): 
   };
 }
 
+/**
+ * Check if an email address is already registered in Neon PostgreSQL or stores
+ */
+export async function checkCloudEmailExists(email: string): Promise<boolean> {
+  const clean = (email || '').toLowerCase().trim().replace(/'/g, "''");
+  if (!clean || !clean.includes('@')) return false;
+
+  try {
+    // 1. Check in merchants table
+    const query1 = `SELECT id, email FROM za3em_merchants WHERE LOWER(email) = '${clean}' LIMIT 1;`;
+    const res1 = await executeSql(query1);
+    if (res1 && Array.isArray(res1.rows) && res1.rows.length > 0) {
+      return true;
+    }
+
+    // 2. Check in stores table
+    const query2 = `SELECT id, user_email FROM za3em_stores WHERE LOWER(user_email) = '${clean}' LIMIT 1;`;
+    const res2 = await executeSql(query2);
+    if (res2 && Array.isArray(res2.rows) && res2.rows.length > 0) {
+      return true;
+    }
+  } catch (err) {
+    console.warn('[CloudDb] checkCloudEmailExists error:', err);
+  }
+
+  // Check locally saved user as fallback
+  try {
+    const raw = localStorage.getItem('zaeem_user');
+    if (raw) {
+      const u = JSON.parse(raw);
+      if (u?.email && u.email.toLowerCase().trim() === clean) return true;
+    }
+  } catch {}
+
+  return false;
+}
+
+/**
+ * Check if a phone number is already registered in Neon PostgreSQL
+ */
+export async function checkCloudPhoneExists(phone: string): Promise<{
+  exists: boolean;
+  email?: string;
+  fullName?: string;
+  storeName?: string;
+}> {
+  if (!phone) return { exists: false };
+  const rawDigits = phone.replace(/\D/g, '');
+  if (rawDigits.length < 9) return { exists: false };
+
+  // Normalize phone to last 9 digits (e.g. 770123456 or 07701234567)
+  const last9 = rawDigits.slice(-9);
+
+  try {
+    // 1. Check in za3em_merchants table
+    const query1 = `SELECT id, email, phone, full_name, store_name FROM za3em_merchants WHERE phone LIKE '%${last9}%' LIMIT 1;`;
+    const res1 = await executeSql(query1);
+    if (res1 && Array.isArray(res1.rows) && res1.rows.length > 0) {
+      const row = res1.rows[0];
+      return {
+        exists: true,
+        email: row.email,
+        fullName: row.full_name,
+        storeName: row.store_name,
+      };
+    }
+
+    // 2. Check in za3em_customers table if merchant also exists
+    const query2 = `SELECT id, name, phone, email FROM za3em_customers WHERE phone LIKE '%${last9}%' LIMIT 1;`;
+    const res2 = await executeSql(query2);
+    if (res2 && Array.isArray(res2.rows) && res2.rows.length > 0) {
+      const row = res2.rows[0];
+      return {
+        exists: true,
+        fullName: row.name,
+        email: row.email,
+      };
+    }
+  } catch (err) {
+    console.warn('[CloudDb] checkCloudPhoneExists error:', err);
+  }
+
+  // Check locally stored user as fallback
+  try {
+    const raw = localStorage.getItem('zaeem_user');
+    if (raw) {
+      const u = JSON.parse(raw);
+      const uPhoneDigits = (u?.phone || '').replace(/\D/g, '');
+      if (uPhoneDigits && uPhoneDigits.endsWith(last9)) {
+        return { exists: true, email: u.email, fullName: u.name };
+      }
+    }
+  } catch {}
+
+  return { exists: false };
+}
+
+/**
+ * Register or update a merchant in central Neon database
+ */
+export async function saveCloudMerchant(merchant: {
+  email: string;
+  phone: string;
+  fullName?: string;
+  governorate?: string;
+  storeName?: string;
+  subdomain?: string;
+}): Promise<boolean> {
+  const cleanEmail = (merchant.email || '').toLowerCase().trim().replace(/'/g, "''");
+  if (!cleanEmail) return false;
+
+  const rawDigits = (merchant.phone || '').replace(/\D/g, '');
+  const cleanPhone = (rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits).replace(/'/g, "''");
+  const cleanName = (merchant.fullName || '').replace(/'/g, "''");
+  const cleanGov = (merchant.governorate || 'بغداد').replace(/'/g, "''");
+  const cleanStore = (merchant.storeName || '').replace(/'/g, "''");
+  const cleanSub = (merchant.subdomain || '').replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
+
+  try {
+    const query = `
+      INSERT INTO za3em_merchants (email, phone, full_name, governorate, store_name, subdomain)
+      VALUES ('${cleanEmail}', '${cleanPhone}', '${cleanName}', '${cleanGov}', '${cleanStore}', '${cleanSub}')
+      ON CONFLICT (email) DO UPDATE
+      SET phone = EXCLUDED.phone,
+          full_name = COALESCE(EXCLUDED.full_name, za3em_merchants.full_name),
+          governorate = COALESCE(EXCLUDED.governorate, za3em_merchants.governorate),
+          store_name = COALESCE(EXCLUDED.store_name, za3em_merchants.store_name),
+          subdomain = COALESCE(EXCLUDED.subdomain, za3em_merchants.subdomain)
+      RETURNING id, email, phone;
+    `;
+    const res = await executeSql(query);
+    return Boolean(res && Array.isArray(res.rows) && res.rows.length > 0);
+  } catch (err) {
+    console.warn('[CloudDb] saveCloudMerchant error:', err);
+    return false;
+  }
+}
+
+
 

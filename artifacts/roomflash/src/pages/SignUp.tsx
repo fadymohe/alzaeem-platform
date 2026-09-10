@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { IRAQ_GOVERNORATES } from '../data/iraqData';
 import { supabase } from '../utils/supabase';
+import { checkCloudEmailExists, checkCloudPhoneExists, saveCloudMerchant } from '../utils/cloudDb';
 
 const GOOGLE_CLIENT_ID = '142585183945-gtdbluikj92oj5r5qpb902467a4ag95f.apps.googleusercontent.com';
 
@@ -34,6 +35,10 @@ export function SignUpPage() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
+
+  // Phone Validation & Uniqueness State
+  const [phoneChecking, setPhoneChecking] = useState(false);
+  const [phoneExistsWarning, setPhoneExistsWarning] = useState('');
 
   // Real OAuth Provider State & Notice Modal
   const [oauthLoading, setOauthLoading] = useState(false);
@@ -250,6 +255,44 @@ export function SignUpPage() {
 
 
 
+  // Phone Number Uniqueness Checker
+  const checkPhoneAvailability = async (phoneToTest: string): Promise<boolean> => {
+    if (!phoneToTest || phoneToTest.length < 10) {
+      setPhoneExistsWarning('');
+      return true;
+    }
+    setPhoneChecking(true);
+    try {
+      const res = await checkCloudPhoneExists(phoneToTest);
+      if (res.exists) {
+        const msg = isAr
+          ? `يوجد حساب مسجل بالفعل برقم الهاتف هذا (+964${phoneToTest}). يرجى تسجيل الدخول بدلاً من ذلك.`
+          : `An account is already registered with this phone number (+964${phoneToTest}). Please sign in instead.`;
+        setPhoneExistsWarning(msg);
+        setErrors((prev) => ({
+          ...prev,
+          phone: isAr ? 'رقم الهاتف مسجل مسبقاً' : 'Phone already registered'
+        }));
+        setPhoneChecking(false);
+        return false;
+      } else {
+        setPhoneExistsWarning('');
+        setErrors((prev) => {
+          const next = { ...prev };
+          if (next.phone === 'رقم الهاتف مسجل مسبقاً' || next.phone === 'Phone already registered') {
+            delete next.phone;
+          }
+          return next;
+        });
+        setPhoneChecking(false);
+        return true;
+      }
+    } catch (err) {
+      setPhoneChecking(false);
+      return true;
+    }
+  };
+
   // Handler to Send Real Email OTP via Supabase Auth
   const handleSendOtp = async () => {
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
@@ -265,7 +308,16 @@ export function SignUpPage() {
 
     // 0. Pre-check: Verify if an account already exists with this email!
     try {
-      // Check local storage registered users
+      // 1. Check in Neon Central DB & Stores
+      const emailTaken = await checkCloudEmailExists(normalizedEmail);
+      if (emailTaken) {
+        setOtpLoading(false);
+        setOtpError(isAr ? 'يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل! يرجى تسجيل الدخول بدلاً من ذلك.' : 'An account with this email already exists. Please sign in.');
+        setErrors((prev) => ({ ...prev, email: isAr ? 'هذا البريد مسجل مسبقاً' : 'Email already registered' }));
+        return;
+      }
+
+      // 2. Check local storage registered users
       const storedUserRaw = localStorage.getItem('zaeem_user');
       if (storedUserRaw) {
         try {
@@ -279,7 +331,7 @@ export function SignUpPage() {
         } catch (e) {}
       }
 
-      // Check backend database via /api/auth/check-email
+      // 3. Check backend database via /api/auth/check-email
       const checkRes = await fetch('/api/auth/check-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -295,6 +347,16 @@ export function SignUpPage() {
       }
     } catch (err) {
       // proceed if check fails
+    }
+
+    // Pre-check phone if already entered
+    if (phoneBody && phoneBody.length === 10) {
+      const isPhoneFree = await checkPhoneAvailability(phoneBody);
+      if (!isPhoneFree) {
+        setOtpLoading(false);
+        setOtpError(isAr ? 'رقم الهاتف المدخل مسجل بالفعل بحساب آخر، يرجى تسجيل الدخول' : 'Phone number is already registered');
+        return;
+      }
     }
 
     try {
@@ -553,6 +615,17 @@ export function SignUpPage() {
     if (!userObj.id) {
       userObj.id = `ZAEEM-ACC-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
     }
+
+    // Save to central Neon merchants database table
+    try {
+      await saveCloudMerchant({
+        email: email.trim().toLowerCase(),
+        phone: formattedPhone,
+        fullName: `${firstName.trim()} ${lastName.trim()}`,
+        governorate,
+        storeName: firstName.trim()
+      });
+    } catch (e) {}
 
     // Clear any previous poisoned registration data
     localStorage.removeItem('zaeem_registered_stores');
@@ -856,13 +929,23 @@ export function SignUpPage() {
 
               {/* Fixed Non-Erasable +964 Iraqi Phone Input */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 block">
-                  {isAr ? 'رقم الهاتف *' : 'Phone *'}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    {isAr ? 'رقم الهاتف *' : 'Phone *'}
+                  </label>
+                  {phoneChecking && (
+                    <span className="text-[10px] text-teal-600 font-bold flex items-center gap-1">
+                      <span className="size-1.5 rounded-full bg-teal-500 animate-ping" />
+                      جاري التحقق من الرقم...
+                    </span>
+                  )}
+                </div>
                 <div
                   dir="ltr"
                   className={`flex items-center rounded-2xl border bg-slate-50/50 overflow-hidden transition-all ${
-                    errors.phone ? 'border-red-400 bg-red-50/20' : 'border-slate-200 focus-within:border-teal-600 focus-within:bg-white'
+                    phoneExistsWarning || errors.phone
+                      ? 'border-amber-400 bg-amber-50/20 ring-2 ring-amber-200/50'
+                      : 'border-slate-200 focus-within:border-teal-600 focus-within:bg-white'
                   }`}
                 >
                   <span className="bg-slate-200/70 text-slate-700 px-3 py-2.5 text-xs font-mono font-extrabold select-none border-r border-slate-200 shrink-0">
@@ -877,14 +960,44 @@ export function SignUpPage() {
                       let val = e.target.value.replace(/\D/g, '');
                       if (val.startsWith('0')) val = val.substring(1);
                       if (val.startsWith('964')) val = val.substring(3);
-                      setPhoneBody(val.slice(0, 10));
+                      const clean = val.slice(0, 10);
+                      setPhoneBody(clean);
+                      if (clean.length === 10) {
+                        checkPhoneAvailability(clean);
+                      } else {
+                        setPhoneExistsWarning('');
+                      }
+                    }}
+                    onBlur={() => {
+                      if (phoneBody.length === 10) {
+                        checkPhoneAvailability(phoneBody);
+                      }
                     }}
                     placeholder="7701234567"
                     className="w-full px-3 py-2.5 text-xs font-mono text-slate-900 bg-transparent focus:outline-none"
                   />
                 </div>
-                {errors.phone && <p className="text-[10px] text-red-500 font-bold">{errors.phone}</p>}
-                {!errors.phone && phoneBody.length > 0 && phoneBody.length < 10 && (
+
+                {phoneExistsWarning && (
+                  <div className="p-2.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold flex flex-col gap-1.5 animate-fadeIn">
+                    <div className="flex items-start gap-1.5">
+                      <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-600" />
+                      <span className="leading-snug">{phoneExistsWarning}</span>
+                    </div>
+                    <Link
+                      href="/sign-in"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black py-1.5 px-3 text-[11px] shadow-sm transition-all text-center mt-1"
+                    >
+                      <span>الانتقال لتسجيل الدخول إلى حسابك</span>
+                      <ArrowLeft className="size-3" />
+                    </Link>
+                  </div>
+                )}
+
+                {errors.phone && !phoneExistsWarning && (
+                  <p className="text-[10px] text-red-500 font-bold">{errors.phone}</p>
+                )}
+                {!errors.phone && !phoneExistsWarning && phoneBody.length > 0 && phoneBody.length < 10 && (
                   <p className="text-[10px] text-slate-400 font-medium">{phoneBody.length}/10 أرقام</p>
                 )}
               </div>

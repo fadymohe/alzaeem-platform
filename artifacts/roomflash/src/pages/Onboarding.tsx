@@ -14,6 +14,7 @@ import {
 import { formatIQD, IRAQ_GOVERNORATES } from '../data/iraqData';
 import { registerStore, encodeStoreSeed, checkSubdomainAvailability } from '../utils/storeRegistry';
 import { saveCloudStore } from '../utils/cloudDb';
+import { supabase } from '../utils/supabase';
 import { getStoredProducts, saveStoredProducts, type StoreProduct } from '../data/storeState';
 import { validateProductImageSafety } from '../utils/nsfwDetector';
 import { StoreTemplates, TEMPLATES_MAP, type TemplateId, normalizeTemplateId } from '../components/storefront/StoreTemplates';
@@ -408,6 +409,87 @@ const NICHE_OPTIONS = [
 
 export function OnboardingPage() {
   const [, setLocation] = useLocation();
+
+  // 0. Strict Authentication & Direct URL Access Verification Guard
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const verifyAccess = async () => {
+      try {
+        // 1. Check localStorage user session
+        let activeUser: any = null;
+        const rawUser = localStorage.getItem('zaeem_user');
+        if (rawUser) {
+          try {
+            const parsed = JSON.parse(rawUser);
+            if (parsed && (parsed.email || parsed.id) && parsed.loggedIn !== false) {
+              activeUser = parsed;
+            }
+          } catch {}
+        }
+
+        // 2. Check Supabase Auth session if not found in localStorage
+        if (!activeUser) {
+          try {
+            const { data } = await supabase.auth.getUser();
+            if (data?.user && data.user.email) {
+              const meta = data.user.user_metadata || {};
+              activeUser = {
+                id: data.user.id,
+                email: data.user.email,
+                name: meta.full_name || meta.name || data.user.email.split('@')[0],
+                phone: meta.phone || data.user.phone || '+9647700000000',
+                governorate: meta.governorate || 'بغداد',
+                loggedIn: true,
+                time: new Date().toISOString()
+              };
+              localStorage.setItem('zaeem_user', JSON.stringify(activeUser));
+            }
+          } catch {}
+        }
+
+        if (!isMounted) return;
+
+        // If NOT authenticated -> Redirect to sign-in with clear notice
+        if (!activeUser || !activeUser.email) {
+          sessionStorage.setItem(
+            'zaeem_auth_redirect_notice',
+            'يرجى تسجيل الدخول أو إنشاء حسابك أولاً للبدء في إعداد متجرك الإلكتروني'
+          );
+          setAuthStatus('unauthenticated');
+          window.location.hash = '#/sign-in';
+          setLocation('/sign-in');
+          return;
+        }
+
+        // Check if user already completed onboarding previously
+        const isOnboarded = localStorage.getItem('zaeem_onboarding_completed') === 'true';
+        const rawOnb = localStorage.getItem('zaeem_onboarded_store');
+        const hasReconfigParam =
+          window.location.href.includes('reconfigure=true') ||
+          window.location.hash.includes('reconfigure=true');
+
+        if (isOnboarded && rawOnb && !hasReconfigParam) {
+          // Already has a store and not explicitly reconfiguring -> redirect directly to dashboard
+          window.location.hash = '#/dashboard';
+          setLocation('/dashboard');
+          return;
+        }
+
+        setAuthStatus('authenticated');
+      } catch (err) {
+        if (isMounted) setAuthStatus('authenticated');
+      }
+    };
+
+    verifyAccess();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setLocation]);
 
   // Wizard Navigation: Step 1 to 5
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -994,8 +1076,27 @@ export function OnboardingPage() {
         }
       }
     } catch {}
-    return { hasStore: false };
   });
+
+  if (authStatus === 'checking' || authStatus === 'unauthenticated') {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#0b0f19] text-slate-200 flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+          <div className="size-16 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center shadow-lg shadow-teal-500/10 animate-pulse">
+            <Logo className="size-10" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-lg font-bold text-white">منصة الزعيم للتجارة الإلكترونية</h3>
+            <p className="text-xs text-slate-400">جاري التحقق من بيانات الدخول وحالة الحساب...</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-teal-400 text-xs mt-2">
+            <span className="size-2 rounded-full bg-teal-400 animate-ping" />
+            <span>يرجى الانتظار لحظات</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main dir="rtl" className="min-h-[100dvh] bg-[#0b0f19] text-slate-200 font-sans select-none flex flex-col relative overflow-x-hidden">
