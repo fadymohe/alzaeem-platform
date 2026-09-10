@@ -178,9 +178,40 @@ export function PublicHomePage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2️⃣ HERO SECTION */}
+        {/* 2️⃣ HERO SECTION WITH FLOATING INTERACTIVE BADGES & ANIMATIONS */}
         {/* ========================================================================= */}
-        <section className="mx-auto max-w-5xl px-4 pt-16 pb-12 text-center md:pt-24 md:pb-16">
+        <section className="relative mx-auto max-w-6xl px-4 pt-16 pb-12 text-center md:pt-24 md:pb-16 overflow-hidden">
+          {/* Ambient background pulsing orbs */}
+          <div className="absolute top-10 left-1/2 -translate-x-1/2 size-96 rounded-full bg-gradient-to-tr from-teal-400/20 via-emerald-400/15 to-transparent blur-3xl pointer-events-none animate-pulse-glow -z-10" />
+
+          {/* Floating Live Event Badge - Left (Desktop) */}
+          <div className="hidden xl:flex absolute left-4 top-28 items-center gap-3 bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl px-4 py-2.5 animate-float-slow text-right max-w-xs z-20">
+            <div className="size-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+              <ShoppingBag className="size-4 text-emerald-600" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-800">
+                <span>طلب جديد #1048 · بغداد</span>
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
+              </div>
+              <p className="text-[10px] font-semibold text-emerald-700 mt-0.5">+45,000 د.ع · تم تأكيد الطلب ✓</p>
+            </div>
+          </div>
+
+          {/* Floating Live Event Badge - Right (Desktop) */}
+          <div className="hidden xl:flex absolute right-4 top-36 items-center gap-3 bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl px-4 py-2.5 animate-float-reverse text-right max-w-xs z-20">
+            <div className="size-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center shrink-0">
+              <Truck className="size-4 text-teal-600" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-800">
+                <span>أسطول الزعيم · البصرة</span>
+                <span className="size-1.5 rounded-full bg-teal-500" />
+              </div>
+              <p className="text-[10px] font-semibold text-teal-700 mt-0.5">بوليصة ZAEEM-9821 · قيد التوصيل</p>
+            </div>
+          </div>
+
           <div className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 bg-teal-50/80 px-4 py-1.5 text-xs font-extrabold text-teal-800 shadow-sm backdrop-blur-sm mb-6">
             <Sparkles className="size-4 text-teal-600 animate-pulse" />
             <span>{t.badge}</span>
@@ -219,6 +250,58 @@ export function PublicHomePage() {
           <p className="mt-5 text-xs font-bold text-slate-400">
             {t.trustText}
           </p>
+
+          {/* Quick Metrics Bar */}
+          <div className="mt-12 grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto pt-6 border-t border-slate-100">
+            <div className="p-3 rounded-2xl bg-white/60 border border-slate-100 shadow-xs">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 font-mono">+500</p>
+              <p className="text-[11px] font-bold text-slate-500 mt-0.5">{isAr ? 'متجر عراقي نشط' : 'Active Stores'}</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-white/60 border border-slate-100 shadow-xs">
+              <p className="text-xl sm:text-2xl font-black text-teal-700 font-mono">18</p>
+              <p className="text-[11px] font-bold text-slate-500 mt-0.5">{isAr ? 'محافظة مغطاة بالشحن' : 'Governorates'}</p>
+            </div>
+            <div className="col-span-2 sm:col-span-1 p-3 rounded-2xl bg-white/60 border border-slate-100 shadow-xs">
+              <p className="text-xl sm:text-2xl font-black text-emerald-600 font-mono">99.4%</p>
+              <p className="text-[11px] font-bold text-slate-500 mt-0.5">{isAr ? 'نسبة تسليم الشحنات' : 'Delivery Rate'}</p>
+            </div>
+          </div>
+
+          {/* Governorates Ticker Banner */}
+          <div className="mt-8 overflow-hidden rounded-full bg-slate-100/80 border border-slate-200/70 py-2 px-3 max-w-3xl mx-auto flex items-center gap-3">
+            <span className="shrink-0 text-[11px] font-black text-teal-900 bg-teal-100/90 px-3 py-1 rounded-full flex items-center gap-1.5">
+              <MapPin className="size-3 text-teal-700" />
+              <span>{isAr ? 'تغطية الشحن' : 'Fleet Route'}</span>
+            </span>
+            <div className="overflow-hidden whitespace-nowrap flex-1">
+              <div className="inline-flex gap-4 text-xs font-bold text-slate-600 animate-marquee-row">
+                <span>بغداد •</span>
+                <span>البصرة •</span>
+                <span>أربيل •</span>
+                <span>نينوى •</span>
+                <span>النجف •</span>
+                <span>كربلاء •</span>
+                <span>الأنبار •</span>
+                <span>بابل •</span>
+                <span>السليمانية •</span>
+                <span>كركوك •</span>
+                <span>ديالى •</span>
+                <span>ذي قار •</span>
+                <span>ميسان •</span>
+                <span>واسط •</span>
+                <span>صلاح الدين •</span>
+                <span>دهوك •</span>
+                <span>المثنى •</span>
+                <span>القادسية •</span>
+                <span>بغداد •</span>
+                <span>البصرة •</span>
+                <span>أربيل •</span>
+                <span>نينوى •</span>
+                <span>النجف •</span>
+                <span>كربلاء •</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* ========================================================================= */}
@@ -233,7 +316,6 @@ export function PublicHomePage() {
         {/* ========================================================================= */}
         <PlatformVideoShowcase isAr={isAr} />
 
-
         {/* ========================================================================= */}
         {/* 4️⃣ TRANSFORMATION DIAGRAM (Before vs After with Al-Zaeem Engine) */}
         {/* ========================================================================= */}
@@ -245,7 +327,7 @@ export function PublicHomePage() {
         <EcosystemRadialHub isAr={isAr} />
 
         {/* ========================================================================= */}
-        {/* 5️⃣ REAL MERCHANT STORIES SECTION (from Image 1) */}
+        {/* 5️⃣ REAL MERCHANT STORIES SECTION */}
         {/* ========================================================================= */}
         <section id="stories" className="bg-slate-50 py-20 px-4 border-y border-slate-200/60">
           <div className="mx-auto max-w-6xl text-center">
@@ -259,71 +341,80 @@ export function PublicHomePage() {
               {t.storiesSubheading}
             </p>
 
-            {/* 3 Metric Cards */}
+            {/* 3 Metric Cards with Interactive Elevate Effect */}
             <div className="grid gap-6 md:grid-cols-3 mt-14">
               {/* Card 1 */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm text-right flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="group rounded-3xl border border-slate-200/90 bg-white p-7 shadow-sm text-right flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900 mb-4">{isAr ? 'متجر أزياء — بغداد' : 'Fashion Store — Baghdad'}</h4>
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-2 text-xs text-red-600 font-medium">
-                      <span className="size-2 rounded-full bg-red-500" />
-                      <span>{isAr ? 'كان البيع عبر رسائل إنستغرام' : 'Was selling via Instagram DMs'}</span>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
+                    <h4 className="font-extrabold text-sm text-slate-900">{isAr ? 'متجر أزياء — بغداد' : 'Fashion Store — Baghdad'}</h4>
+                  </div>
+                  <div className="space-y-2.5 mb-6">
+                    <div className="flex items-center gap-2 text-xs text-red-600 font-medium bg-red-50/70 p-2 rounded-xl border border-red-100">
+                      <span className="size-2 rounded-full bg-red-500 shrink-0" />
+                      <span>{isAr ? 'سابقاً: البيع اليدوي عبر رسائل إنستغرام' : 'Was selling via Instagram DMs'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-emerald-600 font-extrabold">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      <span>{isAr ? '320 طلباً شهرياً عبر المتجر' : '320 monthly orders automated'}</span>
+                    <div className="flex items-center gap-2 text-xs text-emerald-700 font-extrabold bg-emerald-50/80 p-2 rounded-xl border border-emerald-100">
+                      <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span>{isAr ? 'حالياً: 320 طلباً شهرياً تلقائياً عبر المتجر' : '320 monthly orders automated'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
-                  <p className="text-4xl font-black text-slate-900 font-mono">4x</p>
-                  <span className="text-xs font-bold text-slate-500 mt-1 block">{isAr ? 'نمو المبيعات خلال 6 أشهر' : 'Sales growth in 6 months'}</span>
+                <div className="pt-4 border-t border-slate-100 flex items-baseline justify-between">
+                  <span className="text-xs font-bold text-slate-500">{isAr ? 'نمو المبيعات خلال 6 أشهر' : 'Sales growth in 6 months'}</span>
+                  <p className="text-4xl font-black text-slate-900 font-mono group-hover:text-teal-700 transition-colors">4x</p>
                 </div>
               </div>
 
               {/* Card 2 */}
-              <div className="rounded-2xl border border-teal-200 bg-white p-6 shadow-sm text-right flex flex-col justify-between ring-2 ring-teal-500/20 hover:shadow-md transition-shadow">
+              <div className="group rounded-3xl border border-teal-200 bg-white p-7 shadow-md text-right flex flex-col justify-between ring-2 ring-teal-500/20 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900 mb-4">{isAr ? 'علامة عبايات — البصرة' : 'Abaya Brand — Basra'}</h4>
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-2 text-xs text-red-600 font-medium">
-                      <span className="size-2 rounded-full bg-red-500" />
-                      <span>{isAr ? 'كانت السلات المتروكة تضيع' : 'Abandoned carts were lost'}</span>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="size-2 rounded-full bg-teal-500 animate-ping" />
+                    <h4 className="font-extrabold text-sm text-slate-900">{isAr ? 'علامة عبايات — البصرة' : 'Abaya Brand — Basra'}</h4>
+                  </div>
+                  <div className="space-y-2.5 mb-6">
+                    <div className="flex items-center gap-2 text-xs text-red-600 font-medium bg-red-50/70 p-2 rounded-xl border border-red-100">
+                      <span className="size-2 rounded-full bg-red-500 shrink-0" />
+                      <span>{isAr ? 'سابقاً: السلات المتروكة تضيع دون متابعة' : 'Abandoned carts were lost'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-emerald-600 font-extrabold">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      <span>{isAr ? 'استرجاع تلقائي عبر واتساب' : 'Automated WhatsApp recovery'}</span>
+                    <div className="flex items-center gap-2 text-xs text-teal-700 font-extrabold bg-teal-50/80 p-2 rounded-xl border border-teal-100">
+                      <span className="size-2 rounded-full bg-teal-500 shrink-0" />
+                      <span>{isAr ? 'حالياً: استرجاع تلقائي عبر رسائل واتساب' : 'Automated WhatsApp recovery'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
-                  <p className="text-4xl font-black text-teal-700 font-mono">22%</p>
-                  <span className="text-xs font-bold text-slate-500 mt-1 block">{isAr ? 'من السلات المتروكة تحولت إلى طلبات' : 'Abandoned carts turned into orders'}</span>
+                <div className="pt-4 border-t border-slate-100 flex items-baseline justify-between">
+                  <span className="text-xs font-bold text-slate-500">{isAr ? 'من السلات تحولت إلى طلبات فعلية' : 'Abandoned carts converted'}</span>
+                  <p className="text-4xl font-black text-teal-700 font-mono group-hover:scale-105 transition-transform">22%</p>
                 </div>
               </div>
 
               {/* Card 3 */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm text-right flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="group rounded-3xl border border-slate-200/90 bg-white p-7 shadow-sm text-right flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900 mb-4">{isAr ? 'متجر إلكترونيات — أربيل' : 'Electronics Store — Erbil'}</h4>
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-2 text-xs text-red-600 font-medium">
-                      <span className="size-2 rounded-full bg-red-500" />
-                      <span>{isAr ? 'إعلانات دون تتبع واسع' : 'Ads without conversion tracking'}</span>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
+                    <h4 className="font-extrabold text-sm text-slate-900">{isAr ? 'متجر إلكترونيات — أربيل' : 'Electronics Store — Erbil'}</h4>
+                  </div>
+                  <div className="space-y-2.5 mb-6">
+                    <div className="flex items-center gap-2 text-xs text-red-600 font-medium bg-red-50/70 p-2 rounded-xl border border-red-100">
+                      <span className="size-2 rounded-full bg-red-500 shrink-0" />
+                      <span>{isAr ? 'سابقاً: إعلانات ممولة بدون تتبع للتحويلات' : 'Ads without conversion tracking'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-emerald-600 font-extrabold">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      <span>{isAr ? 'بكسل + CAPI من اللوحة' : 'Pixel + CAPI integrated'}</span>
+                    <div className="flex items-center gap-2 text-xs text-emerald-700 font-extrabold bg-emerald-50/80 p-2 rounded-xl border border-emerald-100">
+                      <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span>{isAr ? 'حالياً: ربط Meta Pixel و CAPI من المنصة' : 'Pixel + CAPI integrated'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
-                  <p className="text-4xl font-black text-slate-900 font-mono">2.8x</p>
-                  <span className="text-xs font-bold text-slate-500 mt-1 block">{isAr ? 'تحسن العائد على الإعلانات (ROAS)' : 'ROAS return on ad spend'}</span>
+                <div className="pt-4 border-t border-slate-100 flex items-baseline justify-between">
+                  <span className="text-xs font-bold text-slate-500">{isAr ? 'تحسن العائد على الإعلانات (ROAS)' : 'ROAS return on ad spend'}</span>
+                  <p className="text-4xl font-black text-slate-900 font-mono group-hover:text-emerald-600 transition-colors">2.8x</p>
                 </div>
               </div>
             </div>
@@ -335,100 +426,154 @@ export function PublicHomePage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* 7️⃣ FEATURE GRID WITH METRICS */}
+        {/* 6️⃣ FOUR CORE PILLARS OF GROWTH (Streamlined & Non-Redundant) */}
         {/* ========================================================================= */}
         <section id="features" className="py-20 px-4 mx-auto max-w-6xl">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-extrabold text-teal-700 uppercase tracking-widest block mb-2">{isAr ? 'حلول عملية' : 'Practical Solutions'}</span>
+            <span className="text-xs font-extrabold text-teal-700 uppercase tracking-widest block mb-2">{isAr ? 'ركائز المنصة' : 'Core Pillars'}</span>
             <h2 className="text-3xl md:text-5xl font-black text-slate-900">
-              {isAr ? 'كل ميزة تحل مشكلة حقيقية' : 'Every Feature Solves a Real Challenge'}
+              {isAr ? 'أدوات ذكية متكاملة لإنجاح تجارتك' : 'Smart Tools Built for Your Store'}
             </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-3 font-medium">
+              {isAr
+                ? 'كل ركيزة مصممة لتوفير وقتك وزيادة أرباحك وتخليصك من المهام اليدوية المجهدة.'
+                : 'Every tool is built to save your hours, scale sales, and automate tedious manual tasks.'}
+            </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2">
             {[
               {
-                pain: isAr ? '«أضيع ساعات في كتابة بوليصة الشحن»' : '«Spending hours writing waybills»',
-                title: isAr ? 'حجز الشحنة وطباعة البوليصة بنقرة واحدة' : 'Waybill Generation in 1 Click',
-                desc: isAr ? 'توليد تلقائي لكود الشحنة ZAEEM وطباعة البولايص دفعة واحدة دون كتابة يدوية.' : 'Automatic ZAEEM tracking code generation and bulk waybill printing.',
-                metric: isAr ? 'وفر 3 ساعات يومياً' : 'Save 3 hrs daily'
+                icon: Store,
+                title: isAr ? 'متجر إلكتروني فوري وسريع' : 'Instant High-Speed Storefront',
+                desc: isAr
+                  ? 'واجهة شراء سريعة بدون تعقيدات، تدعم الطلب بنقرة واحدة عبر الموبايل وعرض المنتجات بصور وفيديوهات جذابة.'
+                  : 'Fast checkout optimized for mobile shoppers with 1-click express ordering and rich media.',
+                tag: isAr ? 'تجربة شراء فائقة السلاسة' : 'Seamless UX'
               },
               {
-                pain: isAr ? '«التوصيل يتأخر والمندوب لا يجيب»' : '«Couriers delay & don’t pick up»',
-                title: isAr ? 'ربط فوري بأسطول شركة الزعيم للشحن' : 'Direct Dispatch with Al-Zaeem Fleet',
-                desc: isAr ? 'تغطية كاملة لـ 18 محافظة مع تتبع حي ومباشر لحالة الشحنة حتى تسليم المبلغ.' : 'Full coverage across 18 Iraqi cities with live tracking until payout.',
-                metric: isAr ? 'شحن لـ 18 محافظة' : '18 Governorates'
+                icon: MessageSquare,
+                title: isAr ? 'أتمتة الواتساب الذكية' : 'Smart WhatsApp Automations',
+                desc: isAr
+                  ? 'إرسال رسائل تأكيد فورية للزبون مع تفاصيل طلبه، وإشعارات الشحن التلقائية، واسترجاع السلات المتروكة لزيادة مبيعاتك.'
+                  : 'Automated WhatsApp order confirmations, live delivery updates, and smart cart recovery messages.',
+                tag: isAr ? 'تأكيد الطلب واسترجاع السلات' : 'Automated Recovery'
               },
               {
-                pain: isAr ? '«أحسب أرباحي بالتخمين وأتفاجأ بالنفاذ»' : '«Guessing profit margins»',
-                title: isAr ? 'مخزون دقيق وتقارير مالية لحظية' : 'Inventory & Real-Time Financials',
-                desc: isAr ? 'تتبع حركة كل قطعة ومزامنة الأرباح الصافية بعد خصم أجور الشحن تلقائياً.' : 'Track item movement and auto-calculate net profit after shipping fees.',
-                metric: isAr ? '100% دقة مخزون' : '100% Accuracy'
+                icon: BarChart3,
+                title: isAr ? 'مخزون ذكي وحساب صافي الأرباح' : 'Smart Inventory & Real Margins',
+                desc: isAr
+                  ? 'مزامنة دقيقة لحركة المخزون وتنبيهات النفاذ، مع احتساب صافي الأرباح تلقائياً بعد خصم مصاريف الشحن والمندوب.'
+                  : 'Live inventory sync with low-stock alerts and automatic net profit margin calculations.',
+                tag: isAr ? 'تقارير مالية لحظية 100%' : '100% Financial Clarity'
+              },
+              {
+                icon: Zap,
+                title: isAr ? 'تتبع الإعلانات والـ Pixel' : 'Pixel & Conversion API (CAPI)',
+                desc: isAr
+                  ? 'ربط مباشر بضغطة زر مع Meta Pixel و TikTok Events API لتتبع الشراء الفعلي بدقة وتحسين نتائج حملاتك الإعلانية.'
+                  : '1-click native integration with Meta Pixel & TikTok CAPI to optimize ad campaigns and maximize ROAS.',
+                tag: isAr ? 'رفع العائد الإعلاني ROAS' : 'Maximized ROAS'
               }
-            ].map((feat, idx) => (
-              <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-                <div>
-                  <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600 mb-3">
-                    {feat.pain}
-                  </span>
-                  <h3 className="text-base font-extrabold text-slate-900 mb-2">{feat.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">{feat.desc}</p>
+            ].map((feat, idx) => {
+              const Icon = feat.icon;
+              return (
+                <div
+                  key={idx}
+                  className="rounded-3xl border border-slate-200/90 bg-white p-7 shadow-sm flex flex-col justify-between hover:shadow-xl hover:border-teal-300 transition-all duration-300 group"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="size-12 rounded-2xl bg-teal-50 text-teal-700 grid place-items-center group-hover:scale-110 group-hover:bg-teal-700 group-hover:text-white transition-all duration-300">
+                        <Icon className="size-6" />
+                      </div>
+                      <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-100">
+                        {feat.tag}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900 group-hover:text-teal-800 transition-colors">{feat.title}</h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{feat.desc}</p>
+                  </div>
                 </div>
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-black text-teal-700 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
-                    {feat.metric}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         {/* ========================================================================= */}
-        {/* 7.5️⃣ SHIPPING & FLEET SECTION (Anchored by #shipping) */}
+        {/* 7️⃣ SHIPPING & FLEET POWERHOUSE (Anchored by #shipping) */}
         {/* ========================================================================= */}
-        <section id="shipping" className="py-20 px-4 bg-slate-900 text-white border-y border-slate-800">
-          <div className="mx-auto max-w-6xl">
-            <div className="text-center max-w-2xl mx-auto mb-14">
-              <span className="inline-block rounded-full bg-teal-500/20 border border-teal-500/40 px-3.5 py-1 text-xs font-black text-teal-300 mb-3">
-                {isAr ? '● شبكة الشحن واللوجستيات' : '● Logistics Fleet'}
+        <section id="shipping" className="py-20 px-4 bg-slate-950 text-white border-y border-slate-800 relative overflow-hidden">
+          {/* Ambient background glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] rounded-full bg-teal-500/10 blur-[140px] pointer-events-none" />
+
+          <div className="relative z-10 mx-auto max-w-6xl">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <span className="inline-block rounded-full bg-teal-500/20 border border-teal-500/40 px-4 py-1.5 text-xs font-black text-teal-300 mb-3">
+                {isAr ? '● أسطول الشحن واللوجستيات' : '● Logistics Fleet'}
               </span>
-              <h2 className="text-3xl md:text-5xl font-black">
-                {isAr ? 'ربط فوري بأسطول شركة الزعيم للشحن' : 'Direct Dispatch with Al-Zaeem Logistics'}
+              <h2 className="text-3xl md:text-5xl font-black text-white">
+                {isAr ? 'شحن فوري بأسطول شركة الزعيم' : 'Direct Dispatch with Al-Zaeem Fleet'}
               </h2>
-              <p className="text-xs md:text-sm text-slate-400 mt-2">
-                {isAr ? 'تغطية شاملة لجميع المحافظات الـ 18، طباعة بوليصات ZAEEM بنقرة واحدة، وتحصيل مالي موثوق (COD).' : 'Full coverage across 18 governorates with instant waybill printing and cash on delivery.'}
+              <p className="text-xs md:text-sm text-slate-400 mt-2 max-w-xl mx-auto leading-relaxed">
+                {isAr
+                  ? 'منصتك متصلة مباشرة بشركة الزعيم للشحن: إصدار بوليصة فوري، أسطول يغطي كل المحافظات، وتحصيل مالي موثوق وأمين.'
+                  : 'Your store directly integrated with Al-Zaeem shipping fleet: 1-click waybills, all 18 governorates, and secure COD.'}
               </p>
             </div>
 
+            {/* Interactive Logistics Flow Stepper */}
+            <div className="mb-14 p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-md shadow-2xl">
+              <h4 className="text-xs font-bold text-teal-400 text-center mb-6 tracking-wide uppercase">
+                {isAr ? 'مسار الشحنة التلقائي من متجرك وحتى استلام الأرباح' : 'Automated Fulfillment Workflow'}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                {[
+                  { step: '1', title: isAr ? 'طلب جديد بالمتجر' : 'New Order', desc: isAr ? 'يصلك إشعار فوري بالطلب' : 'Instant push notification' },
+                  { step: '2', title: isAr ? 'طباعة بوليصة ZAEEM' : '1-Click Waybill', desc: isAr ? 'إصدار تلقائي بكود التتبع' : 'Auto tracking code generated' },
+                  { step: '3', title: isAr ? 'استلام أسطول الزعيم' : 'Fleet Dispatch', desc: isAr ? 'استلام الشحنة من باب متجرك' : 'Doorstep courier pickup' },
+                  { step: '4', title: isAr ? 'تحصيل الكاش وتصفية الحساب' : 'COD & Payout', desc: isAr ? 'إيداع الأرباح في محفظتك' : 'Secure earnings deposited' },
+                ].map((s, idx) => (
+                  <div key={idx} className="relative p-4 rounded-2xl bg-slate-950/70 border border-slate-800/90 flex flex-col items-center justify-center space-y-2">
+                    <span className="size-8 rounded-full bg-teal-500/20 text-teal-400 border border-teal-500/40 text-xs font-black grid place-items-center">
+                      {s.step}
+                    </span>
+                    <h5 className="font-black text-xs sm:text-sm text-white">{s.title}</h5>
+                    <p className="text-[11px] text-slate-400 leading-tight">{s.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 3 Core Logistics Value Cards */}
             <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 space-y-3 hover:border-teal-500/50 transition-colors">
                 <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center mb-2">
                   <Truck className="size-6" />
                 </div>
-                <h3 className="font-extrabold text-base text-white">{isAr ? 'تغطية 18 محافظة' : '18 Governorates Coverage'}</h3>
+                <h3 className="font-extrabold text-base text-white">{isAr ? 'تغطية 18 محافظة عراقية' : '18 Governorates Coverage'}</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isAr ? 'شحن فوري من بغداد لجميع المحافظات مع تسليم سريع خلال 24 - 48 ساعة كحد أقصى.' : 'Fast parcel delivery from Baghdad across all governorates within 24-48 hours.'}
+                  {isAr ? 'توصيل سريع من بغداد إلى كافة مراكز وأقضية المحافظات خلال 24 إلى 48 ساعة بأعلى معدلات نجاح التسليم.' : 'Fast parcel delivery from Baghdad across all 18 Iraqi governorates within 24-48 hours.'}
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 space-y-3 hover:border-teal-500/50 transition-colors">
                 <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center mb-2">
                   <ShieldCheck className="size-6" />
                 </div>
-                <h3 className="font-extrabold text-base text-white">{isAr ? 'الدفع عند الاستلام (COD)' : 'Cash On Delivery'}</h3>
+                <h3 className="font-extrabold text-base text-white">{isAr ? 'تحصيل المبالغ النقدية (COD)' : 'Cash On Delivery'}</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isAr ? 'تحصيل المبالغ النقدية بأمان وتصفية الحسابات وإيداع الأرباح في محفظتك أو حسابك بانتظام.' : 'Secure COD collection with regular payouts directly to your account.'}
+                  {isAr ? 'تحصيل أموال طلباتك بأمان تام وتصفية الحسابات وإيداع الأرباح الصافية في حسابك أو محفظتك بانتظام ودقة.' : 'Secure COD collection with prompt, transparent payout schedules directly into your account.'}
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 space-y-3 hover:border-teal-500/50 transition-colors">
                 <div className="size-12 rounded-2xl bg-teal-500/10 text-teal-400 grid place-items-center mb-2">
                   <Zap className="size-6" />
                 </div>
-                <h3 className="font-extrabold text-base text-white">{isAr ? 'تتبع لحظي للزبائن' : 'Live Customer Tracking'}</h3>
+                <h3 className="font-extrabold text-base text-white">{isAr ? 'تتبع مباشر للزبائن' : 'Live Customer Tracking'}</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isAr ? 'صفحة تتبع حية لكل طلب تتيح للعميل معرفة خط سير الشحنة بدقة وتخفف رسائل خدمة العملاء.' : 'Real-time parcel tracking stepper minimizing customer inquiries.'}
+                  {isAr ? 'صفحة تتبع حية لكل شحنة تتيح للعميل معرفة خط سير الطلب لحظة بلحظة، مما يخفف استفسارات خدمة العملاء بنسبة 80%.' : 'Real-time parcel tracking page for buyers, eliminating repetitive "Where is my order?" messages.'}
                 </p>
               </div>
             </div>
@@ -436,13 +581,13 @@ export function PublicHomePage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* 7.8️⃣ BLOG & FAQ SECTION (Anchored by #blog) */}
+        {/* 8️⃣ FAQ & OFFICIAL HEADQUARTERS SECTION (Anchored by #blog) */}
         {/* ========================================================================= */}
         <section id="blog" className="py-20 px-4 mx-auto max-w-6xl">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="text-xs font-black text-teal-700 tracking-widest uppercase block mb-2">{isAr ? 'دليلك للنجاح' : 'Guide to Success'}</span>
             <h2 className="text-3xl md:text-5xl font-black text-slate-900">
-              {isAr ? 'الأسئلة الشائعة ومدونة التجارة' : 'FAQ & E-Commerce Blog'}
+              {isAr ? 'الأسئلة الشائعة والمعلومات الرسمية' : 'FAQ & Official Information'}
             </h2>
           </div>
 
@@ -454,17 +599,26 @@ export function PublicHomePage() {
               },
               {
                 q: isAr ? 'هل يتم ربط الشحنات تلقائياً بشركة الزعيم؟' : 'Are orders dispatched automatically with Al-Zaeem?',
-                a: isAr ? 'نعم، بمجرد تأكيد الطلب، يمكنك إصدار بوليصة الشحن بنقرة زر واحدة وتحديد موقع الاستلام من مقر متجرك.' : 'Yes, 1-click waybill generation directly from your merchant dashboard.'
+                a: isAr ? 'نعم، بمجرد تأكيد الطلب، يمكنك إصدار بوليصة الشحن بنقرة زر واحدة وتحديد موقع الاستلام من مقر متجرك، وسيقوم المندوب باستلامها فوراً.' : 'Yes, 1-click waybill generation directly from your merchant dashboard with automatic driver pickup.'
               },
               {
                 q: isAr ? 'أين يقع المقر الرئيسي لشركة الزعيم؟' : 'Where is Al-Zaeem headquarters located?',
                 a: isAr ? 'يقع مقرنا الرئيسي في: بغداد - سريع الدورة - مقابل شركة تشانجان. يمكنك زيارتنا أو التواصل معنا هاتفياً على 07822999919 أو 07722999919.' : 'Our HQ is in Baghdad - Dora Highway - Opposite Changan Co. Phone: 07822999919 / 07722999919.'
+              },
+              {
+                q: isAr ? 'كيف يتم تسليم أرباح ومبالغ الدفع عند الاستلام (COD)؟' : 'How are COD payouts received?',
+                a: isAr ? 'تتم تصفية مبالغ الطلبات المسلمة دورياً وبشكل تلقائي، ويمكنك استلام أرباحك نقدياً أو عبر المحافظ الإلكترونية مثل زين كاش أو الحساب البنكي.' : 'Delivered order funds are settled regularly and paid out via Cash, Zain Cash, or Bank Transfer.'
               }
             ].map((faq, i) => (
-              <div key={i} className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-2 text-right">
-                <h4 className="font-extrabold text-sm text-slate-900">{faq.q}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">{faq.a}</p>
-              </div>
+              <details key={i} className="group p-5 rounded-3xl border border-slate-200 bg-white shadow-xs text-right cursor-pointer open:ring-2 open:ring-teal-500/20 transition-all duration-200">
+                <summary className="flex items-center justify-between font-black text-sm text-slate-900 list-none select-none">
+                  <span>{faq.q}</span>
+                  <span className="size-6 rounded-full bg-slate-100 group-open:bg-teal-700 group-open:text-white grid place-items-center text-xs font-bold transition-all duration-300 group-open:rotate-180">
+                    ↓
+                  </span>
+                </summary>
+                <p className="text-xs text-slate-600 leading-relaxed mt-3 pt-3 border-t border-slate-100">{faq.a}</p>
+              </details>
             ))}
           </div>
         </section>
