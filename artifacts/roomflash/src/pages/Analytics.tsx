@@ -5,7 +5,7 @@ import {
   ArrowUpRight, ArrowDownRight, Clock, Truck, RefreshCw, Zap
 } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../data/iraqData';
-import { getStoredOrders, getStoredCustomers, getStoredProducts, type StoreOrder, type StoreCustomer } from '../data/storeState';
+import { getStoredOrders, getStoredCustomers, getStoredProducts, syncCloudOrders, type StoreOrder, type StoreCustomer } from '../data/storeState';
 
 type PeriodType = 'today' | '7d' | 'month' | 'year';
 
@@ -29,6 +29,7 @@ export function AnalyticsPage() {
 
   useEffect(() => {
     loadData();
+    syncCloudOrders().then(() => loadData()).catch(() => {});
     const handleUpdate = () => loadData();
     window.addEventListener('zaeem_store_updated', handleUpdate);
     window.addEventListener('zaeem_shipments_updated', handleUpdate);
@@ -42,10 +43,13 @@ export function AnalyticsPage() {
 
   const handleManualRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => {
+    syncCloudOrders().then(() => {
       loadData();
       setIsRefreshing(false);
-    }, 400);
+    }).catch(() => {
+      loadData();
+      setIsRefreshing(false);
+    });
   };
 
   // Helper: check if a date string falls in the selected period

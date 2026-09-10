@@ -1115,6 +1115,7 @@ export function OnboardingPage() {
         }
       }
     } catch {}
+    return { hasStore: false };
   });
 
   if (authStatus === 'checking' || authStatus === 'unauthenticated') {

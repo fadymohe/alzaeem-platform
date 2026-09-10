@@ -203,8 +203,10 @@ export function StorePage() {
 
       const products = getStoredProducts();
 
-      // If subdomain was changed, register new subdomain locally
+      // If subdomain was changed, release old and register new
       if (subdomain && cleanSub !== subdomain) {
+        unregisterStore(subdomain);
+        await releaseCloudSubdomain(subdomain);
         registerStore({
           subdomain: cleanSub,
           storeName: cleanName,
@@ -215,7 +217,6 @@ export function StorePage() {
           slogan: parsed.slogan,
           products: products
         });
-        unregisterStore(subdomain);
       }
 
       // Update cloud DB first with full store details and safe rename

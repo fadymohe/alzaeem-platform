@@ -439,7 +439,7 @@ export async function fetchCloudShipments(subdomain?: string): Promise<CloudShip
     const cleanSub = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
     let query = `SELECT id, tracking_number, subdomain, recipient_name, recipient_phone, governorate, district, nearest_landmark, address, cod_amount, shipping_cost, payment_type, status, shipping_company, notes, created_at FROM za3em_shipments ORDER BY created_at DESC;`;
     if (cleanSub) {
-      query = `SELECT id, tracking_number, subdomain, recipient_name, recipient_phone, governorate, district, nearest_landmark, address, cod_amount, shipping_cost, payment_type, status, shipping_company, notes, created_at FROM za3em_shipments WHERE subdomain = '${cleanSub}' OR subdomain = '' OR subdomain IS NULL ORDER BY created_at DESC;`;
+      query = `SELECT id, tracking_number, subdomain, recipient_name, recipient_phone, governorate, district, nearest_landmark, address, cod_amount, shipping_cost, payment_type, status, shipping_company, notes, created_at FROM za3em_shipments WHERE subdomain = '${cleanSub}' ORDER BY created_at DESC;`;
     }
     const res = await executeSql(query);
     if (res && Array.isArray(res.rows)) {

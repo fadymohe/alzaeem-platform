@@ -466,8 +466,9 @@ function RoutedApp() {
   // 2. Hash Route Template Preview (e.g. #/store/nova or #/view-store/classic)
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
   if (hash.includes('/store/') || hash.includes('/view-store/')) {
-    const hashParts = hash.split('?')[0].split('/').filter(Boolean);
-    const hashSlug = hashParts[1] || '';
+    const cleanHash = hash.replace(/^#\/?/, '').split('?')[0];
+    const hashParts = cleanHash.split('/').filter(Boolean);
+    const hashSlug = hashParts[1] || hashParts[0] || '';
     if (isTemplatePreview(hashSlug)) {
       return <StandaloneStorePage />;
     }

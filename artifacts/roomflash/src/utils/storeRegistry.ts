@@ -289,24 +289,22 @@ export async function updateStoreActiveStatus(subdomain: string, isActive: boole
     }
   }
 
-  // 2. Update Neon Cloud DB
-  if (cleanSub) {
-    try {
-      await updateCloudStoreActive(cleanSub, isActive);
-    } catch (e) {
-      console.warn("Error updating cloud active status:", e);
-    }
+  // 2. Sync to cloud PostgreSQL server
+  try {
+    const { updateCloudStoreActive } = await import("./cloudDb");
+    await updateCloudStoreActive(cleanSub, isActive);
+  } catch (e) {
+    console.warn("Cloud active status sync failed:", e);
   }
 
   return true;
 }
 
 /**
- * Release an old subdomain from registries and caches so it becomes immediately available for others,
- * and mark that old subdomain as unavailable.
+ * Completely unregister and free an old subdomain from local registry and cookies
  */
 export function unregisterStore(subdomain: string): void {
-  const cleanSub = (subdomain || "").replace(".za3em.shop", "").toLowerCase().trim();
+  const cleanSub = (subdomain || '').replace('.za3em.shop', '').toLowerCase().trim();
   if (!cleanSub) return;
 
   if (typeof window !== "undefined") {

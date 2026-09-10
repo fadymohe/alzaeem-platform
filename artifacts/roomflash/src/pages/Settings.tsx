@@ -138,8 +138,10 @@ export function SettingsPage() {
         currency: 'IQD',
       };
 
-      // If subdomain was changed, register new subdomain locally
+      // If subdomain was changed, register new subdomain and release old
       if (originalSubdomain && cleanSub !== originalSubdomain) {
+        unregisterStore(originalSubdomain);
+        await releaseCloudSubdomain(originalSubdomain);
         registerStore({
           subdomain: cleanSub,
           storeName: storeName.trim(),
@@ -150,7 +152,7 @@ export function SettingsPage() {
           slogan: slogan.trim(),
           products: products
         });
-        unregisterStore(originalSubdomain);
+        setOriginalSubdomain(cleanSub);
       }
 
       // 1. Save to cloud PostgreSQL server with full settings and safe rename

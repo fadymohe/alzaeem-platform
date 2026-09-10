@@ -80,17 +80,17 @@ export function ShipmentsPage() {
       if (rawStore) storeObj = JSON.parse(rawStore);
       if (rawUser) userObj = JSON.parse(rawUser);
 
-      const sub = (storeObj?.subdomain || userObj?.subdomain || 'alzaeem')
+      const sub = (storeObj?.subdomain || userObj?.subdomain || '')
         .replace('.za3em.shop', '')
         .replace(/^https?:\/\//, '')
         .trim();
       setSubdomain(sub);
-      setStoreName(storeObj?.storeName || userObj?.storeName || 'متجر الزعيم');
-      setStorePhone(userObj?.phone || '07700000000');
+      setStoreName(storeObj?.storeName || userObj?.storeName || 'متجري');
+      setStorePhone(userObj?.phone || storeObj?.phone || '07700000000');
     } catch {}
   }, []);
 
-  // 1. Real Shipments from Server (Purge Dummy Shipments)
+  // 1. Real Shipments from Server (Strict Merchant Store Isolation)
   const [shipments, setShipments] = useState<CloudShipment[]>([]);
   const [isLoadingShipments, setIsLoadingShipments] = useState(false);
   const [search, setSearch] = useState('');
@@ -99,18 +99,41 @@ export function ShipmentsPage() {
   const loadShipmentsFromServer = async () => {
     setIsLoadingShipments(true);
     try {
-      const serverData = await fetchCloudShipments(subdomain);
-      // Also merge with locally stored shipments if any
+      const activeSub = subdomain || (() => {
+        try {
+          const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+          const rawUser = localStorage.getItem('zaeem_user');
+          const st = rawStore ? JSON.parse(rawStore) : null;
+          const us = rawUser ? JSON.parse(rawUser) : null;
+          return (st?.subdomain || us?.subdomain || '').replace('.za3em.shop', '').trim();
+        } catch { return ''; }
+      })();
+
+      const serverData = await fetchCloudShipments(activeSub);
+      // Also merge with locally stored shipments strictly matching current store
       let localData: CloudShipment[] = [];
       try {
         const raw = localStorage.getItem('zaeem_local_shipments');
-        if (raw) localData = JSON.parse(raw);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          localData = Array.isArray(parsed) 
+            ? parsed.filter((s: CloudShipment) => !activeSub || !s.subdomain || s.subdomain === activeSub) 
+            : [];
+        }
       } catch {}
 
       const map = new Map<string, CloudShipment>();
-      (serverData || []).forEach(s => map.set(s.trackingNumber, s));
+      (serverData || []).forEach(s => {
+        if (!activeSub || s.subdomain === activeSub) {
+          map.set(s.trackingNumber, s);
+        }
+      });
       (localData || []).forEach(s => {
-        if (!map.has(s.trackingNumber)) map.set(s.trackingNumber, s);
+        if (!map.has(s.trackingNumber)) {
+          if (!activeSub || !s.subdomain || s.subdomain === activeSub) {
+            map.set(s.trackingNumber, s);
+          }
+        }
       });
 
       const merged = Array.from(map.values()).sort((a, b) => {
@@ -270,7 +293,6 @@ export function ShipmentsPage() {
     recipientPhone: '',
     governorate: 'بغداد' as Governorate,
     district: '',
-    neighborhood: '',
     address: '',
     nearestLandmark: '',
     codAmount: '',
@@ -283,7 +305,6 @@ export function ShipmentsPage() {
     recipientName?: string;
     recipientPhone?: string;
     district?: string;
-    neighborhood?: string;
     nearestLandmark?: string;
   }>({});
 
@@ -329,8 +350,8 @@ export function ShipmentsPage() {
     }
   };
 
-  const handleNoSymbolChange = (field: 'district' | 'neighborhood' | 'nearestLandmark', val: string) => {
-    // Strictly no special symbols in district, neighborhood, or landmark
+  const handleNoSymbolChange = (field: 'district' | 'nearestLandmark', val: string) => {
+    // Strictly no special symbols in district or landmark
     const sanitized = val.replace(/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?~`]/g, '');
     setForm(prev => ({ ...prev, [field]: sanitized }));
   };
@@ -378,7 +399,7 @@ export function ShipmentsPage() {
 
     // 3. Validate Landmark and District (No symbols)
     if (!form.district.trim() || !form.nearestLandmark.trim()) {
-      alert('يرجى إدخال المدينة / القضاء والنقطة الدالة بشكل صحيح.');
+      alert('يرجى إدخال المدينة / القضاء والعلامة المميزة بشكل صحيح.');
       return;
     }
 
@@ -393,7 +414,7 @@ export function ShipmentsPage() {
       governorate: form.governorate,
       district: form.district.trim(),
       nearestLandmark: form.nearestLandmark.trim(),
-      address: `${form.neighborhood.trim()} ${form.address.trim()} (قرب ${form.nearestLandmark.trim()})`.trim(),
+      address: `${form.address.trim()} (قرب ${form.nearestLandmark.trim()})`.trim(),
       codAmount: form.paymentType === 'cod' ? Number(form.codAmount) || 0 : 0,
       shippingCost: shippingCost,
       paymentType: form.paymentType,
@@ -422,7 +443,6 @@ export function ShipmentsPage() {
         recipientPhone: '',
         governorate: 'بغداد',
         district: '',
-        neighborhood: '',
         address: '',
         nearestLandmark: '',
         codAmount: '',
@@ -1188,34 +1208,56 @@ export function ShipmentsPage() {
           {/* Manual Entry Form */}
           {createMode === 'manual' && (
             <form onSubmit={handleManualCreateShipment} className="space-y-6">
-              {/* Quick Preset Buttons */}
-              <div className="p-4 rounded-xl bg-teal-50/80 dark:bg-teal-950/30 border border-teal-200/60 dark:border-teal-800/50">
-                <span className="text-xs font-extrabold text-teal-900 dark:text-teal-300 block mb-2">
-                  ⚡ خيارات سريعة وتعبئة تلقائية:
-                </span>
-                <div className="flex flex-wrap gap-2">
+              {/* Quick Preset Buttons & Autofill */}
+              <div className="p-4 rounded-2xl bg-teal-50/80 dark:bg-teal-950/30 border border-teal-200/60 dark:border-teal-800/50 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs font-extrabold text-teal-900 dark:text-teal-300 block">
+                    ⚡ تعبئة سريعة وتحديد فوري:
+                  </span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    يمكنك اختيار محافظة شائعة أو سحب بيانات آخر طلب وصل إلى متجرك مباشرة.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, governorate: 'بغداد', notes: 'شحن فوري داخل بغداد - تسليم خلال 24 ساعة 🚀' }))}
-                    className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-teal-300 text-teal-800 dark:text-teal-200 text-xs font-bold hover:bg-teal-100 transition-colors flex items-center gap-1.5 shadow-sm"
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 text-teal-800 dark:text-teal-200 text-xs font-bold hover:bg-teal-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 shadow-sm"
                   >
                     <span>🚀</span> شحن بغداد (24 ساعة)
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, governorate: 'البصرة', notes: 'شحن محافظات العراق' }))}
-                    className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-teal-300 text-teal-800 dark:text-teal-200 text-xs font-bold hover:bg-teal-100 transition-colors flex items-center gap-1.5 shadow-sm"
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 text-teal-800 dark:text-teal-200 text-xs font-bold hover:bg-teal-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 shadow-sm"
                   >
                     <span>🚚</span> شحن المحافظات
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAutoFillFromLatestOrder}
+                    className="px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Sparkles className="size-3.5" />
+                    <span>سحب بيانات آخر طلب من المتجر</span>
                   </button>
                 </div>
               </div>
 
-              {/* Section 1: Recipient Details */}
-              <div>
-                <h3 className="text-sm font-bold text-teal-800 dark:text-teal-400 mb-4 flex items-center gap-2">
-                  <User className="size-4" /> بيانات المستلم (يمنع الرموز والأرقام في الاسم)
-                </h3>
+              {/* Card 1: Recipient Details */}
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 md:p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="size-8 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 grid place-items-center font-bold text-sm border border-teal-200/50">
+                    1
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <User className="size-4 text-teal-700 dark:text-teal-400" /> بيانات المستلم
+                    </h3>
+                    <p className="text-[11px] text-slate-500">اسم العميل الثلاثي أو الثنائي ورقم الهاتف العراقي</p>
+                  </div>
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -1226,7 +1268,7 @@ export function ShipmentsPage() {
                       type="text"
                       value={form.recipientName}
                       onChange={(e) => handleNameChange(e.target.value)}
-                      placeholder="مثال: حيدر علي الحسيني"
+                      placeholder="مثال: أحمد علي الخفاجي"
                       className={`w-full h-11 px-3.5 rounded-xl border bg-white dark:bg-slate-800 text-sm outline-none transition-all ${
                         validationErrors.recipientName
                           ? 'border-rose-500 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/10'
@@ -1272,12 +1314,21 @@ export function ShipmentsPage() {
                 </div>
               </div>
 
-              {/* Section 2: Address Details */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <h3 className="text-sm font-bold text-teal-800 dark:text-teal-400 mb-4 flex items-center gap-2">
-                  <MapPin className="size-4" /> عنوان التوصيل بالتفصيل (يمنع استخدام الرموز)
-                </h3>
-                <div className="grid gap-4 md:grid-cols-3">
+              {/* Card 2: Address Details */}
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 md:p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="size-8 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 grid place-items-center font-bold text-sm border border-teal-200/50">
+                    2
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <MapPin className="size-4 text-teal-700 dark:text-teal-400" /> عنوان التوصيل
+                    </h3>
+                    <p className="text-[11px] text-slate-500">المحافظة، المدينة، تفاصيل الشارع والعلامة المميزة</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                       المحافظة العراقية <span className="text-red-500">*</span>
@@ -1285,7 +1336,7 @@ export function ShipmentsPage() {
                     <select
                       value={form.governorate}
                       onChange={(e) => setForm({ ...form, governorate: e.target.value as Governorate })}
-                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600 font-bold text-slate-800 dark:text-slate-100"
                     >
                       {IRAQ_GOVERNORATES.map((g) => (
                         <option key={g} value={g}>
@@ -1308,31 +1359,18 @@ export function ShipmentsPage() {
                       className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      المنطقة
-                    </label>
-                    <input
-                      type="text"
-                      value={form.neighborhood}
-                      onChange={(e) => handleNoSymbolChange('neighborhood', e.target.value)}
-                      placeholder="اسم المنطقة"
-                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
-                    />
-                  </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 mt-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      الشارع / رقم الدار
+                      الشارع / رقم الدار أو الزقاق
                     </label>
                     <input
                       type="text"
                       value={form.address}
                       onChange={(e) => setForm({ ...form, address: e.target.value })}
-                      placeholder="الشارع ورقم الدار أو الزقاق"
+                      placeholder="الشارع العام أو رقم الزقاق والدار"
                       className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
                     />
                   </div>
@@ -1346,18 +1384,26 @@ export function ShipmentsPage() {
                       type="text"
                       value={form.nearestLandmark}
                       onChange={(e) => handleNoSymbolChange('nearestLandmark', e.target.value)}
-                      placeholder="أقرب علامة مميزة (مدرسة، مجمع، مستشفى...)"
+                      placeholder="أقرب علامة مميزة (مدرسة، مجمع، جامع، مستشفى...)"
                       className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Section 3: Financials & Live Shipping Fee Auto-Calculation */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <h3 className="text-sm font-bold text-teal-800 dark:text-teal-400 mb-4 flex items-center gap-2">
-                  <DollarSign className="size-4" /> احتساب تكلفة الشحن ومبلغ التحصيل
-                </h3>
+              {/* Card 3: Financials & Live Shipping Fee Auto-Calculation */}
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 md:p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="size-8 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 grid place-items-center font-bold text-sm border border-teal-200/50">
+                    3
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <DollarSign className="size-4 text-teal-700 dark:text-teal-400" /> احتساب تكلفة الشحن ومبلغ التحصيل
+                    </h3>
+                    <p className="text-[11px] text-slate-500">تحديد طريقة الدفع ومبلغ الطلب المستلم وصافي مستحقات المتجر</p>
+                  </div>
+                </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
@@ -1367,7 +1413,7 @@ export function ShipmentsPage() {
                     <select
                       value={form.paymentType}
                       onChange={(e) => setForm({ ...form, paymentType: e.target.value as 'cod' | 'prepaid' })}
-                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600 font-bold"
                     >
                       <option value="cod">الدفع عند الاستلام (COD)</option>
                       <option value="prepaid">مدفوع مسبقاً (Prepaid)</option>
@@ -1384,66 +1430,66 @@ export function ShipmentsPage() {
                       type="number"
                       value={form.paymentType === 'prepaid' ? 0 : form.codAmount}
                       onChange={(e) => setForm({ ...form, codAmount: e.target.value })}
-                      placeholder="مثال: 50000"
-                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600 disabled:opacity-50"
+                      placeholder="مثال: 45000"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600 disabled:opacity-50 font-mono font-bold"
                     />
                   </div>
                 </div>
 
-                {/* Auto Calculated Shipping Cost Card */}
-                <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 grid sm:grid-cols-3 gap-4 text-xs">
+                {/* Auto Calculated Shipping Cost Summary Card */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 grid sm:grid-cols-3 gap-4 text-xs">
                   <div>
-                    <span className="text-slate-400 block font-bold text-[10px]">كلفة الشحن المقررة لـ ({form.governorate})</span>
+                    <span className="text-slate-400 block font-bold text-[10px]">كلفة الشحن لـ ({form.governorate})</span>
                     <span className="text-base font-black text-teal-700 dark:text-teal-400 font-mono mt-0.5 block">
                       {formatIQD(shippingCost)}
                     </span>
-                    <span className="text-[10px] text-slate-500">المدة: {deliveryDuration}</span>
+                    <span className="text-[10px] text-slate-500">المدة المتوقعة: {deliveryDuration}</span>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 block font-bold text-[10px]">قيمة تحصيل الطلب (COD)</span>
+                    <span className="text-slate-400 block font-bold text-[10px]">المبلغ المستلم من الزبون (COD)</span>
                     <span className="text-base font-black text-slate-900 dark:text-white font-mono mt-0.5 block">
                       {formatIQD(codNum)}
                     </span>
-                    <span className="text-[10px] text-slate-500">المبلغ المستلم من الزبون</span>
+                    <span className="text-[10px] text-slate-500">شامل كلفة المنتج والتوصيل</span>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 block font-bold text-[10px]">صافي مستحقات المتجر المحولة</span>
+                    <span className="text-slate-400 block font-bold text-[10px]">صافي مستحقات المتجر</span>
                     <span className="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">
                       {formatIQD(merchantNetAmount)}
                     </span>
-                    <span className="text-[10px] text-slate-500">تصفية يومية / أسبوعية</span>
+                    <span className="text-[10px] text-slate-500">يتم تحويله لحسابك بعد التسليم</span>
                   </div>
                 </div>
 
-                <div className="mt-4">
+                <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    ملاحظات الشحنة للمندوب
+                    ملاحظات الشحنة للمندوب (اختياري)
                   </label>
                   <textarea
                     rows={2}
                     value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    placeholder="مثال: يرجى الاتصال قبل التوصيل بنصف ساعة."
+                    placeholder="مثال: يرجى الاتصال قبل التوصيل بنصف ساعة، الطرد قابل للكسر."
                     className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:border-teal-600"
                   />
                 </div>
               </div>
 
               {/* Submit Buttons */}
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="pt-2 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setActiveTab('list')}
-                  className="px-5 h-11 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50"
+                  className="px-5 h-11 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 h-11 bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2"
+                  className="px-6 h-11 bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <RefreshCw className="size-4 animate-spin" />

@@ -340,7 +340,7 @@ export const TEMPLATE_IDENTIFIERS = new Set([
   'classic', 'aurit', 'nova', 'brick', 'novatrend', 'gizmo', 'sneak', 'nexora',
   'store-sprout', 'store-wardrobe', 'store-stride', 'store-chic', 'store-mane', 'store-loftora',
   'store-classic', 'store-aurit', 'store-nova', 'store-brick', 'store-novatrend', 'store-gizmo', 'store-sneak', 'store-nexora',
-  'volt', 'rose', 'nitro', 'sepia', 'oret', 'shoppingcart.1.2.7'
+  'volt', 'rose', 'nitro', 'sepia', 'oret', 'shoppingcart.1.2.7', 'shopwell', 'easyorders-flash', 'botiga', 'flash', 'mega'
 ]);
 
 export function isTemplatePreview(slug?: string): boolean {
@@ -1053,19 +1053,23 @@ export function StoreTemplates({
 
     let foundCoupon: any = null;
     try {
+      const rawCloud = localStorage.getItem('zaeem_cloud_coupons');
       const rawCoupons = localStorage.getItem('zaeem_coupons');
-      if (rawCoupons) {
-        const parsed = JSON.parse(rawCoupons);
-        foundCoupon = parsed.find((c: any) => c.code && c.code.toUpperCase() === clean);
-      }
+      const list = [
+        ...(rawCloud ? JSON.parse(rawCloud) : []),
+        ...(rawCoupons ? JSON.parse(rawCoupons) : [])
+      ];
+      foundCoupon = list.find((c: any) => c.code && c.code.toUpperCase().trim() === clean);
     } catch {}
 
     // Default built-in coupons
     if (!foundCoupon) {
-      if (clean === 'ZAEEM10' || clean === 'DISCOUNT10') {
-        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 10, minOrderValue: 0 };
+      if (clean === 'ZAEEM' || clean === 'VIP' || clean === 'ZAEEM10' || clean === 'DISCOUNT10') {
+        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 15, minOrderValue: 0 };
       } else if (clean === 'WELCOME' || clean === 'ZA3EM5') {
         foundCoupon = { code: clean, discountType: 'fixed', discountValue: 5000, minOrderValue: 20000 };
+      } else if (clean === 'RAMADAN' || clean === 'SALE20') {
+        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 20, minOrderValue: 0 };
       }
     }
 
@@ -1074,8 +1078,13 @@ export function StoreTemplates({
       return;
     }
 
-    if (foundCoupon.minOrderValue && orderSubtotal < foundCoupon.minOrderValue) {
-      setCouponError(`الحد الأدنى لتطبيق هذا الكوبون هو ${formatIQD(foundCoupon.minOrderValue)}`);
+    if (foundCoupon.status === 'متوقف') {
+      setCouponError('هذا الكوبون متوقف حالياً');
+      return;
+    }
+
+    if (foundCoupon.minOrderValue && orderSubtotal < Number(foundCoupon.minOrderValue)) {
+      setCouponError(`الحد الأدنى لتطبيق هذا الكوبون هو ${formatIQD(Number(foundCoupon.minOrderValue))}`);
       return;
     }
 

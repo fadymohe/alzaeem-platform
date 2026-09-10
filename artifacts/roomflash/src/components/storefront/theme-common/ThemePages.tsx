@@ -6,7 +6,8 @@ import {
   Lock, CreditCard, Send, ExternalLink, HelpCircle, Package, AlertCircle
 } from 'lucide-react';
 import { formatIQD, IRAQ_GOVERNORATES } from '../../../data/iraqData';
-import type { StoreProduct } from '../../../data/storeState';
+import { addStoredOrder, type StoreProduct } from '../../../data/storeState';
+import { saveCloudShipment } from '../../../utils/cloudDb';
 
 export interface ThemeSharedProps {
   storeName: string;
@@ -399,12 +400,55 @@ export function ThemeCartCheckoutView({
   };
 
   const handleApplyCoupon = () => {
-    if (couponCode.trim().toUpperCase() === 'ZAEEM' || couponCode.trim().toUpperCase() === 'VIP') {
-      setCouponDiscount(Math.round(subtotal * 0.15));
-      alert('تم تطبيق كود الخصم بنجاح! تم خصم 15% من قيمة الطلب.');
-    } else {
-      alert('كود الخصم غير صالح. يمكنك تجربة كود ZAEEM للحصول على خصم 15%');
+    if (!couponCode.trim()) return;
+    const clean = couponCode.toUpperCase().trim();
+
+    let foundCoupon: any = null;
+    try {
+      const rawCloud = localStorage.getItem('zaeem_cloud_coupons');
+      const rawCoupons = localStorage.getItem('zaeem_coupons');
+      const list = [
+        ...(rawCloud ? JSON.parse(rawCloud) : []),
+        ...(rawCoupons ? JSON.parse(rawCoupons) : [])
+      ];
+      foundCoupon = list.find((c: any) => c.code && c.code.toUpperCase().trim() === clean);
+    } catch {}
+
+    if (!foundCoupon) {
+      if (clean === 'ZAEEM' || clean === 'VIP' || clean === 'ZAEEM10' || clean === 'DISCOUNT10') {
+        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 15, minOrderValue: 0 };
+      } else if (clean === 'WELCOME' || clean === 'ZA3EM5') {
+        foundCoupon = { code: clean, discountType: 'fixed', discountValue: 5000, minOrderValue: 20000 };
+      } else if (clean === 'RAMADAN' || clean === 'SALE20') {
+        foundCoupon = { code: clean, discountType: 'percentage', discountValue: 20, minOrderValue: 0 };
+      }
     }
+
+    if (!foundCoupon) {
+      alert('كود الخصم غير صالح أو منتهي الصلاحية');
+      return;
+    }
+
+    if (foundCoupon.status === 'متوقف') {
+      alert('هذا الكوبون متوقف حالياً');
+      return;
+    }
+
+    if (foundCoupon.minOrderValue && subtotal < Number(foundCoupon.minOrderValue)) {
+      alert(`الحد الأدنى لتطبيق هذا الكوبون هو ${formatIQD(Number(foundCoupon.minOrderValue))}`);
+      return;
+    }
+
+    let discount = 0;
+    if (foundCoupon.discountType === 'percentage') {
+      discount = Math.round((subtotal * Number(foundCoupon.discountValue)) / 100);
+    } else {
+      discount = Number(foundCoupon.discountValue) || 5000;
+    }
+
+    const appliedDiscount = Math.min(discount, subtotal);
+    setCouponDiscount(appliedDiscount);
+    alert(`تم تطبيق كود الخصم بنجاح! تم خصم ${formatIQD(appliedDiscount)} من إجمالي الطلب 🎉`);
   };
 
   const handleConfirmOrder = (e: React.FormEvent) => {
@@ -414,9 +458,55 @@ export function ThemeCartCheckoutView({
       return;
     }
     const randCode = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
-    const randTrack = `ZM-${custGov.slice(0, 2)}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const randTrack = `ZAEEM-2026-${Math.floor(100000 + Math.random() * 900000)}`;
     setOrderCode(randCode);
     setTrackingNumber(randTrack);
+
+    // Save actual order to storeState
+    try {
+      const orderItems = items.map(i => ({
+        productName: i.product.name,
+        quantity: i.quantity,
+        unitPrice: i.product.price,
+      }));
+
+      addStoredOrder({
+        customerName: custName.trim(),
+        customerPhone: custPhone.trim(),
+        customerCity: custGov,
+        address: `${custGov} — ${custAddress.trim()}`,
+        total: total,
+        shippingCost: shippingFee,
+        itemsCount: orderItems.reduce((acc, i) => acc + i.quantity, 0),
+        status: 'pending',
+        paymentMethod: 'cod',
+        notes: custNotes || undefined,
+        items: orderItems,
+      });
+
+      // Save corresponding shipment
+      saveCloudShipment({
+        trackingNumber: randTrack,
+        subdomain: subdomain,
+        recipientName: custName.trim(),
+        recipientPhone: custPhone.trim(),
+        governorate: custGov,
+        district: custAddress.trim(),
+        nearestLandmark: custAddress.trim(),
+        address: `${custGov} — ${custAddress.trim()}`,
+        codAmount: total,
+        shippingCost: shippingFee,
+        paymentType: 'cod',
+        status: 'جديدة',
+        shippingCompany: 'شركة الزعيم للشحن السريع',
+        notes: custNotes || '',
+        createdAt: new Date().toISOString(),
+        date: new Date().toISOString().split('T')[0],
+      });
+    } catch (err) {
+      console.warn('Error recording order:', err);
+    }
+
     setActiveStep('success');
   };
 
