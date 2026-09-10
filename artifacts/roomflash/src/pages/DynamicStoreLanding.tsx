@@ -14,7 +14,7 @@ import {
 } from "../utils/storeRegistry";
 import { fetchCloudStore, fetchCloudLandingPageBySlug } from "../utils/cloudDb";
 import { addStoredOrder } from "../data/storeState";
-import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, PauseCircle, Power, ShoppingBag } from "lucide-react";
+import { Globe, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, PauseCircle, Power, ShoppingBag, RefreshCw } from "lucide-react";
 import { StandaloneStorePage } from "./StandaloneStore";
 import { isTemplatePreview, checkAndEnforceThemeTrialExpiration } from "../components/storefront/StoreTemplates";
 import { setStoreDocumentIdentity, restoreDefaultDocumentIdentity } from "../utils/storeIdentityHelper";
