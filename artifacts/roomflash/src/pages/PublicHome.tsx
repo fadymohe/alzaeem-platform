@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { Link } from 'wouter';
 import { Logo } from '../components/common/Logo';
@@ -21,6 +21,7 @@ export function PublicHomePage() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [activeStep, setActiveStep] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
 
   const isAr = lang === 'ar';
 
@@ -84,12 +85,47 @@ export function PublicHomePage() {
     stickyBtn: isAr ? 'ابدأ متجرك مجاناً' : 'Start Free Store'
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['how-it-works', 'features', 'pricing', 'stories', 'shipping', 'blog'];
+      const scrollPos = window.scrollY + 220;
+
+      let current = '';
+      for (const sectionId of sections) {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPos >= top && scrollPos < top + height) {
+            current = sectionId;
+            break;
+          }
+        }
+      }
+      setActiveSection(current);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const scrollToSection = (id: string) => {
+    setActiveSection(id);
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  const navItems = [
+    { id: 'how-it-works', label: isAr ? 'كيف تعمل المنصة' : 'How It Works', icon: Play },
+    { id: 'features', label: t.navFeatures, icon: Sparkles },
+    { id: 'pricing', label: t.navPricing, icon: Tag },
+    { id: 'stories', label: t.navStories, icon: TrendingUp },
+    { id: 'shipping', label: t.navShipping, icon: Truck },
+    { id: 'blog', label: t.navBlog, icon: MessageSquare },
+  ];
 
   return (
     <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[100dvh] overflow-x-clip bg-white text-slate-900 font-sans select-none">
@@ -111,67 +147,27 @@ export function PublicHomePage() {
               <Logo showSubtitle={false} />
             </div>
 
-            {/* Center: Nav Links With Distinct Icons & Pill Badges */}
-            <nav className="hidden xl:flex items-center gap-5 text-xs font-bold text-slate-600">
-              {/* 1. كيف تعمل المنصة */}
-              <button
-                type="button"
-                onClick={() => scrollToSection('how-it-works')}
-                className="transition-all hover:scale-105 cursor-pointer font-black flex items-center gap-1.5 text-emerald-900 bg-emerald-100/90 px-3.5 py-1.5 rounded-full border border-emerald-300/80 shadow-xs"
-              >
-                <Play className="size-3 text-emerald-700 fill-emerald-700" />
-                <span>{isAr ? 'كيف تعمل المنصة' : 'How It Works'}</span>
-              </button>
-
-              {/* 2. المميزات */}
-              <button
-                type="button"
-                onClick={() => scrollToSection('features')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 group"
-              >
-                <Sparkles className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
-                <span>{t.navFeatures}</span>
-              </button>
-
-              {/* 3. الأسعار */}
-              <button
-                type="button"
-                onClick={() => scrollToSection('pricing')}
-                className="transition-all hover:scale-105 cursor-pointer font-black flex items-center gap-1.5 text-emerald-800 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-300 shadow-xs"
-              >
-                <Globe className="size-3.5 text-emerald-600" />
-                <span>{t.navPricing}</span>
-              </button>
-
-              {/* 4. قصص النجاح */}
-              <button
-                type="button"
-                onClick={() => scrollToSection('stories')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 group"
-              >
-                <TrendingUp className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
-                <span>{t.navStories}</span>
-              </button>
-
-              {/* 5. الشحن والتوصيل */}
-              <button
-                type="button"
-                onClick={() => scrollToSection('shipping')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 group"
-              >
-                <Truck className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
-                <span>{t.navShipping}</span>
-              </button>
-
-              {/* 6. المدونة */}
-              <button
-                type="button"
-                onClick={() => scrollToSection('blog')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 group"
-              >
-                <MessageSquare className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
-                <span>{t.navBlog}</span>
-              </button>
+            {/* Center: Dynamic Nav Links with Individual Active State Only */}
+            <nav className="hidden xl:flex items-center gap-2 text-xs font-bold text-slate-600">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => scrollToSection(item.id)}
+                    className={`transition-all cursor-pointer font-bold flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs select-none ${
+                      isActive
+                        ? 'text-emerald-950 bg-emerald-100 border border-emerald-300 font-black shadow-xs scale-[1.03]'
+                        : 'text-slate-600 hover:text-teal-700 hover:bg-slate-100/70'
+                    }`}
+                  >
+                    <Icon className={`size-3.5 ${isActive ? 'text-emerald-700 fill-emerald-700' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </nav>
 
             {/* Left: Language Switcher, Sign In & CTA */}
@@ -213,55 +209,26 @@ export function PublicHomePage() {
 
           {/* Mobile Dropdown Menu Drawer */}
           {mobileMenuOpen && (
-            <div className="xl:hidden mt-2 p-4 rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xl shadow-2xl space-y-2 animate-in fade-in slide-in-from-top-2">
-              <button
-                type="button"
-                onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
-                className="w-full text-right p-2.5 rounded-xl bg-emerald-50 text-emerald-900 text-xs font-black flex items-center gap-2"
-              >
-                <Play className="size-3.5 text-emerald-700 fill-emerald-700" />
-                <span>{isAr ? 'كيف تعمل المنصة' : 'How It Works'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { scrollToSection('features'); setMobileMenuOpen(false); }}
-                className="w-full text-right p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2"
-              >
-                <Sparkles className="size-3.5 text-teal-600" />
-                <span>{t.navFeatures}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { scrollToSection('pricing'); setMobileMenuOpen(false); }}
-                className="w-full text-right p-2.5 rounded-xl bg-emerald-50/70 text-emerald-800 text-xs font-black flex items-center gap-2"
-              >
-                <Globe className="size-3.5 text-emerald-600" />
-                <span>{t.navPricing}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { scrollToSection('stories'); setMobileMenuOpen(false); }}
-                className="w-full text-right p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2"
-              >
-                <TrendingUp className="size-3.5 text-teal-600" />
-                <span>{t.navStories}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { scrollToSection('shipping'); setMobileMenuOpen(false); }}
-                className="w-full text-right p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2"
-              >
-                <Truck className="size-3.5 text-teal-600" />
-                <span>{t.navShipping}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { scrollToSection('blog'); setMobileMenuOpen(false); }}
-                className="w-full text-right p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2"
-              >
-                <MessageSquare className="size-3.5 text-teal-600" />
-                <span>{t.navBlog}</span>
-              </button>
+            <div className="xl:hidden mt-2 p-4 rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xl shadow-2xl space-y-1.5 animate-in fade-in slide-in-from-top-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => { scrollToSection(item.id); setMobileMenuOpen(false); }}
+                    className={`w-full text-right p-2.5 rounded-xl text-xs flex items-center gap-2 transition-all ${
+                      isActive
+                        ? 'bg-emerald-100 text-emerald-950 font-black border border-emerald-300'
+                        : 'text-slate-700 hover:bg-slate-50 font-bold'
+                    }`}
+                  >
+                    <Icon className={`size-3.5 ${isActive ? 'text-emerald-700' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                 <Link
                   href="/sign-in"
