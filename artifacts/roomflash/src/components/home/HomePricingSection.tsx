@@ -58,7 +58,7 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
       {/* Pricing Cards Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
         
-        {/* 1. الباقة العادية (Green Card - Right side in RTL) */}
+        {/* 1. الباقة الأساسية (Green Card - Right side in RTL) */}
         <div className="rounded-[2.5rem] bg-[#00b050] text-white p-8 sm:p-10 shadow-2xl shadow-emerald-600/25 flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:translate-y-[-4px]">
           {/* Subtle glow circle in background */}
           <div className="absolute top-0 right-0 size-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
@@ -73,13 +73,13 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
             </div>
 
             <h3 className="text-2xl sm:text-3xl font-black text-white">
-              {isAr ? 'الباقة العادية' : 'Standard Plan'}
+              {isAr ? 'الباقة الأساسية' : 'Basic Plan'}
             </h3>
 
             <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-medium mt-2.5">
               {isAr
-                ? 'ادفع اشتراك رمزي فقط 2 دولار شهرياً، وابدأ ببيع منتجاتك فورًا'
-                : 'Pay an affordable fee of only $2 per month, and start selling your products right away.'}
+                ? 'ادفع اشتراك رمزي فقط 2 دولار شهرياً مع عمولة 8 سنت فقط على كل طلب'
+                : 'Pay an affordable fee of only $2 per month with a low 8 cents fee per order.'}
             </p>
 
             {/* Price block */}
@@ -98,6 +98,9 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
             {/* Features List */}
             <ul className="space-y-4 text-xs sm:text-sm font-bold text-white mb-10">
               {[
+                isAr ? 'عمولة 8 سنت ($0.08) فقط على كل طلب' : '8 cents ($0.08) commission per order',
+                isAr ? '5 متاجر احترافية مستقلة' : '5 independent stores',
+                isAr ? '50 صفحة هبوط تسويقية سريعة' : '50 fast landing pages',
                 isAr ? 'عدد غير محدود من المنتجات' : 'Unlimited products',
                 isAr ? 'عدد غير محدود من الطلبات' : 'Unlimited orders',
                 isAr ? 'زيارات غير محدودة' : 'Unlimited store visits',
@@ -142,8 +145,8 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
 
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium mt-2.5">
               {isAr
-                ? 'هل تحقق عدد طلبات كبير؟ ادفع اشتراك شهري مخفض 7 دولار فقط بدون أي عمولة علي الطلبات'
-                : 'Processing high order volumes? Pay only $7 per month with 0% order commission.'}
+                ? 'هل تحقق عدد طلبات كبير؟ ادفع اشتراك شهري مخفض 7 دولار مع أقل عمولة 4 سنت فقط'
+                : 'Processing high order volumes? Pay only $7 per month with an ultra-low 4 cents per order.'}
             </p>
 
             {/* Price block */}
@@ -162,9 +165,10 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
             {/* Features List */}
             <ul className="space-y-4 text-xs sm:text-sm font-bold text-slate-700 mb-10">
               {[
-                isAr ? 'عدد غير محدود من الطلبات بدون عمولة' : 'Unlimited 0% commission orders',
-                isAr ? 'عدد غير محدود من المنتجات' : 'Unlimited products',
-                isAr ? 'عدد غير محدود من الطلبات' : 'Unlimited orders',
+                isAr ? 'عمولة 4 سنت ($0.04) فقط على كل طلب' : '4 cents ($0.04) commission per order',
+                isAr ? '25 متجر احترافي مستقل' : '25 independent stores',
+                isAr ? 'عدد لا نهائي من صفحات الهبوط' : 'Unlimited landing pages',
+                isAr ? 'عدد غير محدود من المنتجات والطلبات' : 'Unlimited products & orders',
                 isAr ? 'زيارات غير محدودة' : 'Unlimited visits & bandwidth',
                 isAr ? 'رابط مباشر للدفع الإلكتروني' : 'Direct payment gateway',
                 isAr ? 'متجرك يظل مفتوحًا حتى لو لم تجدّد الاشتراك' : 'Store stays always active',
