@@ -6,6 +6,7 @@ import { DashboardMockupHero } from '../components/home/DashboardMockupHero';
 import { PlatformVideoShowcase } from '../components/home/PlatformVideoShowcase';
 import { TransformationDiagram } from '../components/home/TransformationDiagram';
 import { EcosystemRadialHub } from '../components/home/EcosystemRadialHub';
+import { HomePricingSection } from '../components/home/HomePricingSection';
 import {
   Sparkles, ArrowLeft, ArrowRight, CheckCircle2, XCircle, ShoppingBag,
 
@@ -125,6 +126,14 @@ export function PublicHomePage() {
                 className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
               >
                 {t.navFeatures}
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('pricing')}
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1 text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200"
+              >
+                <Globe className="size-3 text-emerald-600" />
+                <span>{t.navPricing}</span>
               </button>
               <button
                 type="button"
@@ -471,6 +480,11 @@ export function PublicHomePage() {
             })}
           </div>
         </section>
+
+        {/* ========================================================================= */}
+        {/* 6.5️⃣ PRICING SECTION (Anchored by #pricing) */}
+        {/* ========================================================================= */}
+        <HomePricingSection isAr={isAr} />
 
         {/* ========================================================================= */}
         {/* 7️⃣ SHIPPING & FLEET POWERHOUSE (Anchored by #shipping) */}
