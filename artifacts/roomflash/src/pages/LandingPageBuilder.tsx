@@ -12,7 +12,8 @@ import {
 import {
   generateAiLandingPage,
   generateAiSlug,
-  calculateAiCompareAtPrice
+  calculateAiCompareAtPrice,
+  generateCatchyMarketingTitle
 } from '../utils/aiLandingGenerator';
 
 // صفحات الهبوط الافتراضية لضمان ظهور الصفحة فوراً ولا يظهر الجدول فارغاً
@@ -91,40 +92,46 @@ export function LandingPageBuilderPage() {
   const fileRef2 = useRef<HTMLInputElement>(null);
   const fileRef3 = useRef<HTMLInputElement>(null);
 
-  // حالة نافذة التوليد بالذكاء الاصطناعي (AI Generator - 3 مدخلات فقط)
+  // حالة نافذة التوليد بالذكاء الاصطناعي (AI Generator)
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiProductName, setAiProductName] = useState('');
-  const [aiImage, setAiImage] = useState('');
+  const [aiImage1, setAiImage1] = useState('');
+  const [aiImage2, setAiImage2] = useState('');
+  const [aiImage3, setAiImage3] = useState('');
+  const [aiImageErrors, setAiImageErrors] = useState<{ image1?: string }>({});
   const [aiPrice, setAiPrice] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiGenerationProgress, setAiGenerationProgress] = useState('');
-  const aiFileRef = useRef<HTMLInputElement>(null);
+  const [hasGeneratedTitle, setHasGeneratedTitle] = useState(false);
+  const aiFileRef1 = useRef<HTMLInputElement>(null);
+  const aiFileRef2 = useRef<HTMLInputElement>(null);
+  const aiFileRef3 = useRef<HTMLInputElement>(null);
 
   // فتح نافذة التوليد بالذكاء الاصطناعي
   const handleOpenAiGenerator = () => {
     setAiProductName('');
-    setAiImage('');
+    setAiImage1('');
+    setAiImage2('');
+    setAiImage3('');
+    setAiImageErrors({});
     setAiPrice('');
     setAiGenerationProgress('');
+    setHasGeneratedTitle(false);
     setIsAiModalOpen(true);
   };
 
-  // رفع صورة منتج الـ AI من الجهاز
-  const handleAiFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('حجم الصورة كبير جداً، الحد الأقصى 5 ميجابايت.');
+  // صياغة عنوان تسويقي جديد ومقنع من العنوان المكتوب
+  const handleGenerateTitleFromInput = () => {
+    if (!aiProductName.trim()) {
+      alert('يرجى كتابة اسم أو نوع المنتج أولاً.');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAiImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    const newCatchyTitle = generateCatchyMarketingTitle(aiProductName);
+    setAiProductName(newCatchyTitle);
+    setHasGeneratedTitle(true);
   };
 
-  // توليد وإطلاق صفحة الهبوط بالذكاء الاصطناعي (اسم المنتج + صورته + سعره فقط)
+  // توليد وإطلاق صفحة الهبوط بالذكاء الاصطناعي
   const handleGenerateAiLandingPage = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -132,8 +139,9 @@ export function LandingPageBuilderPage() {
       alert('يرجى كتابة اسم المنتج للبدء بالتوليد الذكي.');
       return;
     }
-    if (!aiImage.trim()) {
-      alert('يرجى رفع صورة المنتج أو وضع رابطها.');
+    if (!aiImage1.trim()) {
+      setAiImageErrors({ image1: 'الصورة 1 الرئيسية إجبارية لإطلاق صفحة الهبوط' });
+      alert('الصورة 1 الرئيسية إجبارية (*)، يرجى رفع صورة أو وضع رابط للصورة.');
       return;
     }
     const priceNum = Number(aiPrice);
@@ -143,7 +151,7 @@ export function LandingPageBuilderPage() {
     }
 
     setIsAiGenerating(true);
-    setAiGenerationProgress('جاري تحليل اسم ومواصفات المنتج...');
+    setAiGenerationProgress('جاري صياغة عنوان ترويجي جذاب وقراءة مواصفات المنتج...');
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -152,9 +160,14 @@ export function LandingPageBuilderPage() {
       setAiGenerationProgress('جاري إنشاء الرابط النظيف وحفظ صفحة الهبوط سحابياً...');
       await new Promise((resolve) => setTimeout(resolve, 400));
 
+      // تجميع الصور (الأولى إجبارية، 2 و 3 اختياريتان)
+      const imagesList = [aiImage1.trim()];
+      if (aiImage2.trim()) imagesList.push(aiImage2.trim());
+      if (aiImage3.trim()) imagesList.push(aiImage3.trim());
+
       const pageData = generateAiLandingPage({
         productName: aiProductName.trim(),
-        imageUrl: aiImage.trim(),
+        images: imagesList,
         price: priceNum,
         subdomain,
       });
@@ -173,7 +186,10 @@ export function LandingPageBuilderPage() {
       setIsAiModalOpen(false);
       setCreatedSuccessPage(pageData);
       setAiProductName('');
-      setAiImage('');
+      setAiImage1('');
+      setAiImage2('');
+      setAiImage3('');
+      setAiImageErrors({});
       setAiPrice('');
     } catch (err) {
       console.warn('Error generating AI landing page:', err);
@@ -444,15 +460,15 @@ export function LandingPageBuilderPage() {
 
         {/* زر أعلى الصفحة لإضافة صفحة هبوط جديدة */}
         <div className="flex items-center gap-2.5">
-          {/* زر التوليد الذكي بالـ AI (3 مدخلات فقط) */}
+          {/* زر التوليد الذكي بالـ AI (لون وشكل متناسق مع هوية المنصة) */}
           <button
             type="button"
             onClick={handleOpenAiGenerator}
-            className="px-5 py-3 bg-gradient-to-r from-violet-600 via-indigo-600 to-teal-600 hover:from-violet-700 hover:to-teal-700 text-white text-xs font-black rounded-2xl shadow-xl shadow-indigo-600/25 transition-all flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95 border border-white/20"
+            className="px-5 py-3 bg-teal-800 hover:bg-teal-900 text-white text-xs font-black rounded-2xl shadow-lg shadow-teal-900/20 border border-teal-600/30 transition-all flex items-center gap-2.5 cursor-pointer hover:scale-105 active:scale-95"
           >
             <Sparkles className="size-4 text-amber-300 animate-pulse" />
-            <span>توليد صفحة هبوط بـ AI</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/20 font-mono font-black">3 حقول فقط</span>
+            <span>توليد صفحة هبوط بالذكاء الاصطناعي</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-teal-950/80 text-teal-200 border border-teal-500/30 font-bold font-mono">AI</span>
           </button>
 
           <button
@@ -1104,28 +1120,28 @@ export function LandingPageBuilderPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 🌟 4. نافذة التوليد السريع بالذكاء الاصطناعي (اسم + صورة + سعر فقط)       */}
+      {/* 🌟 4. نافذة التوليد السريع بالذكاء الاصطناعي (بتصميم متناسق وهوية تيلي) */}
       {/* ========================================================================= */}
       {isAiModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md overflow-y-auto animate-fadeIn">
-          <div className="max-w-xl w-full bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-2xl border border-indigo-200 dark:border-indigo-900/50 space-y-6 max-h-[92vh] overflow-y-auto my-auto text-right relative">
-            {/* الخلفية الجمالية المتدرجة */}
-            <div className="absolute top-0 right-0 left-0 h-2 bg-gradient-to-r from-violet-600 via-indigo-600 to-teal-500 rounded-t-3xl" />
+          <div className="max-w-2xl w-full bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-2xl border border-teal-200 dark:border-teal-900/50 space-y-6 max-h-[92vh] overflow-y-auto my-auto text-right relative">
+            {/* الشريط العلوي المتناسق */}
+            <div className="absolute top-0 right-0 left-0 h-2 bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600 rounded-t-3xl" />
 
             {/* رأس النافذة */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 pt-1">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 flex items-center gap-1 border border-teal-200 dark:border-teal-800">
                     <Sparkles className="size-3 text-amber-500" /> AI Landing Generator
                   </span>
-                  <span className="text-[11px] font-bold text-teal-800 dark:text-teal-400">3 معلومات فقط ⚡</span>
+                  <span className="text-[11px] font-bold text-teal-800 dark:text-teal-400">توليد فوري ذكي ⚡</span>
                 </div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white mt-1">
                   توليد صفحة هبوط بالذكاء الاصطناعي
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  فقط أدخل اسم المنتج، صورته، وسعره، وسيقوم الـ AI بكتابة المحتوى وبناء ونشر الصفحة فوراً!
+                  أدخل اسم المنتج، صوره، وسعره، وسيقوم الـ AI بصياغة عنوان إعلاني، كتابة المحتوى، وبناء الصفحة فوراً!
                 </p>
               </div>
 
@@ -1133,92 +1149,233 @@ export function LandingPageBuilderPage() {
                 type="button"
                 disabled={isAiGenerating}
                 onClick={() => setIsAiModalOpen(false)}
-                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white grid place-items-center transition-colors"
+                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white grid place-items-center transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
             <form onSubmit={handleGenerateAiLandingPage} className="space-y-5">
-              {/* 1. اسم المنتج */}
+              {/* 1. اسم المنتج مع زر توليد عنوان تسويقي جديد */}
               <div>
-                <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
-                  1. اسم المنتج <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <span>1. اسم المنتج</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  {aiProductName.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleGenerateTitleFromInput}
+                      className="text-[11px] font-bold text-teal-800 dark:text-teal-300 hover:text-teal-900 dark:hover:text-teal-200 flex items-center gap-1.5 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-1 rounded-lg border border-teal-200 dark:border-teal-800 transition-all cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/60 active:scale-95"
+                      title="صياغة عنوان تسويقي جذاب ومقنع من هذا العنوان"
+                    >
+                      <Sparkles className="size-3 text-amber-500 animate-pulse" />
+                      <span>صياغة عنوان ترويجي جديد بالـ AI ✨</span>
+                    </button>
+                  )}
+                </div>
+
                 <input
                   required
                   type="text"
                   value={aiProductName}
-                  onChange={(e) => setAiProductName(e.target.value)}
-                  placeholder="مثال: ساعة الترا الذكية المقاومة للماء مع شاشة AMOLED"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  onChange={(e) => {
+                    setAiProductName(e.target.value);
+                    setHasGeneratedTitle(false);
+                  }}
+                  placeholder="مثال: ساعة الترا الذكية أو عطر تاج الفخامة الفرنسي"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  💡 يحدد الـ AI نوع ومميزات المنتج ويصيغ العرض البيعي تلقائياً من الاسم.
-                </p>
+
+                <div className="flex items-center justify-between mt-1 text-[10px]">
+                  <span className="text-slate-400">
+                    💡 سيقوم الـ AI تلقائياً بتحليل الاسم وصياغة عنوان جذاب وعرض بيعي مقنع.
+                  </span>
+                  {hasGeneratedTitle && (
+                    <span className="text-teal-800 dark:text-teal-400 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="size-3 text-teal-800" /> تم صياغة عنوان ترويجي جديد!
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* 2. صورة المنتج */}
+              {/* 2. صور المنتج (3 صور مطابقة تماماً للصفحة اليدوية) */}
               <div>
-                <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
-                  2. صورة المنتج <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <span>2. صور المنتج</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    الصورة 1 رئيسية وإجبارية، بينما 2 و 3 اختياريتان
+                  </span>
+                </div>
 
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={aiImage.startsWith("data:") ? "صورة مرفوعة من جهازك ✓" : aiImage}
-                      onChange={(e) => setAiImage(e.target.value)}
-                      placeholder="ضع رابط صورة المنتج المباشر..."
-                      dir="ltr"
-                      className="flex-1 h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500"
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  {/* الصورة 1: إجبارية */}
+                  <div
+                    className={`p-3 rounded-2xl border ${
+                      aiImageErrors.image1
+                        ? 'border-rose-500 bg-rose-50/30 dark:bg-rose-950/20'
+                        : 'border-teal-500/50 bg-teal-50/20 dark:bg-teal-950/10'
+                    } space-y-2 text-center`}
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-teal-800 dark:text-teal-300">الصورة 1 (إجبارية *)</span>
+                      <span className="text-[10px] bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 px-1.5 py-0.5 rounded">
+                        الرئيسية
+                      </span>
+                    </div>
+
+                    {aiImage1 ? (
+                      <div className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white">
+                        <img src={aiImage1} alt="صورة 1" className="size-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setAiImage1('')}
+                          className="absolute top-1.5 right-1.5 p-1 bg-rose-600 text-white rounded-lg shadow-sm cursor-pointer"
+                          title="إزالة"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => aiFileRef1.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-800 hover:border-teal-500 flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors bg-white dark:bg-slate-800"
+                      >
+                        <Upload className="size-5 text-teal-600 mb-1" />
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                          اضغط لرفع الصورة 1
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">ملف صورة محلي</span>
+                      </div>
+                    )}
 
                     <input
-                      ref={aiFileRef}
                       type="file"
+                      ref={aiFileRef1}
                       accept="image/*"
-                      onChange={handleAiFileUpload}
+                      onChange={(e) => handleFileUpload(e, setAiImage1, true)}
                       className="hidden"
                     />
 
-                    <button
-                      type="button"
-                      onClick={() => aiFileRef.current?.click()}
-                      className="px-4 h-11 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shrink-0 cursor-pointer"
-                    >
-                      <Upload className="size-4" />
-                      <span>رفع من الجهاز</span>
-                    </button>
+                    <input
+                      type="url"
+                      value={aiImage1.startsWith('data:') ? '' : aiImage1}
+                      onChange={(e) => {
+                        setAiImage1(e.target.value);
+                        if (e.target.value) setAiImageErrors({});
+                      }}
+                      placeholder="أو ضع رابط مباشر..."
+                      className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] outline-none"
+                    />
+
+                    {aiImageErrors.image1 && (
+                      <span className="text-[10px] font-bold text-rose-600 block">
+                        {aiImageErrors.image1}
+                      </span>
+                    )}
                   </div>
 
-                  {/* معاينة مصغرة للصورة إذا وُجدت */}
-                  {aiImage && (
-                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={aiImage}
-                          alt="AI Preview"
-                          className="size-14 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm"
-                        />
-                        <div>
-                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-                            <CheckCircle2 className="size-3.5 text-teal-800" /> تم اختيار صورة المنتج بنجاح
-                          </p>
-                          <p className="text-[10px] text-slate-400">ستكون الصورة الأساسية لصفحة الهبوط</p>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setAiImage("")}
-                        className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs"
-                      >
-                        إزالة
-                      </button>
+                  {/* الصورة 2: اختيارية */}
+                  <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2 text-center">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-slate-700 dark:text-slate-300">الصورة 2 (اختيارية)</span>
+                      <span className="text-[10px] text-slate-400">إضافية</span>
                     </div>
-                  )}
+
+                    {aiImage2 ? (
+                      <div className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white">
+                        <img src={aiImage2} alt="صورة 2" className="size-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setAiImage2('')}
+                          className="absolute top-1.5 right-1.5 p-1 bg-rose-600 text-white rounded-lg shadow-sm cursor-pointer"
+                          title="إزالة"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => aiFileRef2.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-slate-400 flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors bg-white dark:bg-slate-800"
+                      >
+                        <Upload className="size-5 text-slate-400 mb-1" />
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                          اضغط لرفع الصورة 2
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">اختياري</span>
+                      </div>
+                    )}
+
+                    <input
+                      type="file"
+                      ref={aiFileRef2}
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, setAiImage2, false)}
+                      className="hidden"
+                    />
+
+                    <input
+                      type="url"
+                      value={aiImage2.startsWith('data:') ? '' : aiImage2}
+                      onChange={(e) => setAiImage2(e.target.value)}
+                      placeholder="أو ضع رابط مباشر..."
+                      className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] outline-none"
+                    />
+                  </div>
+
+                  {/* الصورة 3: اختيارية */}
+                  <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2 text-center">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-slate-700 dark:text-slate-300">الصورة 3 (اختيارية)</span>
+                      <span className="text-[10px] text-slate-400">إضافية</span>
+                    </div>
+
+                    {aiImage3 ? (
+                      <div className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white">
+                        <img src={aiImage3} alt="صورة 3" className="size-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setAiImage3('')}
+                          className="absolute top-1.5 right-1.5 p-1 bg-rose-600 text-white rounded-lg shadow-sm cursor-pointer"
+                          title="إزالة"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => aiFileRef3.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-slate-400 flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors bg-white dark:bg-slate-800"
+                      >
+                        <Upload className="size-5 text-slate-400 mb-1" />
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                          اضغط لرفع الصورة 3
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">اختياري</span>
+                      </div>
+                    )}
+
+                    <input
+                      type="file"
+                      ref={aiFileRef3}
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, setAiImage3, false)}
+                      className="hidden"
+                    />
+
+                    <input
+                      type="url"
+                      value={aiImage3.startsWith('data:') ? '' : aiImage3}
+                      onChange={(e) => setAiImage3(e.target.value)}
+                      placeholder="أو ضع رابط مباشر..."
+                      className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1240,20 +1397,21 @@ export function LandingPageBuilderPage() {
                   <span className="text-xs font-bold text-slate-500 mr-2">د.ع</span>
                 </div>
                 {aiPrice && Number(aiPrice) > 0 && (
-                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold mt-1.5 flex items-center gap-1">
+                  <p className="text-[11px] text-teal-800 dark:text-teal-400 font-bold mt-1.5 flex items-center gap-1">
                     <Zap className="size-3" /> السعر الذي سيدفعه العميل: {formatIQD(Number(aiPrice))}
                   </p>
                 )}
               </div>
 
               {/* بطاقة معلومات ما سيتكفل به الـ AI تلقائياً */}
-              <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 space-y-2">
-                <p className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
-                  <Wand2 className="size-4 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/40 space-y-2">
+                <p className="text-xs font-extrabold text-teal-950 dark:text-teal-200 flex items-center gap-1.5">
+                  <Wand2 className="size-4 text-teal-800 dark:text-teal-400" />
                   ما سيتكفل به الذكاء الاصطناعي تلقائياً:
                 </p>
-                <ul className="text-[11px] text-indigo-900 dark:text-indigo-300 space-y-1 pr-4 list-disc">
-                  <li>كتابة نصوص ترويجية مقنعة بالعناوين والمميزات التسويقية الفعالة.</li>
+                <ul className="text-[11px] text-teal-900 dark:text-teal-300 space-y-1 pr-4 list-disc">
+                  <li>صياغة عنوان إعلاني احترافي ومقنع مبني على اسم المنتج.</li>
+                  <li>كتابة نصوص ترويجية كاملة بالعناوين والمميزات التسويقية الفعالة.</li>
                   <li>توليد رابط إنجليزي مختصر ونظيف (Clean URL Slug).</li>
                   <li>احتساب السعر المشطوب التنافسي (~30% خصم وهمي محفز).</li>
                   <li>تجهيز باقات الكميات (خصم القطعتين 15%، و 3 قطع 25% مع شحن مجاني).</li>
@@ -1267,25 +1425,26 @@ export function LandingPageBuilderPage() {
                   type="button"
                   disabled={isAiGenerating}
                   onClick={() => setIsAiModalOpen(false)}
-                  className="px-5 h-12 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+                  className="px-5 h-12 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
                 >
                   إلغاء
                 </button>
 
+                {/* زر توليد ونشر باللون وشكل متناسق مع المنصة (Screenshot 2) */}
                 <button
                   type="submit"
                   disabled={isAiGenerating}
-                  className="px-8 h-12 bg-gradient-to-r from-violet-600 via-indigo-600 to-teal-600 hover:from-violet-700 hover:to-teal-700 disabled:opacity-75 text-white text-xs font-black rounded-xl shadow-xl shadow-indigo-600/25 flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  className="px-8 h-12 bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-lg shadow-teal-700/25 flex items-center justify-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
                   {isAiGenerating ? (
                     <>
                       <RefreshCw className="size-4 animate-spin" />
-                      <span>{aiGenerationProgress || "جاري التوليد بالذكاء الاصطناعي..."}</span>
+                      <span>{aiGenerationProgress || 'جاري التوليد بالذكاء الاصطناعي...'}</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="size-4 text-amber-300 animate-bounce" />
-                      <span>✨ توليد ونشر صفحة الهبوط فوراً</span>
+                      <Sparkles className="size-4 text-amber-300" />
+                      <span>توليد ونشر صفحة الهبوط فوراً</span>
                     </>
                   )}
                 </button>

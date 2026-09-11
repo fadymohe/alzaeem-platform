@@ -2,10 +2,9 @@ import type { CloudLandingPage } from "./cloudDb";
 
 interface AiGenerateInput {
   productName: string;
-  imageUrl: string;
+  images: string[];
   price: number;
   subdomain: string;
-  secondaryImages?: string[];
 }
 
 // قاموس الكلمات الدلالية لإنتاج Slug إنجليزي نظيف وسريع
@@ -47,6 +46,71 @@ const SLUG_DICTIONARY: Record<string, string> = {
   كفر: "case",
   محفظة: "wallet"
 };
+
+/**
+ * توليد وصياغة عنوان تسويقي جذاب واحترافي جديد من العنوان المكتوب
+ */
+export function generateCatchyMarketingTitle(rawTitle: string): string {
+  if (!rawTitle || !rawTitle.trim()) return "منتج أصلي مميز - الإصدار الملكي المطور";
+
+  const clean = rawTitle.trim();
+  const lower = clean.toLowerCase();
+
+  // فئة العطور والبخور
+  if (/عطر|عود|مسك|بخور|دهن|عطور/.test(lower)) {
+    if (!/ملكي|فاخر|فرنسي|أصلي|ثبات/.test(lower)) {
+      return `${clean} الملكي الفاخر - ثبات ملكي فواح 48 ساعة مع تركيبة أصلية`;
+    }
+    return `${clean} - الإصدار الملكي الخاص بثبات وفوحان استثنائي`;
+  }
+
+  // فئة الساعات
+  if (/ساعة|ساعات|سمارت|الترا|smart|watch/.test(lower)) {
+    if (!/مقاوم|أصلي|تيتانيوم|amoled|شاشة/.test(lower)) {
+      return `${clean} التيتانيوم الذكية - مقاومة للماء والكسر مع شاشة AMOLED وبطارية خارقة`;
+    }
+    return `${clean} - الإصدار المطور مع ضمان فحص كامل`;
+  }
+
+  // فئة السماعات
+  if (/سماعة|سماعات|ايربودز|بلوتوث|earbuds|headphone/.test(lower)) {
+    if (!/عزل|محيطي|ألعاب|برو/.test(lower)) {
+      return `${clean} اللاسلكية الاحترافية - عزل ضوضاء فائق وصوت محيطي نقي 3D`;
+    }
+    return `${clean} - جودة صوت سينمائية مع شحن سريع`;
+  }
+
+  // فئة العناية والبشرة والشعر
+  if (/كريم|سيروم|بشرة|شعر|زيت|تفتيح|صابون|ماسك|تجميل/.test(lower)) {
+    if (!/طبيعي|مركز|نتائج|أصلي/.test(lower)) {
+      return `${clean} المركز الأصلي - تركيبة طبيعية 100% مع نتائج ملحوظة من أول أسبوع`;
+    }
+    return `${clean} - العناية الفائقة المضمونة والمختبرة`;
+  }
+
+  // فئة الأجهزة المنزلية والمطبخ
+  if (/قلاية|خلاط|مكنسة|مكواة|فرامة|قطاعة|طباخ|شواية|جهاز/.test(lower)) {
+    if (!/ديجيتال|ذكي|قوي|سريع/.test(lower)) {
+      return `${clean} الذكي متعدد الوظائف - أداء فائق وموفر للوقت مع ضمان جودة`;
+    }
+    return `${clean} - الإصدار الأحدث بأعلى معايير المتانة والراحة`;
+  }
+
+  // فئة الملابس والأحذية والأزياء
+  if (/حذاء|قميص|فستان|سترة|بنطلون|شنطة|حقيبة|شوز/.test(lower)) {
+    if (!/أصلي|طبي|مريح|أنيق/.test(lower)) {
+      return `${clean} العصري الأنيق - خامات ممتازة وتصميم فخم مريح للاستخدام اليومي`;
+    }
+    return `${clean} - أناقة متكاملة وخامات نخب أول`;
+  }
+
+  // فئة عامة
+  if (clean.length < 35 && !/أصلي|مطور|فاخر|مميز/.test(clean)) {
+    return `${clean} - الإصدار الأصلي المطور بأعلى مواصفات الجودة وضمان كامل`;
+  }
+
+  return clean;
+}
 
 /**
  * توليد Slug إنجليزي ذكي ونظيف من اسم المنتج العربي
@@ -115,7 +179,7 @@ export function generateAiMarketingCopy(productName: string, price: number): {
         "ثبات وفوحان استثنائي يدوم لأكثر من 48 ساعة على الملابس",
         "زيوت عطرية أصلية ونقية وآمنة 100% على البشرة",
         "تغليف ملكي فاخر يحمي العطر ويزيد من فخامته",
-        "الدفع عند الاستلام مع إمكانية فتح الصندوق وتجربة الرائحة قبل الاستلام"
+        "الدفع عند الاستلام مع إمكانية فتح الصندوق وتجربة الرائحة قبل الدفع"
       ]
     };
   }
@@ -191,35 +255,35 @@ export function generateAiMarketingCopy(productName: string, price: number): {
 
 /**
  * محرك الذكاء الاصطناعي الرئيسي: يولد كائن صفحة الهبوط بالكامل
- * بناءً على اسم المنتج + صورته + سعره فقط!
+ * بناءً على اسم المنتج + صوره + سعره!
  */
 export function generateAiLandingPage(input: AiGenerateInput): CloudLandingPage {
-  const { productName, imageUrl, price, subdomain, secondaryImages = [] } = input;
+  const { productName, images, price, subdomain } = input;
 
-  const cleanSlug = generateAiSlug(productName);
+  // توليد عنوان تسويقي جديد ومقنع من العنوان المكتوب
+  const marketingTitle = generateCatchyMarketingTitle(productName);
+  const cleanSlug = generateAiSlug(marketingTitle || productName);
   const compareAtPrice = calculateAiCompareAtPrice(price);
-  const marketing = generateAiMarketingCopy(productName, price);
+  const marketing = generateAiMarketingCopy(marketingTitle || productName, price);
 
   // تنسيق الوصف الكامل
   const fullDescription = `${marketing.headline}\n\n${marketing.description}\n\nأبرز المميزات:\n• ${marketing.features.join("\n• ")}`;
 
-  // قائمة الصور: الصورة الرئيسية إجبارية + الصور الثانوية إن وجدت
-  const images = [imageUrl.trim()];
-  for (const img of secondaryImages) {
-    if (img && img.trim() && !images.includes(img.trim())) {
-      images.push(img.trim());
-    }
-  }
+  // تصفية الصور الصالحة
+  const validImages = (images || []).map(i => (i || '').trim()).filter(Boolean);
+  const finalImages = validImages.length > 0 
+    ? validImages 
+    : ['https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80'];
 
   return {
     subdomain: subdomain || "alzaeem",
     slug: cleanSlug,
-    productName: productName.trim(),
-    images,
+    productName: marketingTitle,
+    images: finalImages,
     price: Number(price) || 0,
     compareAtPrice,
-    discountTwoItems: 15, // خصم 15% تلقائي لقطعتين
-    discountThreeItems: 25, // خصم 25% تلقائي لـ 3 قطع
+    discountTwoItems: 15,
+    discountThreeItems: 25,
     description: fullDescription,
     template: "easyorders-flash",
     isPublished: true,
