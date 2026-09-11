@@ -58,7 +58,7 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
       {/* Pricing Cards Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
         
-        {/* 1. الباقة العادية (Green Card) */}
+        {/* 1. الباقة العادية (Green Card - Right side in RTL) */}
         <div className="rounded-[2.5rem] bg-[#00b050] text-white p-8 sm:p-10 shadow-2xl shadow-emerald-600/25 flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:translate-y-[-4px]">
           {/* Subtle glow circle in background */}
           <div className="absolute top-0 right-0 size-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
@@ -68,7 +68,7 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
             <div className="flex items-center justify-between gap-4 mb-4">
               <span className="bg-black/90 text-white text-[11px] font-bold px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                 <Tag className="size-3" />
-                <span>{isAr ? 'أقل سعر (مجاني)' : 'Lowest Cost (Free Start)'}</span>
+                <span>{isAr ? 'أقل سعر (2$ شهرياً)' : 'Best Value ($2/mo)'}</span>
               </span>
             </div>
 
@@ -78,17 +78,17 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
 
             <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-medium mt-2.5">
               {isAr
-                ? 'ادفع مبلغ رمزي فقط 4 سنتات لكل طلب، وابدأ ببيع منتجاتك فورًا'
-                : 'Pay a tiny fee of only $0.04 per order, and start selling your products right away.'}
+                ? 'ادفع اشتراك رمزي فقط 2 دولار شهرياً، وابدأ ببيع منتجاتك فورًا'
+                : 'Pay an affordable fee of only $2 per month, and start selling your products right away.'}
             </p>
 
             {/* Price block */}
             <div className="flex items-baseline gap-2 mt-6">
               <span className="text-4xl sm:text-5xl font-black font-mono text-white tracking-tight">
-                $0.04
+                $2
               </span>
               <span className="text-xs sm:text-sm font-bold text-white/90">
-                {isAr ? '/ 4 سنت لكل طلب' : '/ 4 cents per order'}
+                {isAr ? '/ شهرياً' : '/ month'}
               </span>
             </div>
 
@@ -125,14 +125,14 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
           </Link>
         </div>
 
-        {/* 2. الباقة الاحترافية (White Card) */}
+        {/* 2. الباقة الاحترافية (White Card - Left side in RTL) */}
         <div className="rounded-[2.5rem] bg-white border border-slate-200/90 p-8 sm:p-10 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative hover:translate-y-[-4px]">
           <div>
             {/* Top Badge & Header */}
             <div className="flex items-center justify-between gap-4 mb-4">
               <span className="bg-black text-white text-[11px] font-bold px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                 <CreditCard className="size-3" />
-                <span>{isAr ? 'للطلبات الكبيرة' : 'For High Volume'}</span>
+                <span>{isAr ? 'للطلبات الكبيرة (7$ شهرياً)' : 'Pro Scale ($7/mo)'}</span>
               </span>
             </div>
 
@@ -142,17 +142,17 @@ export function HomePricingSection({ isAr = true }: HomePricingSectionProps) {
 
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium mt-2.5">
               {isAr
-                ? 'هل تحقق عدد طلبات كبير؟ ادفع اشتراك شهري بدون أي عمولة علي الطلبات'
-                : 'Processing high order volumes? Pay a flat monthly fee with 0% order commission.'}
+                ? 'هل تحقق عدد طلبات كبير؟ ادفع اشتراك شهري مخفض 7 دولار فقط بدون أي عمولة علي الطلبات'
+                : 'Processing high order volumes? Pay only $7 per month with 0% order commission.'}
             </p>
 
             {/* Price block */}
             <div className="flex items-baseline gap-2 mt-6">
               <span className="text-4xl sm:text-5xl font-black font-mono text-slate-900 tracking-tight">
-                $100
+                $7
               </span>
               <span className="text-xs sm:text-sm font-bold text-[#00b050]">
-                {isAr ? '/ شهرياً' : '/ monthly'}
+                {isAr ? '/ شهرياً' : '/ month'}
               </span>
             </div>
 
