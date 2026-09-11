@@ -2,13 +2,18 @@ import { useState, useEffect, useRef, type FormEvent } from 'react';
 import {
   Sparkles, Plus, Eye, Copy, Check, ExternalLink, Globe,
   Trash2, CheckCircle2, Image as ImageIcon, Upload, DollarSign,
-  Percent, RefreshCw, AlertTriangle, Edit3, X
+  Percent, RefreshCw, AlertTriangle, Edit3, X, Wand2, Zap
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
 import {
   saveCloudLandingPage, fetchCloudLandingPages, deleteCloudLandingPage,
   type CloudLandingPage
 } from '../utils/cloudDb';
+import {
+  generateAiLandingPage,
+  generateAiSlug,
+  calculateAiCompareAtPrice
+} from '../utils/aiLandingGenerator';
 
 // صفحات الهبوط الافتراضية لضمان ظهور الصفحة فوراً ولا يظهر الجدول فارغاً
 const INITIAL_DEMO_PAGES: CloudLandingPage[] = [
@@ -85,6 +90,116 @@ export function LandingPageBuilderPage() {
   const fileRef1 = useRef<HTMLInputElement>(null);
   const fileRef2 = useRef<HTMLInputElement>(null);
   const fileRef3 = useRef<HTMLInputElement>(null);
+
+  // حالة نافذة التوليد بالذكاء الاصطناعي (AI Generator - 3 مدخلات فقط)
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiProductName, setAiProductName] = useState('');
+  const [aiImage, setAiImage] = useState('');
+  const [aiPrice, setAiPrice] = useState('');
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiGenerationProgress, setAiGenerationProgress] = useState('');
+  const aiFileRef = useRef<HTMLInputElement>(null);
+
+  // فتح نافذة التوليد بالذكاء الاصطناعي
+  const handleOpenAiGenerator = () => {
+    setAiProductName('');
+    setAiImage('');
+    setAiPrice('');
+    setAiGenerationProgress('');
+    setIsAiModalOpen(true);
+  };
+
+  // رفع صورة منتج الـ AI من الجهاز
+  const handleAiFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('حجم الصورة كبير جداً، الحد الأقصى 5 ميجابايت.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAiImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // توليد وإطلاق صفحة الهبوط بالذكاء الاصطناعي (اسم المنتج + صورته + سعره فقط)
+  const handleGenerateAiLandingPage = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!aiProductName.trim()) {
+      alert('يرجى كتابة اسم المنتج للبدء بالتوليد الذكي.');
+      return;
+    }
+    if (!aiImage.trim()) {
+      alert('يرجى رفع صورة المنتج أو وضع رابطها.');
+      return;
+    }
+    const priceNum = Number(aiPrice);
+    if (!priceNum || priceNum <= 0) {
+      alert('يرجى إدخال سعر بيع صحيح للمنتج بالدينار العراقي.');
+      return;
+    }
+
+    setIsAiGenerating(true);
+    setAiGenerationProgress('جاري تحليل اسم ومواصفات المنتج...');
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setAiGenerationProgress('جاري صياغة نصوص بيعية مقنعة واحتساب عروض التوفير...');
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setAiGenerationProgress('جاري إنشاء الرابط النظيف وحفظ صفحة الهبوط سحابياً...');
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      const pageData = generateAiLandingPage({
+        productName: aiProductName.trim(),
+        imageUrl: aiImage.trim(),
+        price: priceNum,
+        subdomain,
+      });
+
+      // حفظ ونشر فوري على قاعدة بيانات Neon السحابية
+      await saveCloudLandingPage(pageData);
+
+      // التحديث في القائمة والتخزين المحلي
+      const updatedList = [pageData, ...pages.filter((p) => p.slug !== pageData.slug)];
+      setPages(updatedList);
+      try {
+        localStorage.setItem('zaeem_local_landing_pages', JSON.stringify(updatedList));
+      } catch {}
+
+      // إغلاق النافذة وتصفير الحقول وإظهار نجاح النشر
+      setIsAiModalOpen(false);
+      setCreatedSuccessPage(pageData);
+      setAiProductName('');
+      setAiImage('');
+      setAiPrice('');
+    } catch (err) {
+      console.warn('Error generating AI landing page:', err);
+      alert('حدث خطأ أثناء توليد الصفحة، يرجى المحاولة ثانية.');
+    } finally {
+      setIsAiGenerating(false);
+      setAiGenerationProgress('');
+    }
+  };
+
+  // إكمال الحقول تلقائياً بالذكاء الاصطناعي داخل النموذج اليدوي
+  const handleAutoFillWithAi = () => {
+    if (!productName.trim()) {
+      alert('يرجى كتابة اسم المنتج أولاً لتوليد باقي البيانات تلقائياً.');
+      return;
+    }
+    const currentPrice = Number(price) || 45000;
+    const generatedSlug = generateAiSlug(productName);
+    const generatedCompareAt = calculateAiCompareAtPrice(currentPrice);
+
+    setSlug(generatedSlug);
+    setCompareAtPrice(String(generatedCompareAt));
+    setDiscountTwoItems('15');
+    setDiscountThreeItems('25');
+    alert('تم توليد الرابط والسعر المقترح وعروض الخصومات بالذكاء الاصطناعي بنجاح!');
+  };
 
   // تحميل صفحات الهبوط من السيرفر السحابي ودمجها مع التخزين المحلي
   const loadPages = async () => {
@@ -329,6 +444,17 @@ export function LandingPageBuilderPage() {
 
         {/* زر أعلى الصفحة لإضافة صفحة هبوط جديدة */}
         <div className="flex items-center gap-2.5">
+          {/* زر التوليد الذكي بالـ AI (3 مدخلات فقط) */}
+          <button
+            type="button"
+            onClick={handleOpenAiGenerator}
+            className="px-5 py-3 bg-gradient-to-r from-violet-600 via-indigo-600 to-teal-600 hover:from-violet-700 hover:to-teal-700 text-white text-xs font-black rounded-2xl shadow-xl shadow-indigo-600/25 transition-all flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95 border border-white/20"
+          >
+            <Sparkles className="size-4 text-amber-300 animate-pulse" />
+            <span>توليد صفحة هبوط بـ AI</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/20 font-mono font-black">3 حقول فقط</span>
+          </button>
+
           <button
             type="button"
             onClick={handleOpenCreateNew}
@@ -627,6 +753,23 @@ export function LandingPageBuilderPage() {
             </div>
 
             <form onSubmit={handleSubmitPage} className="space-y-5">
+                {/* شريط الإكمال الذكي السريع بالـ AI */}
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 border border-violet-200 dark:border-violet-800/60 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Wand2 className="size-4 text-violet-600 dark:text-violet-400" />
+                    <span className="text-xs font-bold text-violet-950 dark:text-violet-200">
+                      هل تريد ملء باقي البيانات تلقائياً؟
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAutoFillWithAi}
+                    className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Sparkles className="size-3 text-amber-300" />
+                    <span>توليد تلقائي بالـ AI</span>
+                  </button>
+                </div>
               {/* 1. اسم المنتج */}
               <div>
                 <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
@@ -953,6 +1096,198 @@ export function LandingPageBuilderPage() {
                     <Plus className="size-4 stroke-[3]" />
                   )}
                   <span>{editingPageId ? 'حفظ التعديلات' : 'إضافة'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 🌟 4. نافذة التوليد السريع بالذكاء الاصطناعي (اسم + صورة + سعر فقط)       */}
+      {/* ========================================================================= */}
+      {isAiModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md overflow-y-auto animate-fadeIn">
+          <div className="max-w-xl w-full bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-2xl border border-indigo-200 dark:border-indigo-900/50 space-y-6 max-h-[92vh] overflow-y-auto my-auto text-right relative">
+            {/* الخلفية الجمالية المتدرجة */}
+            <div className="absolute top-0 right-0 left-0 h-2 bg-gradient-to-r from-violet-600 via-indigo-600 to-teal-500 rounded-t-3xl" />
+
+            {/* رأس النافذة */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 pt-1">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
+                    <Sparkles className="size-3 text-amber-500" /> AI Landing Generator
+                  </span>
+                  <span className="text-[11px] font-bold text-teal-800 dark:text-teal-400">3 معلومات فقط ⚡</span>
+                </div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                  توليد صفحة هبوط بالذكاء الاصطناعي
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  فقط أدخل اسم المنتج، صورته، وسعره، وسيقوم الـ AI بكتابة المحتوى وبناء ونشر الصفحة فوراً!
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={isAiGenerating}
+                onClick={() => setIsAiModalOpen(false)}
+                className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white grid place-items-center transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleGenerateAiLandingPage} className="space-y-5">
+              {/* 1. اسم المنتج */}
+              <div>
+                <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
+                  1. اسم المنتج <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={aiProductName}
+                  onChange={(e) => setAiProductName(e.target.value)}
+                  placeholder="مثال: ساعة الترا الذكية المقاومة للماء مع شاشة AMOLED"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  💡 يحدد الـ AI نوع ومميزات المنتج ويصيغ العرض البيعي تلقائياً من الاسم.
+                </p>
+              </div>
+
+              {/* 2. صورة المنتج */}
+              <div>
+                <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
+                  2. صورة المنتج <span className="text-rose-500">*</span>
+                </label>
+
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={aiImage.startsWith("data:") ? "صورة مرفوعة من جهازك ✓" : aiImage}
+                      onChange={(e) => setAiImage(e.target.value)}
+                      placeholder="ضع رابط صورة المنتج المباشر..."
+                      dir="ltr"
+                      className="flex-1 h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500"
+                    />
+
+                    <input
+                      ref={aiFileRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAiFileUpload}
+                      className="hidden"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => aiFileRef.current?.click()}
+                      className="px-4 h-11 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    >
+                      <Upload className="size-4" />
+                      <span>رفع من الجهاز</span>
+                    </button>
+                  </div>
+
+                  {/* معاينة مصغرة للصورة إذا وُجدت */}
+                  {aiImage && (
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={aiImage}
+                          alt="AI Preview"
+                          className="size-14 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                            <CheckCircle2 className="size-3.5 text-teal-800" /> تم اختيار صورة المنتج بنجاح
+                          </p>
+                          <p className="text-[10px] text-slate-400">ستكون الصورة الأساسية لصفحة الهبوط</p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setAiImage("")}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs"
+                      >
+                        إزالة
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. سعر البيع */}
+              <div>
+                <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
+                  3. سعر بيع المنتج (د.ع) <span className="text-rose-500">*</span>
+                </label>
+                <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden px-3">
+                  <input
+                    required
+                    type="number"
+                    value={aiPrice}
+                    onChange={(e) => setAiPrice(e.target.value)}
+                    placeholder="مثال: 35000"
+                    dir="ltr"
+                    className="flex-1 h-12 bg-transparent text-base font-black font-mono text-slate-900 dark:text-white outline-none text-right"
+                  />
+                  <span className="text-xs font-bold text-slate-500 mr-2">د.ع</span>
+                </div>
+                {aiPrice && Number(aiPrice) > 0 && (
+                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold mt-1.5 flex items-center gap-1">
+                    <Zap className="size-3" /> السعر الذي سيدفعه العميل: {formatIQD(Number(aiPrice))}
+                  </p>
+                )}
+              </div>
+
+              {/* بطاقة معلومات ما سيتكفل به الـ AI تلقائياً */}
+              <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 space-y-2">
+                <p className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                  <Wand2 className="size-4 text-indigo-600 dark:text-indigo-400" />
+                  ما سيتكفل به الذكاء الاصطناعي تلقائياً:
+                </p>
+                <ul className="text-[11px] text-indigo-900 dark:text-indigo-300 space-y-1 pr-4 list-disc">
+                  <li>كتابة نصوص ترويجية مقنعة بالعناوين والمميزات التسويقية الفعالة.</li>
+                  <li>توليد رابط إنجليزي مختصر ونظيف (Clean URL Slug).</li>
+                  <li>احتساب السعر المشطوب التنافسي (~30% خصم وهمي محفز).</li>
+                  <li>تجهيز باقات الكميات (خصم القطعتين 15%، و 3 قطع 25% مع شحن مجاني).</li>
+                  <li>إطلاق ونشر الصفحة فورياً على الدومين <span className="font-mono dir-ltr">{subdomain}.za3em.shop</span>.</li>
+                </ul>
+              </div>
+
+              {/* أزرار الإجراءات والتوليد */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={isAiGenerating}
+                  onClick={() => setIsAiModalOpen(false)}
+                  className="px-5 h-12 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+                >
+                  إلغاء
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isAiGenerating}
+                  className="px-8 h-12 bg-gradient-to-r from-violet-600 via-indigo-600 to-teal-600 hover:from-violet-700 hover:to-teal-700 disabled:opacity-75 text-white text-xs font-black rounded-xl shadow-xl shadow-indigo-600/25 flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  {isAiGenerating ? (
+                    <>
+                      <RefreshCw className="size-4 animate-spin" />
+                      <span>{aiGenerationProgress || "جاري التوليد بالذكاء الاصطناعي..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="size-4 text-amber-300 animate-bounce" />
+                      <span>✨ توليد ونشر صفحة الهبوط فوراً</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

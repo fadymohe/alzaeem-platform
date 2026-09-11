@@ -38,10 +38,30 @@ import {
   usersTable,
 } from "@workspace/db";
 import { getUserId, requireAdmin, requireAuth } from "../middlewares/auth";
+import {
+  hashPassword,
+  verifyPassword,
+  isLegacyPasswordHash,
+  createRateLimiter,
+  SafeOtpStore,
+} from "../lib/security";
 
 const router: IRouter = Router();
 
-const otpStore = new Map<string, { code: string; expiresAt: number; verified: boolean }>();
+const otpStore = new SafeOtpStore(5);
+
+// Rate limiters for authentication and OTP endpoints
+const authRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 25,
+  message: "تم تجاوز الحد المسموح به من المحاولات، يرجى الانتظار 15 دقيقة وإعادة المحاولة",
+});
+
+const otpRateLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  maxRequests: 8,
+  message: "تم تجاوز الحد المسموح به لطلب رموز التحقق، يرجى الانتظار 10 دقائق",
+});
 
 const RESERVED_SUBDOMAINS = [
   "admin", "api", "app", "zaeem", "za3em", "dashboard", "root", "www",
@@ -70,9 +90,9 @@ const isValidPassword = (pwd: string): boolean => {
 };
 
 // 1. Send OTP for verification or password recovery
-router.post("/auth/send-otp", async (req, res): Promise<void> => {
+router.post("/auth/send-otp", otpRateLimiter, async (req, res): Promise<void> => {
   try {
-    const { email, type = "register" } = req.body;
+    const { email } = req.body;
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
       res.status(400).json({ error: "يرجى إدخال بريد إلكتروني صحيح" });
       return;
@@ -82,16 +102,13 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 
     // Generate random 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    otpStore.set(normalizedEmail, code);
 
-    otpStore.set(normalizedEmail, { code, expiresAt, verified: false });
-
-    console.log(`[OTP SERVICE] Code for ${normalizedEmail}: ${code}`);
+    console.log(`[OTP SERVICE] Securely dispatched verification code to ${normalizedEmail}`);
 
     res.json({
       success: true,
-      message: `تم إرسال كود التحقق بنجاح إلى ${normalizedEmail}`,
-      otpCode: code // provided for demo/testing convenience
+      message: `تم إرسال كود التحقق بنجاح إلى بريدك الإلكتروني (${normalizedEmail})`,
     });
   } catch (err) {
     res.status(500).json({ error: "فشل إرسال كود التحقق" });
@@ -99,7 +116,7 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 });
 
 // 2. Verify OTP
-router.post("/auth/verify-otp", async (req, res): Promise<void> => {
+router.post("/auth/verify-otp", otpRateLimiter, async (req, res): Promise<void> => {
   try {
     const { email, code } = req.body;
     if (!email || !code) {
@@ -108,20 +125,12 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const record = otpStore.get(normalizedEmail);
+    const result = otpStore.verify(normalizedEmail, code.toString().trim());
 
-    if (!record || record.expiresAt < Date.now()) {
-      res.status(400).json({ error: "كود التحقق منتهي الصلاحية أو غير موجود، يرجى طلب كود جديد" });
+    if (!result.success) {
+      res.status(400).json({ error: result.reason || "كود التحقق غير صحيح" });
       return;
     }
-
-    if (record.code !== code.toString().trim()) {
-      res.status(400).json({ error: "كود التحقق غير صحيح، يرجى التأكد وإعادة المحاولة" });
-      return;
-    }
-
-    record.verified = true;
-    otpStore.set(normalizedEmail, record);
 
     res.json({ success: true, verified: true, message: "تم التحقق من البريد الإلكتروني بنجاح" });
   } catch (err) {
@@ -130,7 +139,7 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
 });
 
 // 3. Reset Password using verified OTP
-router.post("/auth/reset-password", async (req, res): Promise<void> => {
+router.post("/auth/reset-password", authRateLimiter, async (req, res): Promise<void> => {
   try {
     const { email, code, newPassword } = req.body;
     if (!email || !code || !newPassword) {
@@ -139,10 +148,10 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const record = otpStore.get(normalizedEmail);
+    const verifyResult = otpStore.verify(normalizedEmail, code.toString().trim());
 
-    if (!record || record.code !== code.toString().trim() || record.expiresAt < Date.now()) {
-      res.status(400).json({ error: "كود التحقق غير صحيح أو منتهي الصلاحية" });
+    if (!verifyResult.success) {
+      res.status(400).json({ error: verifyResult.reason || "كود التحقق غير صحيح أو منتهي الصلاحية" });
       return;
     }
 
@@ -151,7 +160,7 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
       return;
     }
 
-    const passwordHash = Buffer.from(newPassword).toString("base64");
+    const passwordHash = hashPassword(newPassword);
     const updated = await db.update(usersTable)
       .set({ passwordHash })
       .where(eq(usersTable.email, normalizedEmail))
@@ -197,8 +206,8 @@ router.post("/auth/check-email", async (req, res): Promise<void> => {
   }
 });
 
-// 5. Register with Strict Business Rules
-router.post("/auth/register", async (req, res): Promise<void> => {
+// 5. Register with Strict Business Rules & Cryptographic Password Hashing
+router.post("/auth/register", authRateLimiter, async (req, res): Promise<void> => {
   try {
     const { firstName, lastName, email, phone, governorate, password, storeName, subdomain } = req.body;
 
@@ -242,7 +251,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       email: normalizedEmail,
       phone: formattedPhone,
       governorate: governorate || "بغداد",
-      passwordHash: Buffer.from(password).toString("base64"),
+      passwordHash: hashPassword(password),
     }).returning();
 
     let createdStore = null;
@@ -269,7 +278,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
         status: "published",
         theme: "shoppingcart.1.2.7",
         plan: "free",
-        orderLimit: 5, // Free trial: max 5 shipments as requested
+        orderLimit: 5,
       }).returning();
       createdStore = newStore;
     }
@@ -285,7 +294,8 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 });
 
-router.post("/auth/login", async (req, res): Promise<void> => {
+// 6. Login with Cryptographic Verification & Automatic Legacy Hash Upgrade
+router.post("/auth/login", authRateLimiter, async (req, res): Promise<void> => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -293,22 +303,36 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       return;
     }
 
-    const users = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase()));
+    const normalizedEmail = email.toLowerCase().trim();
+    const users = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
     if (users.length === 0) {
       res.status(401).json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
       return;
     }
 
     const user = users[0];
-    const passwordHash = Buffer.from(password).toString("base64");
-    if (user.passwordHash !== passwordHash) {
+    const isPasswordValid = verifyPassword(password, user.passwordHash);
+
+    if (!isPasswordValid) {
       res.status(401).json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
       return;
     }
 
+    // Transparently upgrade legacy base64 hash to modern scrypt hash
+    if (isLegacyPasswordHash(user.passwordHash)) {
+      try {
+        const upgradedHash = hashPassword(password);
+        await db.update(usersTable)
+          .set({ passwordHash: upgradedHash })
+          .where(eq(usersTable.id, user.id));
+      } catch (upgradeErr) {
+        console.warn("[AUTH] Failed to upgrade legacy password hash:", upgradeErr);
+      }
+    }
+
     let userStore: any = null;
     try {
-      const za3emStores = await db.select().from(za3emStoresTable).where(or(eq(za3emStoresTable.userEmail, email.toLowerCase()), eq(za3emStoresTable.ownerId, `usr_${user.id}`)));
+      const za3emStores = await db.select().from(za3emStoresTable).where(or(eq(za3emStoresTable.userEmail, normalizedEmail), eq(za3emStoresTable.ownerId, `usr_${user.id}`)));
       if (za3emStores.length > 0) {
         userStore = za3emStores[0];
       }

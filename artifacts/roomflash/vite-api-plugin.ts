@@ -350,7 +350,7 @@ export function zaeemApiPlugin(): Plugin {
 
         // 7. Auth OTP mocks (instant access fallback)
         if (pathname === '/api/auth/send-otp' && req.method === 'POST') {
-          return sendJson(200, { success: true, otpCode: '123456', message: 'تم إرسال كود التحقق بنجاح' });
+          return sendJson(200, { success: true, message: 'تم إرسال كود التحقق بنجاح' });
         }
 
         if (pathname === '/api/auth/verify-otp' && req.method === 'POST') {

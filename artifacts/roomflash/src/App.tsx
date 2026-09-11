@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Link, Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
@@ -12,33 +12,44 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 
+// Critical direct imports for instant homepage & authentication load
 import { PublicHomePage } from './pages/PublicHome';
 import { SignInPage } from './pages/SignIn';
 import { SignUpPage } from './pages/SignUp';
 import { OnboardingPage } from './pages/Onboarding';
-import { DashboardPage } from './pages/Dashboard';
-import { ProductsPage } from './pages/Products';
-import { ProductEditorPage } from './pages/ProductEditor';
-import { OrdersPage } from './pages/Orders';
-import { CustomersPage } from './pages/Customers';
-import { ShipmentsPage } from './pages/Shipments';
-import { ZaeemLogisticsPage } from './pages/ZaeemLogistics';
-import { LandingPageBuilderPage } from './pages/LandingPageBuilder';
-import { ApplicationsPage } from './pages/Applications';
-import { AnalyticsPage } from './pages/Analytics';
-import { SubscriptionsPage } from './pages/Subscriptions';
-import { MarketingPage } from './pages/Marketing';
-import { StorePage } from './pages/StorePage';
 import { StandaloneStorePage } from './pages/StandaloneStore';
 import { DynamicStoreLanding } from './pages/DynamicStoreLanding';
 import { isTemplatePreview } from './components/storefront/StoreTemplates';
-import { OrderTrackingPage } from './pages/OrderTrackingPage';
-import { SettingsPage } from './pages/Settings';
-import { SupportPage } from './pages/Support';
-import { ThemeCustomizerPage } from './pages/ThemeCustomizer';
 import { supabase } from './utils/supabase';
 import { setStoreDocumentIdentity } from './utils/storeIdentityHelper';
 import { getRegisteredStore } from './utils/storeRegistry';
+
+// Lazy-loaded heavy admin dashboard pages for optimal initial bundle performance
+const DashboardPage = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
+const ProductsPage = lazy(() => import('./pages/Products').then(m => ({ default: m.ProductsPage })));
+const ProductEditorPage = lazy(() => import('./pages/ProductEditor').then(m => ({ default: m.ProductEditorPage })));
+const OrdersPage = lazy(() => import('./pages/Orders').then(m => ({ default: m.OrdersPage })));
+const CustomersPage = lazy(() => import('./pages/Customers').then(m => ({ default: m.CustomersPage })));
+const ShipmentsPage = lazy(() => import('./pages/Shipments').then(m => ({ default: m.ShipmentsPage })));
+const LandingPageBuilderPage = lazy(() => import('./pages/LandingPageBuilder').then(m => ({ default: m.LandingPageBuilderPage })));
+const ApplicationsPage = lazy(() => import('./pages/Applications').then(m => ({ default: m.ApplicationsPage })));
+const AnalyticsPage = lazy(() => import('./pages/Analytics').then(m => ({ default: m.AnalyticsPage })));
+const SubscriptionsPage = lazy(() => import('./pages/Subscriptions').then(m => ({ default: m.SubscriptionsPage })));
+const MarketingPage = lazy(() => import('./pages/Marketing').then(m => ({ default: m.MarketingPage })));
+const StorePage = lazy(() => import('./pages/StorePage').then(m => ({ default: m.StorePage })));
+const ThemeCustomizerPage = lazy(() => import('./pages/ThemeCustomizer').then(m => ({ default: m.ThemeCustomizerPage })));
+const SettingsPage = lazy(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
+const SupportPage = lazy(() => import('./pages/Support').then(m => ({ default: m.SupportPage })));
+const OrderTrackingPage = lazy(() => import('./pages/OrderTrackingPage').then(m => ({ default: m.OrderTrackingPage })));
+
+function PageLoadingFallback() {
+  return (
+    <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center" dir="rtl">
+      <div className="size-10 rounded-full border-3 border-teal-600 border-t-transparent animate-spin mb-3" />
+      <p className="text-xs font-bold text-slate-500">جاري تحميل الصفحة...</p>
+    </div>
+  );
+}
 
 
 
@@ -147,32 +158,34 @@ function ProtectedRoutes() {
 
   return (
     <ShellLayout>
-      <Switch>
-        <Route path="/dashboard" component={DashboardPage} />
-        <Route path="/products/new" component={ProductEditorPage} />
-        <Route path="/products/:id" component={ProductEditorPage} />
-        <Route path="/products" component={ProductsPage} />
-        <Route path="/orders" component={OrdersPage} />
-        <Route path="/customers" component={CustomersPage} />
-        <Route path="/shipments" component={ShipmentsPage} />
-        <Route path="/shipments/new" component={ShipmentsPage} />
-        <Route path="/shipments/track" component={ShipmentsPage} />
-        <Route path="/shipments/rates" component={ShipmentsPage} />
-        <Route path="/zaeem-logistics"><Redirect to="/shipments/rates" /></Route>
-        <Route path="/landing-pages" component={LandingPageBuilderPage} />
-        <Route path="/landing-page" component={LandingPageBuilderPage} />
-        <Route path="/landing-pages/new" component={LandingPageBuilderPage} />
-        <Route path="/landing-page/new" component={LandingPageBuilderPage} />
-        <Route path="/applications" component={ApplicationsPage} />
-        <Route path="/analytics" component={AnalyticsPage} />
-        <Route path="/subscriptions" component={SubscriptionsPage} />
-        <Route path="/marketing" component={MarketingPage} />
-        <Route path="/store" component={StorePage} />
-        <Route path="/theme-customizer" component={ThemeCustomizerPage} />
-        <Route path="/settings" component={SettingsPage} />
-        <Route path="/support" component={SupportPage} />
-        <Route><Redirect to="/dashboard" /></Route>
-      </Switch>
+      <Suspense fallback={<PageLoadingFallback />}>
+        <Switch>
+          <Route path="/dashboard" component={DashboardPage} />
+          <Route path="/products/new" component={ProductEditorPage} />
+          <Route path="/products/:id" component={ProductEditorPage} />
+          <Route path="/products" component={ProductsPage} />
+          <Route path="/orders" component={OrdersPage} />
+          <Route path="/customers" component={CustomersPage} />
+          <Route path="/shipments" component={ShipmentsPage} />
+          <Route path="/shipments/new" component={ShipmentsPage} />
+          <Route path="/shipments/track" component={ShipmentsPage} />
+          <Route path="/shipments/rates" component={ShipmentsPage} />
+          <Route path="/zaeem-logistics"><Redirect to="/shipments/rates" /></Route>
+          <Route path="/landing-pages" component={LandingPageBuilderPage} />
+          <Route path="/landing-page" component={LandingPageBuilderPage} />
+          <Route path="/landing-pages/new" component={LandingPageBuilderPage} />
+          <Route path="/landing-page/new" component={LandingPageBuilderPage} />
+          <Route path="/applications" component={ApplicationsPage} />
+          <Route path="/analytics" component={AnalyticsPage} />
+          <Route path="/subscriptions" component={SubscriptionsPage} />
+          <Route path="/marketing" component={MarketingPage} />
+          <Route path="/store" component={StorePage} />
+          <Route path="/theme-customizer" component={ThemeCustomizerPage} />
+          <Route path="/settings" component={SettingsPage} />
+          <Route path="/support" component={SupportPage} />
+          <Route><Redirect to="/dashboard" /></Route>
+        </Switch>
+      </Suspense>
     </ShellLayout>
   );
 }
@@ -480,7 +493,13 @@ function RoutedApp() {
   }
 
   // صفحة التتبع الحي للعملاء
-  if (effectiveRoute.startsWith('/track')) return <OrderTrackingPage />;
+  if (effectiveRoute.startsWith('/track')) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <OrderTrackingPage />
+      </Suspense>
+    );
+  }
 
   // صفحات المتاجر والهبوط بالنطاقات المباشرة
   if (effectiveRoute.startsWith('/landing/') || effectiveRoute.startsWith('/view-store/') || effectiveRoute.startsWith('/store/') || effectiveRoute.startsWith('/p/')) {
@@ -496,8 +515,20 @@ function RoutedApp() {
   if (effectiveRoute.startsWith('/sign-in')) return <SignInPage />;
   if (effectiveRoute.startsWith('/sign-up')) return <SignUpPage />;
   if (effectiveRoute.startsWith('/onboarding')) return <OnboardingPage />;
-  if (effectiveRoute.startsWith('/support')) return <SupportPage />;
-  if (effectiveRoute.startsWith('/theme-customizer')) return <ThemeCustomizerPage />;
+  if (effectiveRoute.startsWith('/support')) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <SupportPage />
+      </Suspense>
+    );
+  }
+  if (effectiveRoute.startsWith('/theme-customizer')) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <ThemeCustomizerPage />
+      </Suspense>
+    );
+  }
   return <ProtectedRoutes />;
 }
 
