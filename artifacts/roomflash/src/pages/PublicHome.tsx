@@ -7,19 +7,20 @@ import { PlatformVideoShowcase } from '../components/home/PlatformVideoShowcase'
 import { TransformationDiagram } from '../components/home/TransformationDiagram';
 import { EcosystemRadialHub } from '../components/home/EcosystemRadialHub';
 import { HomePricingSection } from '../components/home/HomePricingSection';
+import { ShippingRatesSummary } from '../components/home/ShippingRatesSummary';
 import {
   Sparkles, ArrowLeft, ArrowRight, CheckCircle2, XCircle, ShoppingBag,
-
   Truck, BarChart3, ShieldCheck, PhoneCall, Globe, Layers, Zap, MessageSquare,
   FileSpreadsheet, AlertCircle, Clock, PackageCheck, Repeat, ChevronLeft,
   Smartphone, Monitor, Play, Check, TrendingUp, Users, DollarSign, Wallet,
-  Store, Building2, MapPin, ArrowUpRight, Palette, Layout, Award
+  Store, Building2, MapPin, ArrowUpRight, Palette, Layout, Award, Tag, Menu, X
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
 
 export function PublicHomePage() {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [activeStep, setActiveStep] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isAr = lang === 'ar';
 
@@ -91,7 +92,7 @@ export function PublicHomePage() {
   };
 
   return (
-    <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[100dvh] overflow-x-hidden bg-white text-slate-900 font-sans select-none">
+    <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[100dvh] overflow-x-clip bg-white text-slate-900 font-sans select-none">
       {/* Background Grid & Glow */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-70" />
@@ -101,69 +102,84 @@ export function PublicHomePage() {
 
       <div className="relative z-10">
         {/* ========================================================================= */}
-        {/* 1️⃣ NAVBAR: Floating Glass Navbar */}
+        {/* 1️⃣ NAVBAR: Floating Sticky Glass Navbar Frame */}
         {/* ========================================================================= */}
-        <div className="sticky top-4 z-50 px-4 md:px-8">
-          <header className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/80 bg-white/80 px-4 md:px-6 py-3 backdrop-blur-md shadow-lg shadow-slate-100/50">
-            {/* Logo Clean (No Country Badge) */}
-            <div className="flex items-center gap-3">
+        <div className="sticky top-4 z-50 px-3 sm:px-6">
+          <header className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/90 bg-white/95 px-4 md:px-6 py-2.5 backdrop-blur-xl shadow-xl shadow-slate-200/50 transition-all">
+            {/* Right: Logo */}
+            <div className="flex items-center gap-3 shrink-0">
               <Logo showSubtitle={false} />
             </div>
 
-            {/* Nav Links With Smooth Scrolling */}
-            <nav className="hidden lg:flex items-center gap-6 text-xs font-bold text-slate-600">
+            {/* Center: Nav Links With Distinct Icons & Pill Badges */}
+            <nav className="hidden xl:flex items-center gap-5 text-xs font-bold text-slate-600">
+              {/* 1. كيف تعمل المنصة */}
               <button
                 type="button"
                 onClick={() => scrollToSection('how-it-works')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 text-teal-800 bg-teal-50/80 px-3 py-1 rounded-full border border-teal-100 hover:bg-teal-100/70"
+                className="transition-all hover:scale-105 cursor-pointer font-black flex items-center gap-1.5 text-emerald-900 bg-emerald-100/90 px-3.5 py-1.5 rounded-full border border-emerald-300/80 shadow-xs"
               >
-                <Play className="size-3 text-teal-600 fill-teal-600" />
+                <Play className="size-3 text-emerald-700 fill-emerald-700" />
                 <span>{isAr ? 'كيف تعمل المنصة' : 'How It Works'}</span>
               </button>
+
+              {/* 2. المميزات */}
               <button
                 type="button"
                 onClick={() => scrollToSection('features')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 group"
               >
-                {t.navFeatures}
+                <Sparkles className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
+                <span>{t.navFeatures}</span>
               </button>
+
+              {/* 3. الأسعار */}
               <button
                 type="button"
                 onClick={() => scrollToSection('pricing')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1 text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200"
+                className="transition-all hover:scale-105 cursor-pointer font-black flex items-center gap-1.5 text-emerald-800 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-300 shadow-xs"
               >
-                <Globe className="size-3 text-emerald-600" />
+                <Globe className="size-3.5 text-emerald-600" />
                 <span>{t.navPricing}</span>
               </button>
+
+              {/* 4. قصص النجاح */}
               <button
                 type="button"
                 onClick={() => scrollToSection('stories')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 group"
               >
-                {t.navStories}
+                <TrendingUp className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
+                <span>{t.navStories}</span>
               </button>
+
+              {/* 5. الشحن والتوصيل */}
               <button
                 type="button"
                 onClick={() => scrollToSection('shipping')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 group"
               >
-                {t.navShipping}
+                <Truck className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
+                <span>{t.navShipping}</span>
               </button>
+
+              {/* 6. المدونة */}
               <button
                 type="button"
                 onClick={() => scrollToSection('blog')}
-                className="transition-colors hover:text-teal-700 cursor-pointer font-bold"
+                className="transition-colors hover:text-teal-700 cursor-pointer font-bold flex items-center gap-1.5 group"
               >
-                {t.navBlog}
+                <MessageSquare className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
+                <span>{t.navBlog}</span>
               </button>
             </nav>
 
-            {/* Language Switcher & Auth */}
-            <div className="flex items-center gap-2.5">
+            {/* Left: Language Switcher, Sign In & CTA */}
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
                 data-testid="button-lang-toggle"
-                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-extrabold text-slate-700 hover:bg-slate-100 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 text-xs font-extrabold text-slate-700 transition-colors shadow-xs cursor-pointer"
               >
                 <Globe className="size-3.5 text-teal-600" />
                 <span>{lang === 'ar' ? 'English' : 'العربية'}</span>
@@ -171,19 +187,97 @@ export function PublicHomePage() {
 
               <Link
                 href="/sign-in"
-                className="hidden sm:inline-flex rounded-full px-4 py-2 text-xs font-extrabold text-slate-700 hover:text-teal-700 transition-colors"
+                className="hidden sm:inline-flex rounded-full px-3.5 py-1.5 text-xs font-extrabold text-slate-700 hover:text-teal-700 transition-colors"
               >
                 {t.signIn}
               </Link>
 
               <Link
                 href="/sign-up"
-                className="inline-flex items-center justify-center rounded-full bg-teal-700 hover:bg-teal-800 px-5 py-2.5 text-xs font-extrabold text-white shadow-md shadow-teal-700/20 transition-all hover:scale-105"
+                className="inline-flex items-center justify-center rounded-full bg-[#00695c] hover:bg-teal-800 px-5 py-2 text-xs font-black text-white shadow-md shadow-teal-900/20 transition-all hover:scale-105 active:scale-95"
               >
                 {t.startFree}
               </Link>
+
+              {/* Mobile Menu Toggle */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="xl:hidden size-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-colors cursor-pointer"
+                aria-label="Toggle navigation menu"
+              >
+                {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+              </button>
             </div>
           </header>
+
+          {/* Mobile Dropdown Menu Drawer */}
+          {mobileMenuOpen && (
+            <div className="xl:hidden mt-2 p-4 rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xl shadow-2xl space-y-2 animate-in fade-in slide-in-from-top-2">
+              <button
+                type="button"
+                onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
+                className="w-full text-right p-2.5 rounded-xl bg-emerald-50 text-emerald-900 text-xs font-black flex items-center gap-2"
+              >
+                <Play className="size-3.5 text-emerald-700 fill-emerald-700" />
+                <span>{isAr ? 'كيف تعمل المنصة' : 'How It Works'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { scrollToSection('features'); setMobileMenuOpen(false); }}
+                className="w-full text-right p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2"
+              >
+                <Sparkles className="size-3.5 text-teal-600" />
+                <span>{t.navFeatures}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { scrollToSection('pricing'); setMobileMenuOpen(false); }}
+                className="w-full text-right p-2.5 rounded-xl bg-emerald-50/70 text-emerald-800 text-xs font-black flex items-center gap-2"
+              >
+                <Globe className="size-3.5 text-emerald-600" />
+                <span>{t.navPricing}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { scrollToSection('stories'); setMobileMenuOpen(false); }}
+                className="w-full text-right p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2"
+              >
+                <TrendingUp className="size-3.5 text-teal-600" />
+                <span>{t.navStories}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { scrollToSection('shipping'); setMobileMenuOpen(false); }}
+                className="w-full text-right p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2"
+              >
+                <Truck className="size-3.5 text-teal-600" />
+                <span>{t.navShipping}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { scrollToSection('blog'); setMobileMenuOpen(false); }}
+                className="w-full text-right p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2"
+              >
+                <MessageSquare className="size-3.5 text-teal-600" />
+                <span>{t.navBlog}</span>
+              </button>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <Link
+                  href="/sign-in"
+                  className="text-xs font-bold text-slate-700 hover:text-teal-700 p-2"
+                >
+                  {t.signIn}
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="text-xs font-bold text-teal-700 p-2"
+                >
+                  {t.startFree}
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ========================================================================= */}
@@ -563,6 +657,9 @@ export function PublicHomePage() {
                 </p>
               </div>
             </div>
+
+            {/* Quick Shipping Rates Summary for Iraq Governorates */}
+            <ShippingRatesSummary isAr={isAr} />
           </div>
         </section>
 
