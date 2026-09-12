@@ -16,6 +16,8 @@ export interface StoreProduct {
   imageUrl?: string;
   images?: string[]; // 3 images: [main, optional1, optional2]
   weightGrams?: number;
+  isManual?: boolean;
+  isDefault?: boolean;
 }
 
 export interface StoreOrder {
@@ -70,47 +72,71 @@ export function getStoredProducts(): StoreProduct[] {
     const raw = localStorage.getItem(PRODUCTS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Clean out the 5 hardcoded dummy sample products if present
-      const isDummyCatalog = Array.isArray(parsed) && parsed.length === 5 &&
-        parsed.some((p: any) => p.sku === 'SHIRT-001' || p.sku === 'PERFUME-99');
-      
-      if (!isDummyCatalog && Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        // فلترة أي منتجات تجريبية أو افتراضية لم يضفها التاجر يدوياً
+        const validProducts = parsed.filter((p: any) => {
+          if (!p || typeof p !== 'object') return false;
+          if (p.isDefault === true) return false;
+          if (p.sku === 'SHIRT-001' || p.sku === 'PERFUME-99') return false;
+          // إزالة العطر الافتراضي المسبق
+          if (!p.isManual && (p.name === 'عطر تاج الفخامة الفرنسي الملكي' || p.title === 'عطر تاج الفخامة الفرنسي الملكي')) {
+            return false;
+          }
+          return true;
+        });
+
+        // إذا تم تنظيف أي منتجات افتراضية نقوم بتحديث التخزين
+        if (validProducts.length !== parsed.length) {
+          saveStoredProducts(validProducts);
+        }
+
+        if (validProducts.length > 0) {
+          return validProducts;
+        }
       }
     }
   } catch (e) {}
 
-  // Check if merchant has an onboarded product or products list
+  // فحص ما إذا كان التاجر يملك منتجات حقيقية أضيفت في الإعداد ولم تكن الافتراضية
   try {
     const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
     if (rawStore) {
       const parsedStore = JSON.parse(rawStore);
       if (Array.isArray(parsedStore.products) && parsedStore.products.length > 0) {
-        saveStoredProducts(parsedStore.products);
-        return parsedStore.products;
+        const validList = parsedStore.products.filter((p: any) =>
+          p && !p.isDefault && p.name !== 'عطر تاج الفخامة الفرنسي الملكي' && p.title !== 'عطر تاج الفخامة الفرنسي الملكي'
+        );
+        if (validList.length > 0) {
+          saveStoredProducts(validList);
+          return validList;
+        }
       }
       if (parsedStore.product && (parsedStore.product.name || parsedStore.product.title)) {
-        const realProd: StoreProduct = {
-          id: 1,
-          name: parsedStore.product.title || parsedStore.product.name,
-          sku: `PRD-${(parsedStore.subdomain || 'ZAEEM').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'SHOP'}-001`,
-          description: parsedStore.product.description || parsedStore.slogan || 'منتج أصلي عالي الجودة مع شحن سريع وضمان الدفع عند الاستلام',
-          price: Number(parsedStore.product.price) || 45000,
-          compareAtPrice: Number(parsedStore.product.compareAtPrice) || Math.round((Number(parsedStore.product.price) || 45000) * 1.3),
-          stock: 50,
-          lowStockThreshold: 5,
-          category: parsedStore.category || 'عام',
-          status: 'active',
-          imageUrl: parsedStore.product.imageUrl || parsedStore.product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
-          weightGrams: 500
-        };
-        localStorage.setItem(PRODUCTS_KEY, JSON.stringify([realProd]));
-        return [realProd];
+        const pTitle = parsedStore.product.title || parsedStore.product.name;
+        if (pTitle && pTitle !== 'عطر تاج الفخامة الفرنسي الملكي' && !parsedStore.product.isDefault) {
+          const realProd: StoreProduct = {
+            id: parsedStore.product.id || 1,
+            name: pTitle,
+            sku: parsedStore.product.sku || `PRD-${(parsedStore.subdomain || 'ZAEEM').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'SHOP'}-001`,
+            description: parsedStore.product.description || parsedStore.slogan || '',
+            price: Number(parsedStore.product.price) || 0,
+            compareAtPrice: parsedStore.product.compareAtPrice ? Number(parsedStore.product.compareAtPrice) : null,
+            stock: parsedStore.product.stock !== undefined ? Number(parsedStore.product.stock) : 50,
+            lowStockThreshold: 5,
+            category: parsedStore.product.category || parsedStore.category || 'عام',
+            status: 'active',
+            imageUrl: parsedStore.product.imageUrl || parsedStore.product.image || '',
+            weightGrams: 500,
+            isManual: true,
+          };
+          saveStoredProducts([realProd]);
+          return [realProd];
+        }
       }
     }
   } catch (e) {}
 
-  // Default is empty if merchant has not added any products
+  // الافتراضي هو قائمة فارغة إذا لم يقم التاجر بإضافة أي منتج يدوياً
   return [];
 }
 
@@ -229,7 +255,8 @@ export function addStoredProduct(product: Omit<StoreProduct, 'id'>): StoreProduc
   const products = getStoredProducts();
   const newProduct: StoreProduct = {
     ...product,
-    id: Date.now()
+    id: Date.now(),
+    isManual: true,
   };
   const updated = [newProduct, ...products];
   saveStoredProducts(updated);

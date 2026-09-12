@@ -119,7 +119,7 @@ export function DashboardPage() {
         templateId: parsedOnb?.templateId || parsedOnb?.selectedTheme || 'store-aurit',
         logoUrl: parsedOnb?.logoUrl,
         bannerUrl: parsedOnb?.bannerUrl,
-        product: parsedOnb?.product,
+        product: (parsedOnb?.product && (parsedOnb.product.title || parsedOnb.product.name) !== 'عطر تاج الفخامة الفرنسي الملكي' && !parsedOnb.product.isDefault) ? parsedOnb.product : undefined,
         freeShipmentsRemaining: parsedOnb?.freeShipmentsRemaining ?? 5
       });
     } catch {}

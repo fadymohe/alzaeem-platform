@@ -76,7 +76,6 @@ export function StandaloneStorePage() {
         setTemplateId(normalizeTemplateId(registered.templateId));
       }
       setStoreData(registered);
-      return;
     }
 
     // 3. Fallback to single onboarded store keys

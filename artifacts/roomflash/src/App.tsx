@@ -322,13 +322,8 @@ function RoutedApp() {
         const storeName = dbStore?.name || meta.store_name || onboarded?.storeName || userObj.storeName;
         const subdomain = `${cleanStoredSub}.za3em.shop`;
         const selectedTheme = dbStore?.templateId || dbStore?.template_id || meta.template_id || meta.selected_theme || onboarded?.templateId || 'shoppingcart.1.2.7';
-        const product = dbStore?.product || meta.product || onboarded?.product || {
-          id: 1,
-          title: 'عطر تاج الفخامة الفرنسي الملكي',
-          price: 45000,
-          compareAtPrice: 58000,
-          imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80'
-        };
+        const rawProd = dbStore?.product || meta.product || onboarded?.product;
+        const product = (rawProd && (rawProd.title || rawProd.name) && rawProd.title !== 'عطر تاج الفخامة الفرنسي الملكي' && !rawProd.isDefault) ? rawProd : null;
 
         const fullStoreData = {
           ...userObj,
@@ -350,24 +345,13 @@ function RoutedApp() {
         localStorage.setItem('zaeem_onboarding_completed', 'true');
         localStorage.setItem('zaeem_auth_action', 'signin');
 
-        // Save product to zaeem_store_products if not present
+        // استرجاع وحفظ المنتجات الحقيقية فقط إذا كانت مسجلة في قاعدة البيانات
         try {
-          const curProds = JSON.parse(localStorage.getItem('zaeem_store_products') || '[]');
-          if (product && (!curProds || curProds.length === 0)) {
-            localStorage.setItem('zaeem_store_products', JSON.stringify([{
-              id: 1,
-              name: product.title || product.name || 'منتج المتجر الحصري',
-              sku: `PRD-${cleanSlug.toUpperCase()}`,
-              description: (fullStoreData as any).slogan || 'منتج أصلي فاخر مع شحن سريع وضمان الدفع عند الاستلام',
-              price: Number(product.price) || 45000,
-              compareAtPrice: Number(product.compareAtPrice) || 58000,
-              stock: 50,
-              lowStockThreshold: 5,
-              category: product.category || 'عام',
-              status: 'active',
-              imageUrl: product.imageUrl || product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
-              weightGrams: 500
-            }]));
+          if (Array.isArray(dbStore?.products) && dbStore.products.length > 0) {
+            const cleanProds = dbStore.products.filter((p: any) => p && !p.isDefault && p.name !== 'عطر تاج الفخامة الفرنسي الملكي');
+            if (cleanProds.length > 0) {
+              localStorage.setItem('zaeem_store_products', JSON.stringify(cleanProds));
+            }
           }
         } catch {}
 

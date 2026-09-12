@@ -28,12 +28,59 @@ export function StorePage() {
   // Main section tabs: ثيمات المتجر vs إعدادات الدومين والخط vs صفحات الهبوط
   const [activeMainTab, setActiveMainTab] = useState<'themes' | 'settings' | 'landing'>('themes');
 
+  // Helper to read initial store data synchronously to prevent UI flicker
+  const getInitialStoreData = () => {
+    try {
+      const stored = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
+      const rawUser = localStorage.getItem('zaeem_user');
+      let parsedUser: any = null;
+      if (rawUser) {
+        try { parsedUser = JSON.parse(rawUser); } catch {}
+      }
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const cleanSub = (parsed.subdomain || parsedUser?.subdomain || 'alzaeem')
+          .replace(/\.za3em\.shop|\.alzaeem\.iq/g, '')
+          .replace(/^https?:\/\//, '')
+          .toLowerCase()
+          .trim();
+        return {
+          name: parsed.storeName || parsedUser?.storeName || (cleanSub && cleanSub !== 'alzaeem' ? `متجر ${cleanSub}` : 'متجر الزعيم'),
+          subdomain: cleanSub || 'alzaeem',
+          templateId: normalizeTemplateId(parsed.selectedTheme || parsed.templateId || 'store-sprout'),
+          font: parsed.font || 'Tajawal',
+          categories: Array.isArray(parsed.categories) && parsed.categories.length > 0 ? parsed.categories : ['عام', 'عطور فاخرة', 'إلكترونيات', 'أزياء'],
+          paymentMethods: parsed.paymentMethods || null,
+          isActive: typeof parsed.isActive === 'boolean' ? parsed.isActive : true,
+        };
+      } else if (parsedUser) {
+        const cleanSub = (parsedUser.subdomain || 'alzaeem')
+          .replace(/\.za3em\.shop|\.alzaeem\.iq/g, '')
+          .replace(/^https?:\/\//, '')
+          .toLowerCase()
+          .trim();
+        return {
+          name: parsedUser.storeName || (cleanSub && cleanSub !== 'alzaeem' ? `متجر ${cleanSub}` : 'متجر الزعيم'),
+          subdomain: cleanSub || 'alzaeem',
+          templateId: 'store-sprout' as TemplateId,
+          font: 'Tajawal',
+          categories: ['عام', 'عطور فاخرة', 'إلكترونيات', 'أزياء'],
+          paymentMethods: null,
+          isActive: true,
+        };
+      }
+    } catch {}
+    return null;
+  };
+
+  const initialStore = getInitialStoreData();
+
   // 1. Basic Store Info & Subdomain
-  const [storeName, setStoreName] = useState('متجر الزعيم');
-  const [subdomainInput, setSubdomainInput] = useState('alzaeem');
-  const [subdomain, setSubdomain] = useState('alzaeem');
-  const [isStoreActive, setIsStoreActive] = useState<boolean>(true);
-  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('store-sprout');
+  const [storeName, setStoreName] = useState(initialStore?.name || 'متجر الزعيم');
+  const [subdomainInput, setSubdomainInput] = useState(initialStore?.subdomain || 'alzaeem');
+  const [subdomain, setSubdomain] = useState(initialStore?.subdomain || 'alzaeem');
+  const [isStoreActive, setIsStoreActive] = useState<boolean>(initialStore?.isActive ?? true);
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>(initialStore?.templateId || 'store-sprout');
   const [themeSearch, setThemeSearch] = useState('');
   const [selectedCategoryTab, setSelectedCategoryTab] = useState('الكل');
 
@@ -45,66 +92,31 @@ export function StorePage() {
   const [previewThemeModal, setPreviewThemeModal] = useState<TemplateConfig | null>(null);
 
   // 2. Store Font & Typography
-  const [storeFont, setStoreFont] = useState<string>('Tajawal');
+  const [storeFont, setStoreFont] = useState<string>(initialStore?.font || 'Tajawal');
 
   // 3. Store Categories / Sections
-  const [categories, setCategories] = useState<string[]>(['عام', 'عطور فاخرة', 'إلكترونيات', 'أزياء']);
+  const [categories, setCategories] = useState<string[]>(initialStore?.categories || ['عام', 'عطور فاخرة', 'إلكترونيات', 'أزياء']);
   const [newCategoryInput, setNewCategoryInput] = useState('');
 
   // 4. Payment Options
-  const [paymentMethods, setPaymentMethods] = useState({
+  const [paymentMethods, setPaymentMethods] = useState(() => initialStore?.paymentMethods || ({
     cod: true,
     zainCash: true,
     zainCashPhone: '07801234567',
     qiCard: true,
     asiaHawala: false,
     asiaHawalaPhone: '07701234567',
-  });
+  }));
 
   // Load from local storage & database
   useEffect(() => {
+    const effectiveSub = initialStore?.subdomain || subdomain;
     try {
-      const stored = localStorage.getItem('zaeem_store_data') || localStorage.getItem('zaeem_onboarded_store');
-      const rawUser = localStorage.getItem('zaeem_user');
-      let parsedUser: any = null;
-      if (rawUser) {
-        try { parsedUser = JSON.parse(rawUser); } catch {}
-      }
-
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.storeName) setStoreName(parsed.storeName);
-        else if (parsedUser?.storeName) setStoreName(parsedUser.storeName);
-
-        const cleanSub = (parsed.subdomain || parsedUser?.subdomain || 'alzaeem')
-          .replace(/\.za3em\.shop|\.alzaeem\.iq/g, '')
-          .replace(/^https?:\/\//, '')
-          .toLowerCase()
-          .trim();
-        setSubdomain(cleanSub);
-        setSubdomainInput(cleanSub);
-
-        if (parsed.selectedTheme) setActiveTemplate(normalizeTemplateId(parsed.selectedTheme));
-        else if (parsed.templateId) setActiveTemplate(normalizeTemplateId(parsed.templateId));
-
-        if (parsed.font) setStoreFont(parsed.font);
-        if (Array.isArray(parsed.categories) && parsed.categories.length > 0) setCategories(parsed.categories);
-        if (parsed.paymentMethods) setPaymentMethods(prev => ({ ...prev, ...parsed.paymentMethods }));
-        if (typeof parsed.isActive === 'boolean') setIsStoreActive(parsed.isActive);
-      } else if (parsedUser) {
-        if (parsedUser.storeName) setStoreName(parsedUser.storeName);
-        if (parsedUser.subdomain) {
-          const cleanSub = parsedUser.subdomain.replace(/\.za3em\.shop/g, '').replace(/^https?:\/\//, '').trim();
-          setSubdomain(cleanSub);
-          setSubdomainInput(cleanSub);
-        }
-      }
-
       const activeVal = localStorage.getItem('zaeem_store_active');
       if (activeVal !== null) setIsStoreActive(activeVal !== 'false');
     } catch (e) {}
 
-    fetchCloudStore(subdomain).then(record => {
+    fetchCloudStore(effectiveSub).then(record => {
       if (record) {
         if (record.name) setStoreName(record.name);
         if (record.template_id) setActiveTemplate(normalizeTemplateId(record.template_id));
@@ -114,7 +126,7 @@ export function StorePage() {
     }).catch(() => {});
 
     // Enforce 3-day trial expiration: revert to free theme if 3 days have passed on free plan
-    checkAndEnforceThemeTrialExpiration(subdomain).then(reverted => {
+    checkAndEnforceThemeTrialExpiration(effectiveSub).then(reverted => {
       if (reverted) {
         setActiveTemplate('store-sprout');
       }

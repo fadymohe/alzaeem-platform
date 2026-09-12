@@ -1011,7 +1011,22 @@ export function StoreTemplates({
   const themeDefaults = THEME_SPECIFIC_PRODUCTS[currentThemeId] || THEME_SPECIFIC_PRODUCTS['store-wardrobe'] || SAMPLE_THEME_PRODUCTS;
 
   // In standalone preview mode or when merchant products array is empty, always use authentic theme defaults
-  const passedProducts = Array.isArray(products) && products.length > 0 ? products : null;
+  const passedProducts = Array.isArray(products) && products.length > 0
+    ? products
+    : (customProduct && (customProduct.title || customProduct.name) ? [{
+        id: customProduct.id || 1,
+        name: customProduct.title || customProduct.name || 'المنتج المميز',
+        price: Number(customProduct.price) || 0,
+        compareAtPrice: Number(customProduct.compareAtPrice) || (Number(customProduct.price) ? Math.round(Number(customProduct.price) * 1.3) : undefined),
+        image: customProduct.imageUrl || customProduct.image || '',
+        category: customProduct.category || 'العروض الحصرية',
+        stock: 50,
+        rating: 4.9,
+        ordersCount: 120,
+        description: customProduct.description || '',
+        images: customProduct.images || (customProduct.imageUrl ? [customProduct.imageUrl] : []),
+      }] : null);
+
   const productsList: StoreProduct[] = standalone
     ? (passedProducts || themeDefaults)
     : (passedProducts || (baseProducts.length > 0 ? baseProducts : themeDefaults));

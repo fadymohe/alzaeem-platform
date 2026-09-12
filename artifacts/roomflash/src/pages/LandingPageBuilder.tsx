@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, type FormEvent } from 'react';
 import {
   Sparkles, Plus, Eye, Copy, Check, ExternalLink, Globe,
   Trash2, CheckCircle2, Image as ImageIcon, Upload, DollarSign,
-  Percent, RefreshCw, AlertTriangle, Edit3, X, Wand2, Zap
+  Percent, RefreshCw, AlertTriangle, Edit3, X, Wand2, Zap, Layers
 } from 'lucide-react';
 import { formatIQD } from '../data/iraqData';
 import {
@@ -16,26 +16,80 @@ import {
   generateCatchyMarketingTitle
 } from '../utils/aiLandingGenerator';
 
-// صفحات الهبوط الافتراضية لضمان ظهور الصفحة فوراً ولا يظهر الجدول فارغاً
-const INITIAL_DEMO_PAGES: CloudLandingPage[] = [
+// قائمة قوالب صفحات الهبوط المتنوعة بتصاميم وأشكال مختلفة
+export interface LandingTemplateOption {
+  id: string;
+  name: string;
+  badge: string;
+  niche: string;
+  description: string;
+  accentColor: string;
+}
+
+export const LANDING_PAGE_TEMPLATES: LandingTemplateOption[] = [
   {
-    id: '1',
-    subdomain: 'alzaeem',
-    slug: 'landbidg1',
-    productName: 'عطر تاج الفخامة الفرنسي الملكي',
-    images: [
-      'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=800&auto=format&fit=crop&q=80',
-    ],
-    price: 45000,
-    compareAtPrice: 58000,
-    discountTwoItems: 15,
-    discountThreeItems: 25,
-    description: 'عطر فاخر بثبات 48 ساعة وشحن مجاني للـ 3 قطع والدفع عند الاستلام بعد المعاينة لجميع محافظات العراق.',
-    template: 'easyorders-flash',
-    isPublished: true,
-    createdAt: '2026-09-05',
+    id: 'easyorders-flash',
+    name: 'قالب فلاش كود السريع (EasyOrders Flash)',
+    badge: 'معدل تحويل فائق ⚡',
+    niche: 'شراء مباشر سريع',
+    description: 'واجهة بيعية فائقة الفعالية مع باقات خصم 1/2/3 قطع، عداد تنازلي، وزر طلب مباشر للدفع عند الاستلام.',
+    accentColor: '#0d9488',
+  },
+  {
+    id: 'minimal-luxury',
+    name: 'قالب المينيمال العصري الفاخر (Minimal Luxury)',
+    badge: 'فاخر ومينيمال 💎',
+    niche: 'منتجات راقية وحصرية',
+    description: 'تصميم هادئ بخلفية ليلية ولمسات ذهبية أنيقة مع عرض صور واسع وتفاصيل مقتضبة عالية الجاذبية.',
+    accentColor: '#d97706',
+  },
+  {
+    id: 'store-classic',
+    name: 'قالب بوتيجا كلاسيك (Botiga Classic)',
+    badge: 'عطور ومجوهرات 👑',
+    niche: 'عطور وساعات فاخرة',
+    description: 'طابع كلاسيكي أندلسي ناصع البياض بلمسات عاجية وذهبية فاخرة، وتفاصيل دقيقة لضمان الأصالة.',
+    accentColor: '#b45309',
+  },
+  {
+    id: 'store-nova',
+    name: 'قالب نوفا الملكي الحديث (Nova Royal)',
+    badge: 'تريند وتأثيرات نيون 🚀',
+    niche: 'تريندات عصرية وسلع حديثة',
+    description: 'تصميم ملكي غامق بتدرجات كحلية وبنفسجية حيوية، شارات ديناميكية، وزر شراء نابض بالحياة.',
+    accentColor: '#6366f1',
+  },
+  {
+    id: 'store-aurit',
+    name: 'قالب شوب ويل الموثوق (ShopWell Mega Trust)',
+    badge: 'أعلى نسبة ثقة 🛡️',
+    niche: 'شامل وموثوق لجميع السلع',
+    description: 'واجهة متوازنة تعرض مؤشرات الأمان العالية، شحن المحافظات السريع، وتفاصيل فنية تفصيلية.',
+    accentColor: '#2563eb',
+  },
+  {
+    id: 'store-brick',
+    name: 'قالب بريك التجاري المباشر (Brick Commerce)',
+    badge: 'إلكترونيات وتقنية ⚙️',
+    niche: 'أجهزة وتقنية وأدوات منزلية',
+    description: 'تباين كحلي وبرتقالي قوي ومباشر، بطاقات مقارنة للمواصفات، وشريط حسم عالي الوضوح.',
+    accentColor: '#ea580c',
+  },
+  {
+    id: 'store-chic',
+    name: 'قالب شيك بوتيك للجمال (Chic Boutique)',
+    badge: 'جمال وموضة 🌸',
+    niche: 'عناية وتجميل وأزياء نسائية',
+    description: 'ألوان باستيل وزهرية ناعمة، بطاقات مستديرة أنيقة، وتنسيق يعكس الرقة والعناية الفائقة.',
+    accentColor: '#ec4899',
+  },
+  {
+    id: 'store-stride',
+    name: 'قالب سترايد الرياضي الديناميكي (Stride Athletic)',
+    badge: 'رياضة وسنيكرز 👟',
+    niche: 'أحذية وملابس رياضية وكاجوال',
+    description: 'واجهة داكنة عالية الحيوية بخطوط رياضية جريئة وزوايا حادة مخصصة للنشاط والحركة.',
+    accentColor: '#10b981',
   },
 ];
 
@@ -62,8 +116,8 @@ export function LandingPageBuilderPage() {
     } catch {}
   }, []);
 
-  // قائمة صفحات الهبوط المعروضة
-  const [pages, setPages] = useState<CloudLandingPage[]>(INITIAL_DEMO_PAGES);
+  // قائمة صفحات الهبوط المعروضة (تبدأ فارغة ولا تضيف صفحات افتراضية)
+  const [pages, setPages] = useState<CloudLandingPage[]>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -75,11 +129,12 @@ export function LandingPageBuilderPage() {
 
   // الحقول المطلوبة لصفحة الهبوط
   const [productName, setProductName] = useState('');
-  const [slug, setSlug] = useState('landbidg1');
+  const [slug, setSlug] = useState('');
   const [price, setPrice] = useState('45000');
   const [compareAtPrice, setCompareAtPrice] = useState('58000');
   const [discountTwoItems, setDiscountTwoItems] = useState('15');
   const [discountThreeItems, setDiscountThreeItems] = useState('25');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('easyorders-flash');
 
   // صور المنتج الثلاثة (الصورة 1 إجبارية)
   const [image1, setImage1] = useState('');
@@ -231,17 +286,18 @@ export function LandingPageBuilderPage() {
 
       const map = new Map<string, CloudLandingPage>();
 
-      // 1. القائمة الافتراضية كبداية مؤكدة
-      INITIAL_DEMO_PAGES.forEach((p) => map.set(p.slug, { ...p, subdomain }));
-
-      // 2. دمج التخزين المحلي
+      // 1. دمج التخزين المحلي (مع استبعاد الصفحة الافتراضية landbidg1 أو عطر الفخامة)
       (localPages || []).forEach((p) => {
-        map.set(p.slug, p);
+        if (p && p.slug !== 'landbidg1' && String(p.id) !== '1' && p.productName !== 'عطر تاج الفخامة الفرنسي الملكي') {
+          map.set(p.slug, p);
+        }
       });
 
-      // 3. دمج قاعدة بيانات السيرفر (Neon DB) بأعلى أولوية
+      // 2. دمج قاعدة بيانات السيرفر (Neon DB) بأعلى أولوية
       (serverPages || []).forEach((p) => {
-        map.set(p.slug, p);
+        if (p && p.slug !== 'landbidg1' && String(p.id) !== '1' && p.productName !== 'عطر تاج الفخامة الفرنسي الملكي') {
+          map.set(p.slug, p);
+        }
       });
 
       const merged = Array.from(map.values());
@@ -294,6 +350,7 @@ export function LandingPageBuilderPage() {
     setCompareAtPrice('58000');
     setDiscountTwoItems('15');
     setDiscountThreeItems('25');
+    setSelectedTemplate('easyorders-flash');
     setImage1('');
     setImage2('');
     setImage3('');
@@ -305,11 +362,12 @@ export function LandingPageBuilderPage() {
   const handleOpenEdit = (p: CloudLandingPage) => {
     setEditingPageId(p.slug || String(p.id));
     setProductName(p.productName || '');
-    setSlug(p.slug || 'landbidg1');
+    setSlug(p.slug || '');
     setPrice(String(p.price || ''));
     setCompareAtPrice(String(p.compareAtPrice || ''));
     setDiscountTwoItems(String(p.discountTwoItems ?? 15));
     setDiscountThreeItems(String(p.discountThreeItems ?? 25));
+    setSelectedTemplate(p.template || 'easyorders-flash');
 
     const imgs = p.images || [];
     setImage1(imgs[0] || '');
@@ -364,8 +422,8 @@ export function LandingPageBuilderPage() {
     const disc3 = Number(discountThreeItems) || 25;
 
     // تنظيف السلاج
-    let cleanSlug = (slug || 'landbidg1').toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
-    if (!cleanSlug) cleanSlug = `landbidg${pages.length + 1}`;
+    let cleanSlug = (slug || '').toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+    if (!cleanSlug) cleanSlug = `page-${Date.now().toString(36)}`;
 
     // تجميع الصور (الأولى إجبارية، 2 و 3 اختياريتان)
     const imagesList = [image1.trim()];
@@ -382,7 +440,7 @@ export function LandingPageBuilderPage() {
       discountTwoItems: disc2,
       discountThreeItems: disc3,
       description: `منتج أصلي عالي الجودة مع شحن سريع لجميع المحافظات وضمان الدفع عند الاستلام بعد المعاينة.`,
-      template: 'easyorders-flash',
+      template: selectedTemplate || 'easyorders-flash',
       isPublished: true,
       createdAt: new Date().toISOString().split('T')[0],
     };
@@ -572,6 +630,38 @@ export function LandingPageBuilderPage() {
             <RefreshCw className="size-8 animate-spin text-teal-700 mx-auto" />
             <p className="text-xs font-bold text-slate-500">جاري تحميل صفحات الهبوط من السيرفر...</p>
           </div>
+        ) : pages.length === 0 ? (
+          <div className="py-16 px-6 text-center space-y-4 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 shadow-sm max-w-2xl mx-auto">
+            <div className="size-16 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 grid place-items-center mx-auto border border-teal-200 dark:border-teal-800">
+              <Globe className="size-8" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                لا توجد صفحات هبوط مضافة بعد
+              </h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                لم تقم بإنشاء أي صفحة هبوط بعد. يمكنك إضافة صفحة هبوط مخصصة لمنتجك واختيار القالب المناسب، أو استخدام التوليد السريع بالذكاء الاصطناعي لإنشاء صفحة احترافية بثوانٍ.
+              </p>
+            </div>
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={handleOpenCreateNew}
+                className="px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-teal-700/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <Plus className="size-4 stroke-[3]" />
+                <span>إضافة صفحة هبوط جديدة</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenAiGenerator}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600 hover:from-teal-800 hover:to-emerald-700 text-white text-xs font-black flex items-center gap-2 shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <Sparkles className="size-4 text-amber-300" />
+                <span>توليد سريع بالذكاء الاصطناعي</span>
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="grid gap-5 md:grid-cols-2">
             {pages.map((p) => {
@@ -582,6 +672,7 @@ export function LandingPageBuilderPage() {
               const d3 = Number(p.discountThreeItems) || 25;
               const twoTotal = Math.round(pPrice * 2 * (1 - d2 / 100));
               const threeTotal = Math.round(pPrice * 3 * (1 - d3 / 100));
+              const currentTmpl = LANDING_PAGE_TEMPLATES.find(t => t.id === p.template) || LANDING_PAGE_TEMPLATES[0];
 
               return (
                 <div
@@ -628,8 +719,9 @@ export function LandingPageBuilderPage() {
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-500 mt-1 block">
-                            قالب الشراء السريع المباشر (COD)
+                          <span className="text-[10px] text-teal-700 dark:text-teal-400 font-extrabold mt-1 flex items-center gap-1">
+                            <Layers className="size-3" />
+                            <span>القالب: {currentTmpl.name}</span>
                           </span>
                         </div>
                       </div>
@@ -786,6 +878,56 @@ export function LandingPageBuilderPage() {
                     <span>توليد تلقائي بالـ AI</span>
                   </button>
                 </div>
+
+                {/* اختيار وتصميم قالب صفحة الهبوط */}
+                <div className="space-y-2.5 p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-800/40">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                      قالب وتصميم صفحة الهبوط <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/80 text-teal-800 dark:text-teal-300">
+                      {LANDING_PAGE_TEMPLATES.find(t => t.id === selectedTemplate)?.badge || 'قالب مميز'}
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={selectedTemplate}
+                      onChange={(e) => setSelectedTemplate(e.target.value)}
+                      className="w-full h-11 pr-4 pl-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 appearance-none cursor-pointer shadow-sm"
+                    >
+                      {LANDING_PAGE_TEMPLATES.map((tmpl) => (
+                        <option key={tmpl.id} value={tmpl.id}>
+                          {tmpl.name} — [{tmpl.niche}]
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute left-3 top-3.5 pointer-events-none text-slate-400">
+                      <Layers className="size-4 text-teal-600" />
+                    </div>
+                  </div>
+
+                  {/* بطاقة تفاصيل القالب المختار */}
+                  {(() => {
+                    const currentTmpl = LANDING_PAGE_TEMPLATES.find(t => t.id === selectedTemplate) || LANDING_PAGE_TEMPLATES[0];
+                    return (
+                      <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 space-y-1 shadow-sm">
+                        <div className="flex items-center justify-between text-[11px] font-extrabold">
+                          <span className="text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span className="size-2 rounded-full" style={{ backgroundColor: currentTmpl.accentColor }} />
+                            {currentTmpl.name}
+                          </span>
+                          <span className="text-teal-700 dark:text-teal-400 text-[10px] font-mono">
+                            {currentTmpl.niche}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                          {currentTmpl.description}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+
               {/* 1. اسم المنتج */}
               <div>
                 <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
@@ -798,7 +940,7 @@ export function LandingPageBuilderPage() {
                   onChange={(e) => {
                     setProductName(e.target.value);
                   }}
-                  placeholder="مثال: عطر تاج الفخامة الفرنسي الملكي"
+                  placeholder="مثال: ساعة لومينور الفاخرة أو حذاء سنيكرز الرياضي"
                   className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600"
                 />
               </div>
@@ -1081,13 +1223,13 @@ export function LandingPageBuilderPage() {
                     type="text"
                     value={slug}
                     onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                    placeholder="landbidg1"
+                    placeholder="offer-special"
                     dir="ltr"
                     className="flex-1 h-11 bg-transparent text-sm font-mono font-bold text-teal-700 dark:text-teal-400 outline-none text-right"
                   />
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">
-                  الرابط الناتج: https://{subdomain}.za3em.shop/{slug || 'landbidg1'}
+                  الرابط الناتج: https://{subdomain}.za3em.shop/{slug || 'offer-special'}
                 </p>
               </div>
 

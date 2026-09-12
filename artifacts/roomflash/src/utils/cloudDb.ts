@@ -195,20 +195,22 @@ export async function saveCloudStore(store: {
     };
   });
 
-  const productObj = {
+  const hasProduct = Boolean((rawProd.title && rawProd.title !== 'عطر تاج الفخامة الفرنسي الملكي') || (rawProd.name && rawProd.name !== 'عطر تاج الفخامة الفرنسي الملكي') || sanitizedProducts.length > 0);
+  const leadName = (rawProd.title && rawProd.title !== 'عطر تاج الفخامة الفرنسي الملكي') ? rawProd.title : (sanitizedProducts[0]?.name || '');
+  const productObj = hasProduct ? {
     id: rawProd.id || sanitizedProducts[0]?.id || 1,
-    title: rawProd.title || rawProd.name || sanitizedProducts[0]?.name || 'عطر تاج الفخامة الفرنسي الملكي',
-    name: rawProd.title || rawProd.name || sanitizedProducts[0]?.name || 'عطر تاج الفخامة الفرنسي الملكي',
-    price: Number(rawProd.price) || sanitizedProducts[0]?.price || 45000,
-    compareAtPrice: Number(rawProd.compareAtPrice) || sanitizedProducts[0]?.compareAtPrice || Math.round((Number(rawProd.price) || 45000) * 1.3),
-    imageUrl: safeProdImg,
-    image: safeProdImg,
-    images: Array.isArray(rawProd.images) && rawProd.images.length > 0 ? rawProd.images : [safeProdImg],
-    description: rawProd.description || store.slogan || 'منتج أصلي معتمد مع شحن سريع وضمان الدفع عند الاستلام',
+    title: leadName,
+    name: leadName,
+    price: Number(rawProd.price) || sanitizedProducts[0]?.price || 0,
+    compareAtPrice: Number(rawProd.compareAtPrice) || sanitizedProducts[0]?.compareAtPrice || null,
+    imageUrl: safeProdImg || '',
+    image: safeProdImg || '',
+    images: Array.isArray(rawProd.images) && rawProd.images.length > 0 ? rawProd.images : (safeProdImg ? [safeProdImg] : []),
+    description: rawProd.description || store.slogan || '',
     category: rawProd.category || 'عام',
     products: sanitizedProducts,
     catalog: sanitizedProducts,
-  };
+  } : { products: [] };
   const productJson = JSON.stringify(productObj).replace(/'/g, "''");
   const productsJson = JSON.stringify(sanitizedProducts).replace(/'/g, "''");
   const categoriesJson = JSON.stringify(store.categories || ['عام']).replace(/'/g, "''");
@@ -536,7 +538,7 @@ export interface CloudLandingPage {
 export async function saveCloudLandingPage(page: CloudLandingPage): Promise<boolean> {
   try {
     const cleanSub = (page.subdomain || 'alzaeem').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
-    const cleanSlug = (page.slug || 'landbidg1').toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+    const cleanSlug = (page.slug || 'page-1').toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
     const nameEsc = (page.productName || '').replace(/'/g, "''");
     const descEsc = (page.description || '').replace(/'/g, "''");
     const templateEsc = (page.template || 'modern').replace(/'/g, "''");

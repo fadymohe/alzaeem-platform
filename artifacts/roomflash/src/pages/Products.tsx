@@ -489,10 +489,30 @@ export function ProductsPage() {
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-3">
-          <Box className="size-10 text-slate-300 mx-auto" />
-          <h3 className="font-bold text-slate-700 dark:text-slate-300">لا توجد منتجات مطابقة</h3>
-          <p className="text-xs text-slate-500">أضف منتجاتك الأولى لتبدأ بالبيع فوراً.</p>
+        <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-12 text-center space-y-4">
+          <div className="size-14 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 grid place-items-center mx-auto border border-teal-200 dark:border-teal-800/40">
+            <Box className="size-7" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-200">
+              {search || statusFilter !== 'all' ? 'لا توجد منتجات مطابقة لخيارات البحث' : 'لا توجد منتجات في الكتالوج بعد'}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+              {search || statusFilter !== 'all'
+                ? 'جرب البحث باسم منتج آخر أو تصفية الحالات للحصول على نتائج.'
+                : 'لم تقم بإضافة أي منتج يدوياً بعد. أضف منتجك الأول لتبدأ باستقبال الطلبات في متجرك الإلكتروني فوراً.'}
+            </p>
+          </div>
+          {(!search && statusFilter === 'all') && (
+            <button
+              type="button"
+              onClick={openAddModal}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-black shadow-md shadow-teal-700/20 transition-all hover:scale-105 active:scale-95 cursor-pointer mx-auto"
+            >
+              <Plus className="size-4 stroke-[3]" />
+              <span>إضافة منتجك الأول الآن</span>
+            </button>
+          )}
         </div>
       )}
 

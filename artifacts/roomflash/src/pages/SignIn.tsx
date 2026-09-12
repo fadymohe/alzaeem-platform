@@ -135,14 +135,9 @@ export function SignInPage() {
       const logoUrl = dbStore?.logoUrl || dbStore?.logo_url || meta?.logo_url || onboarded?.logoUrl || null;
       const bannerUrl = dbStore?.bannerUrl || dbStore?.banner_url || meta?.banner_url || onboarded?.bannerUrl || null;
 
-      // استرجاع المنتج المحفوظ الخاص بالتاجر بدقة
-      const product = dbStore?.product || meta?.product || onboarded?.product || {
-        id: 1,
-        title: 'عطر تاج الفخامة الفرنسي الملكي',
-        price: 45000,
-        compareAtPrice: 58000,
-        imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80'
-      };
+      // استرجاع المنتج الحقيقي الخاص بالتاجر بدقة فقط دون افتراضيات
+      const rawProd = dbStore?.product || meta?.product || onboarded?.product;
+      const product = (rawProd && (rawProd.title || rawProd.name) && rawProd.title !== 'عطر تاج الفخامة الفرنسي الملكي' && !rawProd.isDefault) ? rawProd : null;
 
       const fullStoreData = {
         ...userObj,
@@ -166,22 +161,14 @@ export function SignInPage() {
       localStorage.setItem('zaeem_onboarding_completed', 'true');
       localStorage.setItem('zaeem_auth_action', 'signin');
 
-      // حفظ المنتج في قائمة منتجات المتجر للوحة التحكم
+      // حفظ المنتجات الحقيقية فقط إذا كانت مسجلة في قاعدة البيانات
       try {
-        localStorage.setItem('zaeem_store_products', JSON.stringify([{
-          id: 1,
-          name: product.title || product.name || 'منتج المتجر الحصري',
-          sku: `PRD-${cleanSub.toUpperCase()}`,
-          description: slogan,
-          price: Number(product.price) || 45000,
-          compareAtPrice: Number(product.compareAtPrice) || Math.round((Number(product.price) || 45000) * 1.3),
-          stock: 50,
-          lowStockThreshold: 5,
-          category: product.category || 'عام',
-          status: 'active',
-          imageUrl: product.imageUrl || product.image || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
-          weightGrams: 500
-        }]));
+        if (Array.isArray(dbStore?.products) && dbStore.products.length > 0) {
+          const cleanProds = dbStore.products.filter((p: any) => p && !p.isDefault && p.name !== 'عطر تاج الفخامة الفرنسي الملكي');
+          if (cleanProds.length > 0) {
+            localStorage.setItem('zaeem_store_products', JSON.stringify(cleanProds));
+          }
+        }
       } catch {}
     } catch (e) {
       console.warn("completeLoginRedirect error:", e);

@@ -949,16 +949,16 @@ export function OnboardingPage() {
         logoUrl: logoUrl || undefined,
         bannerUrl: bannerUrl || undefined,
         categories,
-        product: {
+        product: (typeof productName !== 'undefined' && productName && productName !== 'عطر تاج الفخامة الفرنسي الملكي') ? {
           id: 1,
-          title: productName || 'عطر تاج الفخامة الفرنسي الملكي',
-          name: productName || 'عطر تاج الفخامة الفرنسي الملكي',
-          price: Number(productPrice) || 45000,
-          compareAtPrice: Math.round((Number(productPrice) || 45000) * 1.3),
-          imageUrl: productImage || 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop&q=80',
-          description: slogan || 'منتج أصلي معتمد مع شحن سريع لجميع محافظات العراق ودفع عند الاستلام',
-          category: productCategory || 'عام',
-        }
+          title: productName,
+          name: productName,
+          price: Number(typeof productPrice !== 'undefined' ? productPrice : 0),
+          compareAtPrice: Math.round((Number(typeof productPrice !== 'undefined' ? productPrice : 0)) * 1.3),
+          imageUrl: typeof productImage !== 'undefined' ? productImage : undefined,
+          description: slogan || '',
+          category: typeof productCategory !== 'undefined' ? productCategory : 'عام',
+        } : undefined
       });
       if (!saved) {
         console.warn('First save attempt returned false, retrying with lightweight safe payload...');
@@ -971,15 +971,15 @@ export function OnboardingPage() {
           ownerId,
           slogan,
           categories,
-          product: {
+          product: (typeof productName !== 'undefined' && productName && productName !== 'عطر تاج الفخامة الفرنسي الملكي') ? {
             id: 1,
-            title: productName || 'عطر تاج الفخامة الفرنسي الملكي',
-            price: Number(productPrice) || 45000,
-            compareAtPrice: Math.round((Number(productPrice) || 45000) * 1.3),
-            imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop&q=80',
-            description: slogan || 'منتج أصلي معتمد مع شحن سريع لجميع محافظات العراق ودفع عند الاستلام',
-            category: productCategory || 'عام',
-          }
+            title: productName,
+            price: Number(typeof productPrice !== 'undefined' ? productPrice : 0),
+            compareAtPrice: Math.round((Number(typeof productPrice !== 'undefined' ? productPrice : 0)) * 1.3),
+            imageUrl: typeof productImage !== 'undefined' ? productImage : undefined,
+            description: slogan || '',
+            category: typeof productCategory !== 'undefined' ? productCategory : 'عام',
+          } : undefined
         });
       }
     } catch (cloudErr) {

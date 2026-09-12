@@ -99,16 +99,21 @@ export function DynamicStoreLanding() {
 
   const cleanSlug = currentSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, "");
 
-  // 2. التحقق من السجل المركزي للمتاجر المسجلة فورياً
+  // 2. التحقق من السجل المركزي للمتاجر المسجلة
   const initialRegisteredData = getRegisteredStore(cleanSubdomain);
-  const isInitiallyKnown =
-    cleanSubdomain === "zero" ||
-    cleanSubdomain === "demo" ||
-    cleanSubdomain === "alzaeem" ||
-    Boolean(cleanSlug) ||
-    initialRegisteredData !== null;
+  const isStaticDemo = cleanSubdomain === "zero" || cleanSubdomain === "demo";
 
-  const [isStoreRegistered, setIsStoreRegistered] = useState<boolean>(isInitiallyKnown);
+  // تصفية المنتج الافتراضي القديم (عطر الفخامة) من البيانات المبدئية إلا إذا كان مضافاً يدوياً
+  const cleanInitialProduct = (() => {
+    const p = initialRegisteredData?.product;
+    if (!p) return null;
+    const title = (p.title || p.name || '').trim();
+    if (title === 'عطر تاج الفخامة الفرنسي الملكي' && !(p as any).isManual) return null;
+    if ((p as any).isDefault && !(p as any).isManual) return null;
+    return p;
+  })();
+
+  const [isStoreRegistered, setIsStoreRegistered] = useState<boolean>(isStaticDemo || initialRegisteredData !== null);
 
   const resolveCurrentActive = () => {
     try {
@@ -161,26 +166,29 @@ export function DynamicStoreLanding() {
 
   const [product, setProduct] = useState<TemplateProduct>({
     id: 1,
-    title: initialRegisteredData?.product?.title || initialRegisteredData?.product?.name || "عطر تاج الفخامة الفرنسي الملكي",
-    description:
-      initialRegisteredData?.product?.description ||
-      "منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام بعد المعاينة.",
-    price: Number(initialRegisteredData?.product?.price) || 45000,
-    compareAtPrice: Number(initialRegisteredData?.product?.compareAtPrice) || 58000,
-    imageUrl:
-      initialRegisteredData?.product?.imageUrl ||
-      initialRegisteredData?.product?.image ||
-      "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80",
+    title: cleanInitialProduct?.title || cleanInitialProduct?.name || "",
+    description: cleanInitialProduct?.description || "",
+    price: Number(cleanInitialProduct?.price) || 0,
+    compareAtPrice: Number(cleanInitialProduct?.compareAtPrice) || 0,
+    imageUrl: cleanInitialProduct?.imageUrl || cleanInitialProduct?.image || "",
   });
 
   const [productsList, setProductsList] = useState<any[]>(() => {
-    if (Array.isArray((initialRegisteredData as any)?.products) && (initialRegisteredData as any).products.length > 0) {
-      return (initialRegisteredData as any).products;
-    }
-    return initialRegisteredData?.product ? [initialRegisteredData.product] : [];
+    const list = Array.isArray((initialRegisteredData as any)?.products) && (initialRegisteredData as any).products.length > 0
+      ? (initialRegisteredData as any).products
+      : (cleanInitialProduct ? [cleanInitialProduct] : []);
+    return list.filter((p: any) => {
+      if (!p) return false;
+      const title = (p.title || p.name || '').trim();
+      if (title === 'عطر تاج الفخامة الفرنسي الملكي' && !p.isManual) return false;
+      if (p.isDefault && !p.isManual) return false;
+      return true;
+    });
   });
 
-  const [loading, setLoading] = useState<boolean>(!isInitiallyKnown);
+  // لمنع ظهور البيانات القديمة قبل الجديدة، نجعل التحميل مفعلاً دائماً للنطاقات الحقيقية وصفحات الهبوط
+  // حتى يتم جلب ومزامنة أحدث البيانات من قاعدة البيانات السحابية المركزية
+  const [loading, setLoading] = useState<boolean>(!isStaticDemo);
 
   // تحديث عنوان التبويب (Tab Title) وأيقونة المتجر (Favicon) لحظياً مع اسم وشعار المتجر المختار فقط
   useEffect(() => {
@@ -217,48 +225,28 @@ export function DynamicStoreLanding() {
         const rawLocal = localStorage.getItem('zaeem_local_landing_pages');
         if (rawLocal) {
           const list = JSON.parse(rawLocal);
-          foundLocal = list.find((p: any) => (p.slug || '').toLowerCase() === cleanSlug);
+          foundLocal = list.find((p: any) => (p.slug || '').toLowerCase() === cleanSlug && (p.slug || '').toLowerCase() !== 'landbidg1');
         }
       } catch (err) {}
 
-      // في حال كانت الصفحة هي الصفحة الافتراضية landbidg1 ولم تحفظ بعد في التخزين المحلي
-      const activeData = foundLocal || (cleanSlug === 'landbidg1' ? {
-        id: '1',
-        subdomain: cleanSubdomain,
-        slug: 'landbidg1',
-        productName: 'عطر تاج الفخامة الفرنسي الملكي',
-        images: [
-          'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=800&auto=format&fit=crop&q=80',
-        ],
-        price: 45000,
-        compareAtPrice: 58000,
-        discountTwoItems: 15,
-        discountThreeItems: 25,
-        description: 'عطر فاخر بثبات 48 ساعة وشحن مجاني للـ 3 قطع والدفع عند الاستلام بعد المعاينة لجميع محافظات العراق.',
-        template: 'easyorders-flash',
-        isPublished: true,
-      } : null);
-
-      if (activeData && isMounted) {
+      if (foundLocal && isMounted) {
         setIsStoreRegistered(true);
         setLoading(false);
         setStore((prev) => ({
           ...prev,
-          templateId: activeData.template || 'easyorders-flash',
+          templateId: foundLocal.template || 'easyorders-flash',
         }));
-        const pImg = (activeData.images && activeData.images[0]) || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80';
+        const pImg = (foundLocal.images && foundLocal.images[0]) || '';
         setProduct({
-          id: activeData.id || 1,
-          title: activeData.productName,
-          description: activeData.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام بعد المعاينة.',
-          price: Number(activeData.price) || 0,
-          compareAtPrice: Number(activeData.compareAtPrice) || (Number(activeData.price) ? Math.round(Number(activeData.price) * 1.3) : 0),
+          id: foundLocal.id || 1,
+          title: foundLocal.productName,
+          description: foundLocal.description || '',
+          price: Number(foundLocal.price) || 0,
+          compareAtPrice: Number(foundLocal.compareAtPrice) || (Number(foundLocal.price) ? Math.round(Number(foundLocal.price) * 1.3) : 0),
           imageUrl: pImg,
-          images: activeData.images || [pImg],
-          discountTwoItems: activeData.discountTwoItems,
-          discountThreeItems: activeData.discountThreeItems,
+          images: foundLocal.images || (pImg ? [pImg] : []),
+          discountTwoItems: foundLocal.discountTwoItems,
+          discountThreeItems: foundLocal.discountThreeItems,
         });
       }
 
@@ -271,21 +259,28 @@ export function DynamicStoreLanding() {
             ...prev,
             templateId: cloudPage.template || 'easyorders-flash',
           }));
-          const pImg = (cloudPage.images && cloudPage.images[0]) || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80';
+          const pImg = (cloudPage.images && cloudPage.images[0]) || '';
           setProduct({
             id: cloudPage.id || 1,
             title: cloudPage.productName,
-            description: cloudPage.description || 'منتج أصلي عالي الجودة مع شحن سريع لجميع محافظات العراق وضمان الدفع عند الاستلام بعد المعاينة.',
+            description: cloudPage.description || '',
             price: Number(cloudPage.price) || 0,
             compareAtPrice: Number(cloudPage.compareAtPrice) || (Number(cloudPage.price) ? Math.round(Number(cloudPage.price) * 1.3) : 0),
             imageUrl: pImg,
-            images: cloudPage.images || [pImg],
+            images: cloudPage.images || (pImg ? [pImg] : []),
             discountTwoItems: cloudPage.discountTwoItems,
             discountThreeItems: cloudPage.discountThreeItems,
           });
+        } else if (!foundLocal && isMounted) {
+          setIsStoreRegistered(false);
+          setLoading(false);
         }
       }).catch((err) => {
         console.warn('[DynamicStoreLanding] Error fetching landing page:', err);
+        if (!foundLocal && isMounted) {
+          setIsStoreRegistered(false);
+          setLoading(false);
+        }
       });
 
       // جلب اسم المتجر وحالته دون استبدال منتج صفحة الهبوط
@@ -300,52 +295,10 @@ export function DynamicStoreLanding() {
         }
       }).catch(() => {});
 
-      return; // انتهاء المعالجة لصفحة الهبوط حتى لا يتم استبدال منتجها بمنتجات المتجر العامة
+      return; // انتهاء المعالجة لصفحة الهبوط
     }
 
-    // B. فحص السجل المباشر
-    const registered = getRegisteredStore(cleanSubdomain);
-    if (registered && isMounted) {
-      setIsStoreRegistered(true);
-      setLoading(false);
-      if (typeof registered.isActive === 'boolean') {
-        setIsStoreActive(registered.isActive);
-      }
-      setStore({
-        id: 1,
-        name: registered.storeName || `متجر ${cleanSubdomain}`,
-        subdomain: cleanSubdomain,
-        templateId: registered.templateId || "shoppingcart.1.2.7",
-        storeCode: registered.storeCode || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
-        logoUrl: registered.logoUrl,
-        bannerUrl: registered.bannerUrl,
-      });
-      if ((registered as any)?.products && Array.isArray((registered as any).products) && (registered as any).products.length > 0) {
-        setProductsList((registered as any).products);
-      }
-      if (registered.product) {
-        const pImg = registered.product.imageUrl || registered.product.image || "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&auto=format&fit=crop&q=80";
-        setProduct({
-          id: 1,
-          title: registered.product.title || registered.product.name || "منتج العرض الحصري",
-          description: registered.product.description || registered.slogan || "منتج فاخر مع شحن سريع لجميع محافظات العراق.",
-          price: Number(registered.product.price) || 45000,
-          compareAtPrice: Number(registered.product.compareAtPrice) || Math.round((Number(registered.product.price) || 45000) * 1.3),
-          imageUrl: pImg,
-          images: (registered.product as any)?.images || [pImg],
-        });
-        if (!((registered as any)?.products && Array.isArray((registered as any).products) && (registered as any).products.length > 0)) {
-          setProductsList([registered.product]);
-        }
-      }
-    } else if (cleanSubdomain === "zero" || cleanSubdomain === "demo") {
-      if (isMounted) {
-        setIsStoreRegistered(true);
-        setLoading(false);
-      }
-    }
-
-    // C. الاستعلام الدائم من قاعدة بيانات Neon السحابية (المصدر الحقيقي لكافة الدومينات الفرعية)
+    // B. الاستعلام الأساسي من قاعدة بيانات Neon السحابية (المصدر الحقيقي لكافة الدومينات لمنع وميض البيانات القديمة)
     async function syncCloudStore() {
       try {
         const cloudStore = await fetchCloudStore(cleanSubdomain);
@@ -369,8 +322,8 @@ export function DynamicStoreLanding() {
 
           setStoreDocumentIdentity(cloudStore.name, cloudStore.logo_url);
 
-          // استخراج كتالوج كافة المنتجات (القديمة والجديدة) المعروضة في المتجر
-          const cloudCatalog = Array.isArray(cloudStore.products) && cloudStore.products.length > 0
+          // استخراج كتالوج كافة المنتجات (القديمة والجديدة) المعروضة في المتجر مع استبعاد الافتراضي غير اليدوي
+          const rawCatalog = Array.isArray(cloudStore.products) && cloudStore.products.length > 0
             ? cloudStore.products
             : (Array.isArray((cloudStore.product as any)?.products) && (cloudStore.product as any).products.length > 0
               ? (cloudStore.product as any).products
@@ -378,24 +331,33 @@ export function DynamicStoreLanding() {
                 ? (cloudStore.product as any).catalog
                 : (cloudStore.product ? [cloudStore.product] : [])));
 
-          if (cloudCatalog.length > 0) {
-            setProductsList(cloudCatalog);
-          }
+          const cleanCatalog = (rawCatalog || []).filter((p: any) => {
+            if (!p) return false;
+            const pTitle = (p.title || p.name || '').trim();
+            if (pTitle === 'عطر تاج الفخامة الفرنسي الملكي' && !p.isManual) return false;
+            if (p.isDefault && !p.isManual) return false;
+            return true;
+          });
+
+          setProductsList(cleanCatalog);
 
           if (cloudStore.product) {
-            setProduct((prev) => {
-              const cImg = cloudStore.product?.imageUrl || cloudStore.product?.image || prev.imageUrl;
-              return {
-                ...prev,
-                id: cloudStore.product?.id || prev.id,
-                title: cloudStore.product?.title || cloudStore.product?.name || prev.title,
-                description: cloudStore.product?.description || cloudStore.slogan || prev.description,
-                price: Number(cloudStore.product?.price) || prev.price,
-                compareAtPrice: Number(cloudStore.product?.compareAtPrice) || Math.round((Number(cloudStore.product?.price) || prev.price) * 1.3),
-                imageUrl: cImg,
-                images: (cloudStore.product as any)?.images || [cImg],
-              };
-            });
+            const pTitle = cloudStore.product.title || cloudStore.product.name;
+            if (pTitle !== 'عطر تاج الفخامة الفرنسي الملكي' || cloudStore.product.isManual) {
+              setProduct((prev) => {
+                const cImg = cloudStore.product?.imageUrl || cloudStore.product?.image || prev.imageUrl;
+                return {
+                  ...prev,
+                  id: cloudStore.product?.id || prev.id,
+                  title: pTitle || prev.title,
+                  description: cloudStore.product?.description || cloudStore.slogan || prev.description,
+                  price: Number(cloudStore.product?.price) || prev.price,
+                  compareAtPrice: Number(cloudStore.product?.compareAtPrice) || Math.round((Number(cloudStore.product?.price) || prev.price) * 1.3),
+                  imageUrl: cImg,
+                  images: (cloudStore.product as any)?.images || (cImg ? [cImg] : []),
+                };
+              });
+            }
           }
           return;
         }
@@ -403,8 +365,66 @@ export function DynamicStoreLanding() {
         console.warn("Neon Cloud DB fetch error:", cloudErr);
       }
 
+      // C. في حال عدم العثور في السحابة، نفحص السجل المحلي
+      const registered = getRegisteredStore(cleanSubdomain);
+      if (registered && isMounted) {
+        setIsStoreRegistered(true);
+        setLoading(false);
+        if (typeof registered.isActive === 'boolean') {
+          setIsStoreActive(registered.isActive);
+        }
+        setStore({
+          id: 1,
+          name: registered.storeName || `متجر ${cleanSubdomain}`,
+          subdomain: cleanSubdomain,
+          templateId: registered.templateId || "shoppingcart.1.2.7",
+          storeCode: registered.storeCode || `ZAEEM-${cleanSubdomain.toUpperCase().slice(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
+          logoUrl: registered.logoUrl,
+          bannerUrl: registered.bannerUrl,
+        });
+
+        const rawRegList = (registered as any)?.products && Array.isArray((registered as any).products) && (registered as any).products.length > 0
+          ? (registered as any).products
+          : (registered.product ? [registered.product] : []);
+        
+        const cleanRegList = rawRegList.filter((p: any) => {
+          if (!p) return false;
+          const pTitle = (p.title || p.name || '').trim();
+          if (pTitle === 'عطر تاج الفخامة الفرنسي الملكي' && !p.isManual) return false;
+          if (p.isDefault && !p.isManual) return false;
+          return true;
+        });
+
+        if (cleanRegList.length > 0) {
+          setProductsList(cleanRegList);
+        }
+
+        if (registered.product) {
+          const pTitle = registered.product.title || registered.product.name;
+          if (pTitle !== 'عطر تاج الفخامة الفرنسي الملكي' || (registered.product as any)?.isManual) {
+            const pImg = registered.product.imageUrl || registered.product.image || "";
+            setProduct({
+              id: 1,
+              title: pTitle || "منتج المتجر",
+              description: registered.product.description || registered.slogan || "",
+              price: Number(registered.product.price) || 0,
+              compareAtPrice: Number(registered.product.compareAtPrice) || (Number(registered.product.price) ? Math.round(Number(registered.product.price) * 1.3) : 0),
+              imageUrl: pImg,
+              images: (registered.product as any)?.images || (pImg ? [pImg] : []),
+            });
+          }
+        }
+        return;
+      } else if (cleanSubdomain === "zero" || cleanSubdomain === "demo") {
+        if (isMounted) {
+          setIsStoreRegistered(true);
+          setLoading(false);
+        }
+        return;
+      }
+
       // فحص بديل عبر API السيرفر
-      if (!registered && cleanSubdomain !== "zero" && cleanSubdomain !== "demo") {
+      if (cleanSubdomain !== "zero" && cleanSubdomain !== "demo") {
         try {
           const res = await fetch(`/api/tenant/stores/${cleanSubdomain}`);
           if (res.ok && isMounted) {
