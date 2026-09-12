@@ -580,7 +580,7 @@ export async function fetchCloudLandingPages(subdomain?: string): Promise<CloudL
     const cleanSub = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
     let query = `SELECT id, subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published, created_at FROM za3em_landing_pages ORDER BY id DESC;`;
     if (cleanSub) {
-      query = `SELECT id, subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published, created_at FROM za3em_landing_pages WHERE subdomain = '${cleanSub}' OR subdomain = 'alzaeem' OR subdomain = '' OR subdomain IS NULL ORDER BY id DESC;`;
+      query = `SELECT id, subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published, created_at FROM za3em_landing_pages WHERE LOWER(TRIM(subdomain)) = '${cleanSub}' OR subdomain = '${cleanSub}' OR subdomain = 'alzaeem' OR subdomain = '' OR subdomain IS NULL ORDER BY id DESC;`;
     }
     const res = await executeSql(query);
     if (res && Array.isArray(res.rows)) {
@@ -616,9 +616,9 @@ export async function fetchCloudLandingPageBySlug(slug: string, subdomain?: stri
     const cleanSub = (subdomain || '').toLowerCase().trim().replace('.za3em.shop', '').replace(/[^a-z0-9-]/g, '');
     if (!cleanSlug) return null;
 
-    let query = `SELECT id, subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published, created_at FROM za3em_landing_pages WHERE LOWER(slug) = '${cleanSlug}'`;
+    let query = `SELECT id, subdomain, slug, product_name, images, price, compare_at_price, discount_two_items, discount_three_items, description, template, is_published, created_at FROM za3em_landing_pages WHERE LOWER(TRIM(slug)) = '${cleanSlug}'`;
     if (cleanSub) {
-      query += ` AND (LOWER(subdomain) = '${cleanSub}' OR subdomain = '' OR subdomain IS NULL)`;
+      query += ` AND (LOWER(TRIM(subdomain)) = '${cleanSub}' OR subdomain = '${cleanSub}' OR subdomain = 'alzaeem' OR subdomain = '' OR subdomain IS NULL)`;
     }
     query += ` ORDER BY id DESC LIMIT 1;`;
 

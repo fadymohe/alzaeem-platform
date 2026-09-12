@@ -79,8 +79,37 @@ export const LANDING_PAGE_TEMPLATES: LandingTemplateOption[] = [
 
 export function LandingPageBuilderPage() {
   // Store Subdomain & Name
-  const [subdomain, setSubdomain] = useState<string>('alzaeem');
-  const [storeName, setStoreName] = useState<string>('متجر الزعيم');
+  const [subdomain, setSubdomain] = useState<string>(() => {
+    try {
+      const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+      const rawUser = localStorage.getItem('zaeem_user');
+      let storeObj: any = null;
+      let userObj: any = null;
+      if (rawStore) storeObj = JSON.parse(rawStore);
+      if (rawUser) userObj = JSON.parse(rawUser);
+
+      return (storeObj?.subdomain || userObj?.subdomain || 'alzaeem')
+        .replace('.za3em.shop', '')
+        .replace(/^https?:\/\//, '')
+        .trim();
+    } catch {
+      return 'alzaeem';
+    }
+  });
+
+  const [storeName, setStoreName] = useState<string>(() => {
+    try {
+      const rawStore = localStorage.getItem('zaeem_onboarded_store') || localStorage.getItem('zaeem_store_data');
+      const rawUser = localStorage.getItem('zaeem_user');
+      let storeObj: any = null;
+      let userObj: any = null;
+      if (rawStore) storeObj = JSON.parse(rawStore);
+      if (rawUser) userObj = JSON.parse(rawUser);
+      return storeObj?.storeName || userObj?.storeName || 'متجر الزعيم';
+    } catch {
+      return 'متجر الزعيم';
+    }
+  });
 
   useEffect(() => {
     try {
@@ -270,16 +299,16 @@ export function LandingPageBuilderPage() {
 
       const map = new Map<string, CloudLandingPage>();
 
-      // 1. دمج التخزين المحلي (مع استبعاد الصفحة الافتراضية landbidg1 أو عطر الفخامة)
+      // 1. دمج التخزين المحلي
       (localPages || []).forEach((p) => {
-        if (p && p.slug !== 'landbidg1' && String(p.id) !== '1' && p.productName !== 'عطر تاج الفخامة الفرنسي الملكي') {
+        if (p && p.slug && p.productName !== 'عطر تاج الفخامة الفرنسي الملكي') {
           map.set(p.slug, p);
         }
       });
 
       // 2. دمج قاعدة بيانات السيرفر (Neon DB) بأعلى أولوية
       (serverPages || []).forEach((p) => {
-        if (p && p.slug !== 'landbidg1' && String(p.id) !== '1' && p.productName !== 'عطر تاج الفخامة الفرنسي الملكي') {
+        if (p && p.slug && p.productName !== 'عطر تاج الفخامة الفرنسي الملكي') {
           map.set(p.slug, p);
         }
       });
@@ -328,8 +357,8 @@ export function LandingPageBuilderPage() {
   const handleOpenCreateNew = () => {
     setEditingPageId(null);
     setProductName('');
-    const nextNum = pages.length + 1;
-    setSlug(`landbidg${nextNum}`);
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    setSlug(`offer-${randomSuffix}`);
     setPrice('45000');
     setCompareAtPrice('58000');
     setDiscountTwoItems('15');

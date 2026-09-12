@@ -225,7 +225,7 @@ export function DynamicStoreLanding() {
         const rawLocal = localStorage.getItem('zaeem_local_landing_pages');
         if (rawLocal) {
           const list = JSON.parse(rawLocal);
-          foundLocal = list.find((p: any) => (p.slug || '').toLowerCase() === cleanSlug && (p.slug || '').toLowerCase() !== 'landbidg1');
+          foundLocal = list.find((p: any) => (p.slug || '').toLowerCase() === cleanSlug && p.productName !== 'عطر تاج الفخامة الفرنسي الملكي');
         }
       } catch (err) {}
 
