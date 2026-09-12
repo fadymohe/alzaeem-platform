@@ -17,7 +17,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  SingleButtonShippingSelector,
   IRAQ_GOVERNORATES_LIST,
   type IraqGovernorateShipping,
 } from "../shipping/SingleButtonShippingSelector";
@@ -483,15 +482,25 @@ export const EasyOrdersFlashTemplate: React.FC<EasyOrdersFlashTemplateProps> = (
                 />
               </div>
 
-              {/* 3. واجهة الشحن الموحدة (Single-Button Shipping Selector) */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">
-                  المحافظة وتكلفة الشحن (اضغط لتغيير المحافظة) *
+              {/* اختيار المحافظة */}
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                  المحافظة <span className="text-emerald-400">*</span>
                 </label>
-                <SingleButtonShippingSelector
-                  selectedGovernorate={selectedGov.name}
-                  onSelect={(gov) => setSelectedGov(gov)}
-                />
+                <select
+                  value={selectedGov.id}
+                  onChange={(e) => {
+                    const found = IRAQ_GOVERNORATES_LIST.find((g) => g.id === e.target.value);
+                    if (found) setSelectedGov(found);
+                  }}
+                  className="w-full h-11 px-4 rounded-xl border border-slate-700 bg-slate-950 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors cursor-pointer"
+                >
+                  {IRAQ_GOVERNORATES_LIST.map((g) => (
+                    <option key={g.id} value={g.id} className="bg-slate-900 text-white">
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

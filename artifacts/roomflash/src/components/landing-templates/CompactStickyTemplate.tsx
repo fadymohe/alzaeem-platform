@@ -14,7 +14,6 @@ import {
   Check
 } from "lucide-react";
 import {
-  SingleButtonShippingSelector,
   IRAQ_GOVERNORATES_LIST,
   type IraqGovernorateShipping,
 } from "../shipping/SingleButtonShippingSelector";
@@ -302,7 +301,7 @@ export const CompactStickyTemplate: React.FC<CompactStickyTemplateProps> = ({
               >
                 {IRAQ_GOVERNORATES_LIST.map((g) => (
                   <option key={g.id} value={g.id} className="bg-slate-900 text-white">
-                    {g.name} — شحن {formatIQD(g.shippingCost)}
+                    {g.name}
                   </option>
                 ))}
               </select>

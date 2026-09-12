@@ -14,7 +14,6 @@ import {
   ThumbsUp
 } from "lucide-react";
 import {
-  SingleButtonShippingSelector,
   IRAQ_GOVERNORATES_LIST,
   type IraqGovernorateShipping,
 } from "../shipping/SingleButtonShippingSelector";
@@ -284,7 +283,7 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">المحافظة والتوصيل *</label>
+              <label className="text-xs font-bold text-slate-300 block mb-1">المحافظة *</label>
               <select
                 value={selectedGov.id}
                 onChange={(e) => {
@@ -295,7 +294,7 @@ export const MinimalLuxuryTemplate: React.FC<MinimalLuxuryTemplateProps> = ({
               >
                 {IRAQ_GOVERNORATES_LIST.map((g) => (
                   <option key={g.id} value={g.id} className="bg-slate-900 text-white">
-                    {g.name} — شحن {formatIQD(g.shippingCost)}
+                    {g.name}
                   </option>
                 ))}
               </select>
